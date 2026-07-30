@@ -1,0 +1,410 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
+import { getUser } from '@/lib/auth';
+import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
+
+const ACTION_LABELS: Record<string, string> = {
+  'contract.created': 'إنشاء عقد',
+  'contract.sent': 'إرسال عقد',
+  'contract.client_approved': 'موافقة العميل على العقد',
+  'contract.client_rejected': 'رفض العميل للعقد',
+  'contract.client_edit_requested': 'طلب تعديل العقد',
+  'contract.edit_requested': 'طلب تعديل العقد',
+  'contract.company_approved': 'اعتماد الشركة للعقد',
+  'contract.completed': 'إكمال العقد',
+  'contract.archived': 'أرشفة العقد',
+  'contract.updated': 'تحديث العقد',
+  'contract.deleted': 'حذف عقد',
+  'workspace.created': 'إنشاء مساحة عمل',
+  'workspace.activated': 'تفعيل مساحة العمل',
+  'payment.submitted': 'تقديم دفعة',
+  'payment.approved': 'اعتماد دفعة',
+  'payment.rejected': 'رفض دفعة',
+  'approval.created': 'إنشاء طلب موافقة',
+  'approval.approved': 'الموافقة على الطلب',
+  'approval.rejected': 'رفض الطلب',
+  'approval.edit_requested': 'طلب تعديل الموافقة',
+  'file.uploaded': 'رفع ملف',
+  'file.approved': 'الموافقة على الملف',
+  'file.rejected': 'رفض الملف',
+  'login': 'تسجيل دخول',
+  'meeting.created': 'إنشاء اجتماع',
+  'meeting.updated': 'تحديث اجتماع',
+  'meeting.deleted': 'حذف اجتماع',
+  'client.created': 'إنشاء عميل',
+  'client.deleted': 'حذف عميل',
+  'chat.responded.approved': 'الموافقة من الشات',
+  'chat.responded.edit_requested': 'طلب تعديل من الشات',
+};
+
+function getActionBadgeClass(action: string): string {
+  if (action.startsWith('contract.')) return 'ab-contract';
+  if (action.startsWith('payment.')) return 'ab-payment';
+  if (action.startsWith('client.')) return 'ab-client';
+  if (action.startsWith('approval.')) return 'ab-approval';
+  if (action.startsWith('login')) return 'ab-login';
+  if (action.startsWith('meeting.')) return 'ab-meeting';
+  if (action.startsWith('file.')) return 'ab-file';
+  if (action.startsWith('workspace.')) return 'ab-workspace';
+  return 'ab-default';
+}
+
+function resolveClientName(log: any): string {
+  if (log.client?.company_name) return log.client.company_name;
+  if (log.client?.name) return log.client.name;
+  const auditable = log.auditable;
+  if (!auditable) return '—';
+  const type = log.auditable_type || '';
+  if (type.includes('Client')) return auditable.company_name || auditable.name || '—';
+  if (type.includes('Contract') || type.includes('Payment') || type.includes('Meeting') || type.includes('Approval') || type.includes('FileEntry')) {
+    return auditable.workspace?.client?.company_name || '—';
+  }
+  if (type.includes('Workspace')) return auditable.client?.company_name || '—';
+  return '—';
+}
+
+function resolveEntityName(log: any): string {
+  const auditable = log.auditable;
+  if (!auditable) return '—';
+  const type = log.auditable_type || '';
+  if (type.includes('Contract')) return `عقد #${auditable.id}`;
+  if (type.includes('Payment')) return `دفعة #${auditable.id} — ${auditable.amount ? `${Number(auditable.amount).toLocaleString()} ج.م` : ''}`;
+  if (type.includes('Client')) return auditable.company_name || auditable.name || '—';
+  if (type.includes('Meeting')) return auditable.title || 'اجتماع';
+  if (type.includes('Approval')) return `طلب #${auditable.id}`;
+  if (type.includes('FileEntry')) return auditable.file_name || 'ملف';
+  if (type.includes('Workspace')) return `مساحة #${auditable.id}`;
+  return `#${auditable.id || '?'}`;
+}
+
+function resolveClientType(log: any): string | null {
+  if (log.client?.client_type) return log.client.client_type;
+  const auditable = log.auditable;
+  if (!auditable) return null;
+  const type = log.auditable_type || '';
+  if (type.includes('Client')) return auditable.client_type || null;
+  if (type.includes('Contract') || type.includes('Payment') || type.includes('Meeting') || type.includes('Approval') || type.includes('FileEntry')) {
+    return auditable.workspace?.client?.client_type || null;
+  }
+  if (type.includes('Workspace')) return auditable.client?.client_type || null;
+  return null;
+}
+
+function formatDateTime(dateStr: string): { date: string; time: string } {
+  if (!dateStr) return { date: '—', time: '' };
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const logDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - logDay.getTime()) / (1000 * 60 * 60 * 24));
+
+  let date: string;
+  if (diffDays === 0) date = 'اليوم';
+  else if (diffDays === 1) date = 'أمس';
+  else date = d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  const time = d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  return { date, time };
+}
+
+function getAvatarColors(name: string): { bg: string; border: string; text: string } {
+  const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const palettes = [
+    { bg: 'rgba(148,20,20,0.16)', border: 'rgba(148,20,20,0.32)', text: '#D4AF37' },
+    { bg: 'rgba(167,139,250,0.16)', border: 'rgba(167,139,250,0.32)', text: '#A78BFA' },
+    { bg: 'rgba(96,165,250,0.16)', border: 'rgba(96,165,250,0.32)', text: '#60A5FA' },
+    { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', text: '#22C55E' },
+    { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: '#FB923C' },
+    { bg: 'rgba(212,175,55,0.13)', border: 'rgba(212,175,55,0.28)', text: '#D4AF37' },
+  ];
+  return palettes[hash % palettes.length];
+}
+
+export default function AuditLogPage() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [filters, setFilters] = useState({ search: '', action: '', user_id: '', date_from: '', date_to: '' });
+  const [users, setUsers] = useState<any[]>([]);
+  const isSA = getUser()?.role === 'super_admin';
+
+  const fetchLogs = (p: number) => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
+    params.set('page', String(p));
+    api.get(`/audit-logs?${params.toString()}`).then((res) => {
+      const paginated = res.data?.logs;
+      setLogs(paginated?.data || []);
+      setTotalPages(paginated?.last_page || 1);
+      setTotal(paginated?.total || 0);
+    }).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchLogs(1);
+    setPage(1);
+    api.get('/users').then(({ data }) => setUsers(Array.isArray(data) ? data : data.users || [])).catch(() => {});
+  }, []);
+
+  const applyFilters = () => { setPage(1); fetchLogs(1); };
+
+  const generatePageNumbers = (): (number | 'ellipsis')[] => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push('ellipsis');
+      const start = Math.max(2, page - 1);
+      const end = Math.min(totalPages - 1, page + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (page < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  return (
+    <div className="space-y-4">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>سجل التدقيق الكامل</h2>
+          <span className="text-[10px] text-[var(--color-text-secondary)]">{total.toLocaleString()} حدث مسجّل</span>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <input
+          type="text"
+          placeholder="🔍 بحث في السجل..."
+          value={filters.search}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(); }}
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-full px-3.5 py-1.5 text-[11px] text-[var(--color-foreground)] w-[160px] outline-none focus:border-[var(--color-gold)]"
+        />
+        <select value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
+          <option value="">كل الأحداث</option>
+          {Object.entries(ACTION_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+        <select value={filters.user_id} onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
+          <option value="">كل المستخدمين</option>
+          {users.map((u: any) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+        <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
+        <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
+        <button onClick={applyFilters}
+          className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer hover:opacity-90 transition-opacity">
+          تطبيق
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="audit-card">
+        {loading ? (
+          <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">جاري التحميل...</div>
+        ) : logs.length === 0 ? (
+          <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">لا توجد سجلات</div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>الحدث</th>
+                    <th>المستخدم</th>
+                    <th>الكيان</th>
+                    <th>عنوان IP</th>
+                    <th>التاريخ والوقت</th>
+                    <th>التفاصيل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => {
+                    const { date, time } = formatDateTime(log.created_at);
+                    const colors = getAvatarColors(log.user?.name || '');
+                    const entityName = resolveEntityName(log);
+                    return (
+                      <tr key={log.id}>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10 }}>{log.id}</td>
+                        <td>
+                          <span className={`action-badge ${getActionBadgeClass(log.action)}`}>
+                            {ACTION_LABELS[log.action] || log.action}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="td-user">
+                            <div className="td-av" style={{ background: colors.bg, borderColor: colors.border, color: colors.text }}>
+                              {log.user?.name?.slice(0, 2) || '?'}
+                            </div>
+                            <span>{log.user?.name || '—'}</span>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>{entityName}</td>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10, direction: 'ltr', textAlign: 'right' }}>
+                          {log.ip_address || '—'}
+                        </td>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10, whiteSpace: 'nowrap' }}>
+                          {date}, {time}
+                        </td>
+                        <td>
+                          <span style={{ color: '#60A5FA', fontSize: 10, cursor: 'pointer' }}>عرض ←</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="audit-pagination">
+                <span className="pag-info">الصفحة {page} من {totalPages} • {total.toLocaleString()} نتيجة</span>
+                <div className="flex gap-1 mr-auto items-center">
+                  <button
+                    onClick={() => { const p = page - 1; setPage(p); fetchLogs(p); }}
+                    disabled={page <= 1}
+                    className="pag-btn"
+                  >
+                    السابق
+                  </button>
+                  {generatePageNumbers().map((p, i) =>
+                    p === 'ellipsis' ? (
+                      <span key={`e${i}`} style={{ color: 'var(--color-text-secondary)', padding: '5px 4px', fontSize: 12 }}>…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => { setPage(p); fetchLogs(p); }}
+                        className="pag-btn"
+                        style={p === page ? { background: 'var(--color-crimson-soft)', borderColor: 'var(--color-crimson-border)', color: 'var(--color-foreground)' } : {}}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => { const p = page + 1; setPage(p); fetchLogs(p); }}
+                    disabled={page >= totalPages}
+                    className="pag-btn"
+                  >
+                    التالي
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <style>{`
+        .audit-card {
+          background: var(--color-card);
+          border: 1px solid var(--color-card-border);
+          border-radius: 12px;
+          overflow: hidden;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th {
+          text-align: right;
+          padding: 9px 14px;
+          font-size: 10px;
+          color: var(--color-text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 1px solid var(--color-card-border);
+          font-weight: 500;
+          white-space: nowrap;
+        }
+        td {
+          padding: 10px 14px;
+          font-size: 11.5px;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        tbody tr:hover td { background: rgba(255,255,255,0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+        .action-badge {
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 9.5px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+        .ab-contract { background: rgba(96,165,250,0.12); color: #60A5FA; }
+        .ab-payment { background: rgba(212,175,55,0.13); color: #D4AF37; }
+        .ab-client { background: rgba(34,197,94,0.1); color: #22C55E; }
+        .ab-approval { background: rgba(167,139,250,0.12); color: #A78BFA; }
+        .ab-login { background: rgba(251,146,60,0.1); color: #FB923C; }
+        .ab-meeting { background: rgba(148,20,20,0.16); color: #941414; }
+        .ab-file { background: rgba(96,165,250,0.1); color: #60A5FA; }
+        .ab-workspace { background: rgba(167,139,250,0.1); color: #A78BFA; }
+        .ab-default { background: rgba(255,255,255,0.05); color: var(--color-text-secondary); }
+        .td-user {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .td-av {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .audit-pagination {
+          padding: 12px 16px;
+          border-top: 1px solid var(--color-card-border);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .pag-btn {
+          padding: 5px 12px;
+          border-radius: 7px;
+          border: 1px solid var(--color-card-border);
+          background: transparent;
+          color: var(--color-text-secondary);
+          font-size: 11px;
+          cursor: pointer;
+          font-family: Tajawal;
+        }
+        .pag-btn:hover:not(:disabled) {
+          background: var(--color-crimson-soft);
+          border-color: var(--color-crimson-border);
+          color: var(--color-foreground);
+        }
+        .pag-btn:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+        .pag-info {
+          font-size: 11px;
+          color: var(--color-text-secondary);
+        }
+      `}</style>
+    </div>
+  );
+}
