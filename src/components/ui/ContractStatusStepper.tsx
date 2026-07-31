@@ -1,14 +1,16 @@
 'use client';
 
-const STATUS_STEPS = [
-  { key: 'draft', label: 'مسودة' },
-  { key: 'sent', label: 'تم الإرسال' },
-  { key: 'client_approved', label: 'موافقة العميل' },
-  { key: 'company_approved', label: 'موافقة الشركة' },
-  { key: 'completed', label: 'مكتمل' },
-];
+import { useTranslations } from 'next-intl';
 
 export default function ContractStatusStepper({ status, compact = false }: { status: string; compact?: boolean }) {
+  const t = useTranslations('dashboard');
+  const STATUS_STEPS = [
+    { key: 'draft', label: t('label_draft') },
+    { key: 'sent', label: t('label_sent') },
+    { key: 'client_approved', label: t('label_pending_waiting') },
+    { key: 'company_approved', label: t('label_company_approved_badge') },
+    { key: 'completed', label: t('label_completed') },
+  ];
   const activeIndex = STATUS_STEPS.findIndex(s => s.key === status);
   const current = activeIndex >= 0 ? activeIndex : 0;
 

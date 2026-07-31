@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { login } from '@/lib/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations('dashboard');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +25,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.response?.data?.errors?.email?.[0] || 'بيانات الدخول غير صحيحة';
+      const msg = err?.response?.data?.message || err?.response?.data?.errors?.email?.[0] || t('login_error_invalid_credentials');
       setError(msg);
     } finally {
       setLoading(false);
@@ -30,7 +33,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[#D4AF37]/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#941414]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#D4AF37]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -48,7 +51,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">البريد الإلكتروني</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
               <input
                 type="email"
                 value={email}
@@ -60,7 +63,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">كلمة المرور</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
               <div className="relative">
                 <input
                   type={visible ? 'text' : 'password'}
@@ -96,12 +99,12 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-[#941414] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors"
             >
-              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+              {loading ? t('login_loading') : t('login_submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-white/50 mt-6">
-            <Link href="/client-login" className="text-[#D4AF37] hover:underline">تسجيل دخول العميل</Link>
+            <Link href="/client-login" className="text-[#D4AF37] hover:underline">{t('login_client_link')}</Link>
           </p>
         </div>
       </div>

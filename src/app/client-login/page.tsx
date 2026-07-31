@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { clientLogin, getClient, getSubUser, isSubUser } from '@/lib/client-auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function ClientLoginPage() {
   const [email, setEmail] = useState('');
@@ -12,26 +13,28 @@ export default function ClientLoginPage() {
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations('dashboard');
 
   const existing = getClient();
   if (existing) {
     const subName = isSubUser() ? getSubUser()?.name : null;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 text-center border border-[#D4AF37]/20">
           <h1 className="text-2xl font-bold mb-2 text-white">
-            {subName ? `مرحباً ${subName}` : `مرحباً ${existing.contact_person}`}
+            {subName ? t('client_greeting', { name: subName }) : t('client_greeting', { name: existing.contact_person })}
           </h1>
           <p className="text-[#D4AF37] mb-4">
-            {subName ? 'مستخدم تابع' : existing.company_name}
+            {subName ? t('client_sub_user_label') : existing.company_name}
           </p>
           <div className="flex gap-2 justify-center">
             <Link href="/client-dashboard" className="bg-[#941414] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
-              الدخول إلى اللوحة
+              {t('client_enter_dashboard')}
             </Link>
             <button onClick={() => { localStorage.removeItem('client_token'); localStorage.removeItem('client'); localStorage.removeItem('sub_user_token'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); window.location.reload(); }}
               className="bg-white/10 text-white/70 px-6 py-2 rounded-lg text-sm hover:bg-white/20">
-              خروج
+              {t('client_logout_btn')}
             </button>
           </div>
         </div>
@@ -47,7 +50,7 @@ export default function ClientLoginPage() {
       await clientLogin(email, password);
       router.push('/client-dashboard');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.response?.data?.errors?.email?.[0] || 'بيانات الدخول غير صحيحة';
+      const msg = err?.response?.data?.message || err?.response?.data?.errors?.email?.[0] || t('login_error_invalid_credentials');
       setError(msg);
     } finally {
       setLoading(false);
@@ -55,7 +58,7 @@ export default function ClientLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[#D4AF37]/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#941414]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#D4AF37]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -65,7 +68,7 @@ export default function ClientLoginPage() {
             <img src="/logo.jpg" alt="ShadApp" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
           </div>
           <h1 className="text-2xl font-bold text-center mb-1 text-white" style={{ fontFamily: "'Playfair Display', serif" }}>ShadApp</h1>
-          <p className="text-[#D4AF37] text-center text-sm mb-6">تسجيل دخول العميل</p>
+          <p className="text-[#D4AF37] text-center text-sm mb-6">{t('login_client_link')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -73,14 +76,14 @@ export default function ClientLoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">البريد الإلكتروني</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30"
                 required dir="ltr" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">كلمة المرور</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
               <div className="relative">
                 <input type={visible ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
                   className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30 pe-10"
@@ -103,12 +106,12 @@ export default function ClientLoginPage() {
 
             <button type="submit" disabled={loading}
               className="w-full bg-[#941414] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors">
-              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+              {loading ? t('login_loading') : t('login_submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-white/50 mt-6">
-            <Link href="/login" className="text-[#D4AF37] hover:underline">تسجيل دخول المدير</Link>
+            <Link href="/login" className="text-[#D4AF37] hover:underline">{t('client_admin_login_link')}</Link>
           </p>
         </div>
       </div>

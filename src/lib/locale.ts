@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const COOKIE_KEY = 'NEXT_LOCALE';
-const DEFAULT_LOCALE = 'ar';
+const DEFAULT_LOCALE = 'en';
 
 export function getLocale(): string {
   if (typeof document === 'undefined') return DEFAULT_LOCALE;

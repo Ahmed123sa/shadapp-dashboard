@@ -177,7 +177,7 @@ export default function SettingsPage() {
   };
 
   const deleteSignature = async () => {
-    if (!confirm('هل أنت متأكد من حذف التوقيع؟')) return;
+    if (!confirm(t('confirm_delete_signature'))) return;
     setDeletingSig(true);
     try {
       await api.delete('/auth/sign');
@@ -243,13 +243,13 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
-        <h2 className="text-lg font-semibold">رقم الهاتف</h2>
+        <h2 className="text-lg font-semibold">{t('phone')}</h2>
         <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel"
           className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" placeholder="+966..." dir="ltr" />
       </div>
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
-        <h2 className="text-lg font-semibold">تاريخ الميلاد</h2>
+        <h2 className="text-lg font-semibold">{t('date_of_birth')}</h2>
         <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
           className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
       </div>
@@ -271,11 +271,11 @@ export default function SettingsPage() {
             {savedSignature.type === 'text' ? (
               <p className="text-lg font-[cursive] border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] text-center">{savedSignature.data}</p>
             ) : (
-              <img src={resolveFileUrl(savedSignature.data)} alt="التوقيع المحفوظ" className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
+              <img src={resolveFileUrl(savedSignature.data)} alt={t('saved_signature')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
             )}
             <button onClick={deleteSignature} disabled={deletingSig}
               className="text-red-600 hover:text-red-700 text-xs underline disabled:opacity-50">
-              {deletingSig ? '...' : 'حذف التوقيع'}
+              {deletingSig ? '...' : t('delete')}
             </button>
           </div>
         ) : (
@@ -302,14 +302,14 @@ export default function SettingsPage() {
             <canvas ref={canvasRef} width={400} height={150}
               onMouseDown={startDraw} onMouseMove={drawSignature} onMouseUp={stopDraw} onMouseLeave={stopDraw}
               className="border border-[var(--color-card-border)] rounded-lg w-full cursor-crosshair bg-[var(--color-card)]" />
-            <button onClick={clearCanvas} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500">مسح</button>
+            <button onClick={clearCanvas} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500">{t('clear')}</button>
           </div>
         )}
 
         {signatureType === 'type' && (
           <input value={typedSignature} onChange={(e) => setTypedSignature(e.target.value)}
             className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-3 text-lg font-[cursive] w-full text-center"
-            placeholder="اكتب اسمك كاملاً" />
+            placeholder={t('type_signature_ph')} />
         )}
 
         {signatureType === 'upload' && (
@@ -337,14 +337,14 @@ export default function SettingsPage() {
       </div>}
 
       {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
-        <h2 className="text-lg font-semibold">إعدادات النظام</h2>
-        <p className="text-xs text-[var(--color-text-secondary)]">النسبة المئوية للضريبة المضافة على قيمة العقود للعملاء من نوع شركات</p>
+        <h2 className="text-lg font-semibold">{t('system_settings')}</h2>
+        <p className="text-xs text-[var(--color-text-secondary)]">{t('tax_description')}</p>
         {taxSuccess && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">تم حفظ نسبة الضريبة</div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">{t('tax_saved')}</div>
         )}
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">نسبة الضريبة (%)</label>
+            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">{t('tax_percentage')}</label>
             <input type="number" min="0" max="100" step="0.5" value={taxPercentage}
               onChange={(e) => setTaxPercentage(e.target.value)}
               className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
@@ -352,7 +352,7 @@ export default function SettingsPage() {
           <span className="text-[var(--color-text-secondary)] mt-5">%</span>
           <button onClick={saveTax} disabled={savingTax}
             className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50 mt-5">
-            {savingTax ? '...' : 'حفظ'}
+            {savingTax ? '...' : t('save')}
           </button>
         </div>
       </div>}

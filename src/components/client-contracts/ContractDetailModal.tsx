@@ -4,6 +4,7 @@ import { useState } from 'react';
 import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
+import { useTranslations } from 'next-intl';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
   contract: any;
@@ -13,6 +14,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
   onUpload: () => void;
   clientType?: string;
 }) {
+  const t = useTranslations('dashboard');
   const canAct = contract.status === 'sent';
   const [uploading, setUploading] = useState<Record<number, boolean>>({});
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
       const { data } = await api.post(`/workspaces/${wsId}/files`, form);
       if (data) onUpload();
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'فشل رفع المستند');
+      setError(e?.response?.data?.message || e?.message || t('doc_upload_failed'));
     } finally {
       setUploading((prev) => ({ ...prev, [docId]: false }));
     }
@@ -50,23 +52,23 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         <ContractStatusStepper status={contract.status} />
 
         {contract.value > 0 && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">القيمة: <span className="font-medium">{contract.value} ر.س</span></p>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_value', { value: contract.value })}</p>
         )}
         {clientType === 'business' && contract.value > 0 && (
-          <p className="text-xs text-[var(--color-text-disabled)] mb-1">قيمة العقد غير شاملة الضريبة المضافة</p>
+          <p className="text-xs text-[var(--color-text-disabled)] mb-1">{t('contract_excl_vat')}</p>
         )}
         {contract.start_date && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">من: {contract.start_date}{contract.end_date ? ` إلى ${contract.end_date}` : ''}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_date_range', { start: contract.start_date, endSuffix: contract.end_date ? t('contract_date_to', { end: contract.end_date }) : '' })}</p>
         )}
 
         {contract.clauses?.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">بنود العقد</h4>
+            <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('contract_clauses_heading')}</h4>
             {contract.clauses.map((cl: any) => (
               <div key={cl.id} className="text-sm text-[var(--color-text-secondary)] pr-3 border-r-2 border-[var(--color-card-border)] py-1">
                 {cl.content}
                 <span className="text-xs text-[var(--color-text-disabled)] mr-2">
-                  ({cl.type === 'fixed' ? 'ثابت' : cl.type === 'optional' ? 'اختياري' : 'مخصص'})
+                  ({cl.type === 'fixed' ? t('doc_type_fixed') : cl.type === 'optional' ? t('doc_type_optional') : t('doc_type_custom')})
                 </span>
               </div>
             ))}
@@ -75,7 +77,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
 
         {docs.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">المستندات المطلوبة</h4>
+            <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('documents_heading')}</h4>
             {docs.map((doc: any) => {
               const file = doc.files?.[0];
               return (
@@ -89,22 +91,22 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
                           file.status === 'rejected' ? 'bg-red-900/30 text-red-400' :
                           'bg-yellow-900/30 text-yellow-400'
                         }`}>
-                          {file.status === 'approved' ? 'مقبول' : file.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                          {file.status === 'approved' ? t('file_approved_status') : file.status === 'rejected' ? t('file_rejected_status') : t('file_pending_review')}
                         </span>
                         <span className="text-xs text-[var(--color-text-disabled)]">{file.name}</span>
                       </div>
                     ) : (
-                      <p className="text-xs text-[var(--color-text-disabled)] mt-1">لم يتم رفع المستند بعد</p>
+                      <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('doc_not_uploaded')}</p>
                     )}
                     {file?.status === 'rejected' && file.rejection_reason && (
-                      <p className="text-xs text-red-500 mt-1">السبب: {file.rejection_reason}</p>
+                      <p className="text-xs text-red-500 mt-1">{t('doc_reason_prefix')}{file.rejection_reason}</p>
                     )}
                   </div>
                   <div>
                     {(!file || file.status === 'rejected') ? (
                       <label className={`inline-flex items-center gap-1 text-xs text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)] ${uploading[doc.id] ? 'opacity-50' : ''}`}>
                         <input type="file" className="hidden" disabled={uploading[doc.id]} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(doc.id, f); }} />
-                        {uploading[doc.id] ? 'جاري الرفع...' : file ? 'رفع مستند جديد' : 'رفع المستند'}
+                        {uploading[doc.id] ? t('doc_uploading') : file ? t('doc_upload_new') : t('doc_upload')}
                       </label>
                     ) : null}
                   </div>
@@ -119,22 +121,22 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
           <div className="mt-6 flex gap-2">
             <button onClick={() => onAction('approved')}
               className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700">
-              ✔ موافقة
+              {t('contract_approve_action')}
             </button>
             <button onClick={() => onAction('edit_requested')}
               className="flex-1 bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-700">
-              ✎ طلب تعديل
+              {t('contract_edit_action')}
             </button>
           </div>
         )}
 
         {!canAct && contract.status !== 'draft' && contract.status !== 'archived' && (
           <p className="mt-4 text-sm text-[var(--color-text-disabled)] text-center">
-            {contract.status === 'client_approved' ? 'تمت موافقتك على هذا العقد' :
+            {contract.status === 'client_approved' ? t('contract_you_approved') :
 
-             contract.status === 'edit_requested' ? 'قمت بطلب تعديل العقد' :
-             contract.status === 'company_approved' ? 'تم اعتماد العقد من الشركة' :
-             contract.status === 'completed' ? 'العقد مكتمل' : ''}
+             contract.status === 'edit_requested' ? t('contract_you_edit_requested') :
+             contract.status === 'company_approved' ? t('contract_company_approve_msg') :
+             contract.status === 'completed' ? t('contract_completed_msg') : ''}
           </p>
         )}
       </div>

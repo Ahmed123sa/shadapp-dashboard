@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslations } from 'next-intl';
 
 const SECTIONS = [
   { label: 'الرئيسية', group: 'main' },
@@ -46,6 +47,27 @@ const logoLetterVariants = {
 };
 
 export default function ShowcaseDemoPage() {
+  const t = useTranslations('dashboard');
+  const sectionLabels: Record<string, string> = {
+    'الرئيسية': t('nav_group_main'),
+    'إدارة': t('showcase_section_admin'),
+    'النظام': t('nav_group_system'),
+  };
+  const navLabels: Record<string, string> = {
+    'لوحة التحكم': t('showcase_nav_dashboard'),
+    'العملاء': t('clients'),
+    'العقود': t('contracts_nav'),
+    'المدفوعات': t('payments_nav'),
+    'الرسائل': t('messages'),
+    'التقارير': t('reports'),
+    'الإعدادات': t('settings'),
+  };
+  const showcaseStatLabels: Record<string, string> = {
+    'العملاء': t('clients'),
+    'العقود': t('contracts_nav'),
+    'الإيرادات': t('showcase_stat_revenue'),
+    'بانتظار': t('showcase_stat_pending'),
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [active, setActive] = useState(0);
 
@@ -98,7 +120,7 @@ export default function ShowcaseDemoPage() {
           transition={{ delay: 0.5, type: 'spring', stiffness: 100, damping: 20 }}
           className="px-5 py-4 border-b border-[var(--color-card-border)] overflow-hidden"
         >
-          <p className="text-sm font-medium text-white/90">أحمد السيد</p>
+          <p className="text-sm font-medium text-white/90">{t('showcase_user_name')}</p>
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -125,7 +147,7 @@ export default function ShowcaseDemoPage() {
                   variants={itemVariants}
                   className="px-4 py-1 text-[10px] font-semibold tracking-widest text-white/40 uppercase"
                 >
-                  {section.label}
+                  {sectionLabels[section.label] || section.label}
                 </motion.p>
                 <div className="space-y-0.5">
                   {items.map((item, ii) => {
@@ -157,7 +179,7 @@ export default function ShowcaseDemoPage() {
                           >
                             {item.icon}
                           </motion.span>
-                          {item.label}
+                          {navLabels[item.label] || item.label}
                           {item.badge && (
                             <motion.span
                               initial={{ scale: 0 }}
@@ -186,7 +208,7 @@ export default function ShowcaseDemoPage() {
           className="border-t border-[var(--color-card-border)]"
         >
           <button className="flex items-center gap-2 text-sm text-white/40 hover:text-white/80 w-full px-6 py-3 transition-colors">
-            تسجيل الخروج
+            {t('logout')}
           </button>
         </motion.div>
       </motion.aside>
@@ -218,7 +240,7 @@ export default function ShowcaseDemoPage() {
               className="text-lg font-semibold"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              لوحة التحكم
+              {t('showcase_nav_dashboard')}
             </motion.h1>
           </div>
 
@@ -236,7 +258,7 @@ export default function ShowcaseDemoPage() {
               className="hidden md:flex items-center"
             >
               <motion.input
-                placeholder="بحث..."
+                placeholder={t('showcase_search')}
                 whileFocus={{ borderColor: 'var(--color-primary)' }}
                 className="w-full border border-[var(--color-input-border)] rounded-lg px-3 py-1.5 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)] outline-none transition-colors"
               />
@@ -292,8 +314,8 @@ export default function ShowcaseDemoPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}
           >
-            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>مرحباً بعودتك، أحمد</h2>
-            <p className="text-[var(--color-text-secondary)] mb-8">إليك ملخص نشاطك اليوم</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{t('showcase_welcome')}</h2>
+            <p className="text-[var(--color-text-secondary)] mb-8">{t('showcase_subtitle')}</p>
 
             {/* Stats cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -321,7 +343,7 @@ export default function ShowcaseDemoPage() {
                     />
                   </div>
                   <p className="text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{stat.value}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">{stat.label}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">{showcaseStatLabels[stat.label] || stat.label}</p>
                   <p className="text-xs text-[var(--color-gold)] mt-0.5">{stat.change}</p>
                 </motion.div>
               ))}
@@ -335,14 +357,14 @@ export default function ShowcaseDemoPage() {
               className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl overflow-hidden"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-card-border)]">
-                <h3 className="font-semibold">آخر العملاء</h3>
-                <button className="text-xs text-[var(--color-gold)] hover:underline">عرض الكل ←</button>
+                <h3 className="font-semibold">{t('showcase_recent_clients')}</h3>
+                <button className="text-xs text-[var(--color-gold)] hover:underline">{t('showcase_view_all')}</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-card-border)] text-[var(--color-text-disabled)] text-xs">
-                      {['العميل', 'العقد', 'المبلغ', 'الحالة', 'التاريخ'].map((h, i) => (
+                      {[t('showcase_table_client'), t('showcase_table_contract'), t('showcase_table_amount'), t('showcase_table_status'), t('showcase_table_date')].map((h, i) => (
                         <motion.th
                           key={h}
                           initial={{ opacity: 0, y: -10 }}

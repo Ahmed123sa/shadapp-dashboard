@@ -1,26 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import PasswordField from '@/components/ui/PasswordField';
 
 const PERMISSION_DEFS = [
-  { key: 'can_chat', label: 'المحادثة' },
-  { key: 'can_view_contracts', label: 'عرض العقود' },
-  { key: 'can_approve_contracts', label: 'الموافقة على العقود' },
-  { key: 'can_view_payments', label: 'عرض المدفوعات' },
-  { key: 'can_upload_payment_proof', label: 'رفع إثبات الدفع' },
-  { key: 'can_view_approvals', label: 'عرض الطلبات' },
-  { key: 'can_respond_approvals', label: 'الرد على الطلبات' },
-  { key: 'can_view_files', label: 'عرض الملفات' },
-  { key: 'can_upload_files', label: 'رفع ملفات' },
-  { key: 'can_view_meetings', label: 'عرض الاجتماعات' },
-  { key: 'can_join_meetings', label: 'الانضمام للاجتماعات' },
+  { key: 'can_chat' },
+  { key: 'can_view_contracts' },
+  { key: 'can_approve_contracts' },
+  { key: 'can_view_payments' },
+  { key: 'can_upload_payment_proof' },
+  { key: 'can_view_approvals' },
+  { key: 'can_respond_approvals' },
+  { key: 'can_view_files' },
+  { key: 'can_upload_files' },
+  { key: 'can_view_meetings' },
+  { key: 'can_join_meetings' },
 ];
 
 export default function ClientSubUsers({ clientId }: { clientId: number }) {
+  const t = useTranslations('dashboard');
   const [subUsers, setSubUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -34,7 +36,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
   useEffect(() => {
     api.get(`/clients/${clientId}/sub-users`)
       .then(({ data }) => setSubUsers(data.sub_users || []))
-      .catch(() => setLoadError('فشل تحميل المستخدمين'))
+      .catch(() => setLoadError(t('subuser_load_failed')))
       .finally(() => setLoading(false));
   }, [clientId]);
 
@@ -49,7 +51,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
       setForm({ name: '', email: '', password: '', date_of_birth: '' });
       setShowForm(false);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'فشل إنشاء المستخدم');
+      setError(err?.response?.data?.message || t('subuser_create_failed'));
     }
   };
 
@@ -62,7 +64,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
       setSubUsers((prev) => prev.map((u) => u.id === userId ? { ...u, ...data.sub_user } : u));
       setEditingId(null);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'فشل تحديث المستخدم');
+      setError(err?.response?.data?.message || t('subuser_update_failed'));
     }
   };
 
@@ -71,7 +73,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
       await api.delete(`/sub-users/${id}`);
       setSubUsers((prev) => prev.filter((u) => u.id !== id));
       if (expandedId === id) setExpandedId(null);
-    } catch { setError('فشل حذف المستخدم'); }
+    } catch { setError(t('subuser_delete_failed')); }
   };
 
   const togglePermission = async (userId: number, key: string, current: boolean) => {
@@ -84,7 +86,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
         prev.map((u) => u.id === userId ? { ...u, permissions: data.sub_user?.permissions || permissions } : u)
       );
     } catch {
-      setError('فشل تحديث الصلاحيات');
+      setError(t('subuser_save_perms_failed'));
     }
   };
 
@@ -94,24 +96,24 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
   return (
     <div className="space-y-4">
       <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
-        + مستخدم جديد
+        {t('subuser_new')}
       </button>
 
       {showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           {error && <p className="text-xs text-red-500">{error}</p>}
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="الاسم" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
+            placeholder={t('subuser_name_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
           <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-            type="email" placeholder="البريد الإلكتروني" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" dir="ltr" />
-          <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} placeholder="كلمة المرور" />
+            type="email" placeholder={t('subuser_email_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" dir="ltr" />
+          <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} placeholder={t('subuser_password_ph')} />
           <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
             className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
-          <button onClick={create} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">حفظ</button>
+          <button onClick={create} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('subuser_save')}</button>
         </div>
       )}
 
-      {subUsers.length === 0 ? <EmptyState message="لا يوجد مستخدمون تابعون" /> : null}
+      {subUsers.length === 0 ? <EmptyState message={t('subuser_no_users')} /> : null}
       <div className="space-y-2">
         {subUsers.map((u) => {
           const perms = u.permissions || {};
@@ -123,16 +125,16 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                 <div className="p-3 space-y-2">
                   {error && <p className="text-xs text-red-500">{error}</p>}
                   <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    placeholder="الاسم" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+                    placeholder={t('subuser_name_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
                   <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    type="email" placeholder="البريد الإلكتروني" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" dir="ltr" />
+                    type="email" placeholder={t('subuser_email_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" dir="ltr" />
                   <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    placeholder="رقم الهاتف" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" dir="ltr" />
+                    placeholder={t('subuser_phone_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" dir="ltr" />
                   <input type="date" value={editForm.date_of_birth} onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
                     className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
                   <div className="flex gap-2">
-                    <button onClick={() => saveEdit(u.id)} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-xs hover:bg-[var(--color-primary-dark)]">حفظ</button>
-                    <button onClick={() => setEditingId(null)} className="px-4 py-1.5 rounded-lg text-xs border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)]">إلغاء</button>
+                    <button onClick={() => saveEdit(u.id)} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-xs hover:bg-[var(--color-primary-dark)]">{t('subuser_save')}</button>
+                    <button onClick={() => setEditingId(null)} className="px-4 py-1.5 rounded-lg text-xs border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)]">{t('subuser_cancel')}</button>
                   </div>
                 </div>
               ) : (
@@ -140,19 +142,19 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                   <div>
                     <p className="font-medium">{u.name}</p>
                     <p className="text-xs text-[var(--color-text-disabled)]" dir="ltr">{u.email}</p>
-                    <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{activeCount}/11 صلاحية</p>
+                    <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{t('subuser_permissions_count', { count: activeCount })}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => {
                       setEditingId(u.id);
                       setEditForm({ name: u.name || '', email: u.email || '', phone: u.phone || '', date_of_birth: u.date_of_birth ? String(u.date_of_birth).substring(0, 10) : '' });
                     }}
-                      className="text-xs text-[var(--color-gold)] hover:underline">تعديل</button>
+                      className="text-xs text-[var(--color-gold)] hover:underline">{t('subuser_edit')}</button>
                     <button onClick={() => setExpandedId(isExpanded ? null : u.id)}
                       className="text-xs text-[var(--color-text-secondary)] hover:underline">
-                      {isExpanded ? 'إخفاء' : 'الصلاحيات'}
+                      {isExpanded ? t('subuser_hide') : t('subuser_permissions')}
                     </button>
-                    <button onClick={() => remove(u.id)} className="text-xs text-red-500 hover:underline">حذف</button>
+                    <button onClick={() => remove(u.id)} className="text-xs text-red-500 hover:underline">{t('subuser_delete')}</button>
                   </div>
                 </div>
               )}
@@ -160,7 +162,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                 <div className="border-t border-[var(--color-card-border)] p-3 space-y-1">
                   {PERMISSION_DEFS.map((def) => (
                     <label key={def.key} className="flex items-center justify-between py-1 cursor-pointer">
-                      <span className="text-xs text-[var(--color-foreground)]">{def.label}</span>
+                      <span className="text-xs text-[var(--color-foreground)]">{t('perm_' + def.key)}</span>
                       <button
                         onClick={() => togglePermission(u.id, def.key, !!perms[def.key])}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${

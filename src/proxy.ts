@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const locales = ['ar', 'en'];
-const defaultLocale = 'ar';
+const defaultLocale = 'en';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function getLocale(request: NextRequest): string {

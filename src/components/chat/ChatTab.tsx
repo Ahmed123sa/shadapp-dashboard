@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
@@ -18,6 +19,8 @@ function resolveFileUrl(url: string): string {
 }
 
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [messages, setMessages] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [text, setText] = useState('');
@@ -95,7 +98,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     setShowBuilder(false);
   };
 
-  if (loading) return <LoadingSkeleton message="جاري تحميل المحادثة..." />;
+  if (loading) return <LoadingSkeleton message={t('chat_loading')} />;
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
@@ -106,7 +109,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
       <div className="text-center py-10 space-y-3">
         <span className="text-4xl block">{!wsActive ? '🔒' : '👁️'}</span>
         <p className="text-[var(--color-text-secondary)] text-sm">
-          {!wsActive ? 'المحادثة غير متاحة — في انتظار اكتمال الدفع وتفعيل مساحة العمل' : 'عرض المحادثة فقط'}
+          {!wsActive ? t('chat_unavailable') : t('chat_view_only')}
         </p>
         <div className="h-72 overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]">
           {contracts.length > 0 && contracts.map((c) => (
@@ -138,7 +141,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 )}
                 <div>
                   <div className={`px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || 'العميل') : isSubUser ? ('عضو فريق: ' + (m.sender?.name || '')) : ((m.sender?.role === 'super_admin' ? 'مشرف' : 'مدير حساب') + ': ' + (m.sender?.name || ''))}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : ((m.sender?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
                     {m.reply_to && (
                       <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                         <p className="text-[10px] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -167,15 +170,15 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   }
 
   const actionResultLabel: Record<string, string> = {
-    approved: '✅ تمت الموافقة',
-    edit_requested: '✎ طلب تعديل',
+    approved: t('approved_with_emoji'),
+    edit_requested: t('edit_requested_with_emoji'),
   };
 
   return (
     <div className="space-y-4">
       {!showBuilder ? (
         <button onClick={() => setShowBuilder(true)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
-          + إرسال عقد خدمة إضافية
+          {t('chat_send_extra_contract')}
         </button>
       ) : (
         <ContractBuilder wsId={wsId} onCreated={onContractCreated} onCancel={() => setShowBuilder(false)} />
@@ -185,7 +188,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         {contracts.length > 0 && contracts.map((c) => (
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />
         ))}
-        {messages.length === 0 && contracts.length === 0 ? <EmptyState message="لا توجد رسائل بعد" /> : null}
+        {messages.length === 0 && contracts.length === 0 ? <EmptyState message={t('chat_no_messages')} /> : null}
         {messages.map((m) => {
           const isClient = m.sender_type === 'App\\Models\\Client';
           const isSubUser = m.sender_type === 'App\\Models\\SubUser';
@@ -201,7 +204,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const isPending = m.requires_action && !m.action_taken;
           const isResponded = m.action_taken;
           const initial = ((m.sender?.name?.[0]) || '?').toUpperCase();
-          const senderLabel = isClient ? (m.sender?.name || 'العميل') : isSubUser ? (m.sender?.name || 'عضو فريق') : ((m.sender?.role === 'super_admin' ? 'مشرف' : 'مدير حساب') + ': ' + (m.sender?.name || ''));
+          const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : ((m.sender?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
           <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
             <div className="max-w-xs flex gap-2 items-start">
@@ -226,19 +229,19 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                   {m.type === 'file' && m.file_url && (
                     <div className="mb-1">
                       {m.file_url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
-                        <img src={resolveFileUrl(m.file_url)} alt="مرفق" className="max-w-full rounded-lg max-h-40" />
+                        <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
                       ) : (
-                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold)] underline text-xs">📎 عرض المرفق</a>
+                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold)] underline text-xs">{t('view_attachment')}</a>
                       )}
                     </div>
                   )}
                   {m.message}
-                  {isPending && <p className="text-xs text-red-500 mt-1 font-medium">🏷️ طلب موافقة — قيد الانتظار</p>}
+                  {isPending && <p className="text-xs text-red-500 mt-1 font-medium">{t('approval_pending_label')}</p>}
                   {isResponded && <p className={`text-xs mt-1 font-medium ${m.action_result === 'approved' ? 'text-emerald-600' : m.action_result === 'rejected' ? 'text-red-600' : 'text-amber-600'}`}>{actionResultLabel[m.action_result || '']}</p>}
                   {approval?.certificate?.pdf_url && (
                     <a href={resolveFileUrl(approval.certificate.pdf_url)} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-[var(--color-primary)] text-white text-xs font-medium rounded-lg hover:bg-[var(--color-primary-dark)] transition-colors">
-                      📄 تحميل شهادة الموافقة
+                      {t('download_certificate')}
                     </a>
                   )}
                 </div>
@@ -253,7 +256,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 )}
                 {!isClientTeam && !m.action_taken && (
                   <button onClick={() => toggleAction(m.id)} className={`text-xs mt-0.5 ${m.requires_action ? 'text-red-500' : 'text-[var(--color-text-disabled)]'} hover:underline`}>
-                    {m.requires_action ? 'إلغاء طلب الموافقة' : 'طلب موافقة العميل'}
+                    {m.requires_action ? t('chat_cancel_action') : t('chat_require_action')}
                   </button>
                 )}
               </div>
@@ -267,7 +270,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
       {replyTo && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-input-fill)] border border-[var(--color-primary)] border-r-4 rounded-lg text-sm relative">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-[var(--color-primary)]">↩ رد على {replyTo.sender?.name || '...'}</p>
+            <p className="text-[10px] font-medium text-[var(--color-primary)]">{t('reply_to_prefix')}{replyTo.sender?.name || '...'}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
@@ -276,11 +279,11 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
       <div className="flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1" title="إرفاق ملف">📎</button>
+        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1" title={t('attach_file')}>📎</button>
         {uploadFile && <span className="text-xs text-[var(--color-gold)] self-center truncate max-w-24">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
-          className="flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder="اكتب رسالة..." />
-        <button onClick={send} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">إرسال</button>
+          className="flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
+        <button onClick={send} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('chat_send_button')}</button>
       </div>
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
 
@@ -288,7 +291,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         <div className="fixed z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
           <button onClick={() => { setReplyTo(contextMenu.message); setContextMenu(null); }}
             className="bg-[var(--color-card)] border border-[var(--color-card-border)] shadow-lg rounded-lg px-4 py-2 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] whitespace-nowrap">
-            ↩ رد
+            {t('reply')}
           </button>
         </div>
       )}

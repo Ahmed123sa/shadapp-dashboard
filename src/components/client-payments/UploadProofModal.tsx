@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import api from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 export default function UploadProofModal({ wsId, availableMethods, onClose, onCreated }: {
   wsId: number;
@@ -9,6 +10,7 @@ export default function UploadProofModal({ wsId, availableMethods, onClose, onCr
   onClose: () => void;
   onCreated: (payment: any) => void;
 }) {
+  const t = useTranslations('dashboard');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('SAR');
   const [methodType, setMethodType] = useState('');
@@ -16,8 +18,8 @@ export default function UploadProofModal({ wsId, availableMethods, onClose, onCr
   const [saving, setSaving] = useState(false);
 
   const methodLabels: Record<string, string> = {
-    bank_transfer: 'تحويل بنكي', swift: 'SWIFT', corporate_account: 'حساب شركة',
-    instapay: 'Instapay', vodafone_cash: 'فودافون كاش', mobile_wallet: 'محفظة موبايل',
+    bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
+    instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
   };
 
   const submit = async () => {
@@ -37,32 +39,32 @@ export default function UploadProofModal({ wsId, availableMethods, onClose, onCr
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
       <div className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">رفع إثبات دفع</h3>
+          <h3 className="font-bold">{t('pay_submit_proof')}</h3>
           <button onClick={onClose} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
         </div>
 
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="المبلغ"
+        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')}
           className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
 
         <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-          <option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option><option value="EUR">يورو (EUR)</option>
-          <option value="AED">درهم إماراتي (AED)</option><option value="EGP">جنيه مصري (EGP)</option><option value="KWD">دينار كويتي (KWD)</option>
-          <option value="QAR">ريال قطري (QAR)</option><option value="BHD">دينار بحريني (BHD)</option><option value="OMR">ريال عماني (OMR)</option>
+          <option value="SAR">{t('currency_sar')}</option><option value="USD">{t('currency_usd')}</option><option value="EUR">{t('currency_eur')}</option>
+          <option value="AED">{t('currency_aed')}</option><option value="EGP">{t('currency_egp')}</option><option value="KWD">{t('currency_kwd')}</option>
+          <option value="QAR">{t('currency_qar')}</option><option value="BHD">{t('currency_bhd')}</option><option value="OMR">{t('currency_omr')}</option>
         </select>
 
         <select value={methodType} onChange={(e) => setMethodType(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-          <option value="">طريقة الدفع</option>
+          <option value="">{t('pay_method_ph')}</option>
           {availableMethods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
         </select>
 
         <label className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)]">
           <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
-          <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFile ? proofFile.name : '+ اختيار ملف الإثبات'}</span>
+          <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFile ? proofFile.name : t('pay_choose_proof')}</span>
         </label>
 
         <button onClick={submit} disabled={saving || !amount || !methodType}
           className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-          {saving ? 'جاري الحفظ...' : 'إرسال'}
+          {saving ? t('pay_saving') : t('pay_submit_proof')}
         </button>
       </div>
     </div>

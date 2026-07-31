@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 export interface ActivityItem {
   color: 'green' | 'gold' | 'blue' | 'red';
   text: string;
@@ -14,8 +16,9 @@ const dotColors: Record<string, string> = {
 };
 
 export default function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  const t = useTranslations('dashboard');
   if (items.length === 0) {
-    return <p className="text-xs text-[var(--color-text-secondary)] text-center py-6">لا توجد نشاطات</p>;
+    return <p className="text-xs text-[var(--color-text-secondary)] text-center py-6">{t('activity_no_activities')}</p>;
   }
   return (
     <div>

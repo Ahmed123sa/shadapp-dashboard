@@ -6,6 +6,7 @@ import { subscribeToWorkspace } from '@/lib/echo';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
+import { useTranslations } from 'next-intl';
 
 const CLIENT_FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -15,6 +16,7 @@ function resolveFileUrl(url: string): string {
 }
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
+  const t = useTranslations('dashboard');
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
   const load = () => {
     api.get(`/workspaces/${wsId}/chat`)
       .then(({ data }) => { setMessages(data.messages || []); setError(''); })
-      .catch(() => setError('فشل تحميل المحادثة'))
+      .catch(() => setError(t('chat_load_error')))
       .finally(() => setLoading(false));
   };
 
@@ -84,18 +86,18 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
   };
 
   const actionResultLabel: Record<string, string> = {
-    approved: '✅ تمت الموافقة',
-    edit_requested: '✎ تم طلب تعديل',
+    approved: t('chat_action_approved'),
+    edit_requested: t('chat_action_edit_requested'),
   };
 
-  if (loading) return <LoadingSkeleton message="جاري تحميل المحادثة..." />;
+  if (loading) return <LoadingSkeleton message={t('chat_loading')} />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   if (!wsActive) {
     return (
       <div className="text-center py-10">
         <span className="text-4xl block mb-3">🔒</span>
-        <p className="text-[var(--color-text-secondary)] text-sm">المحادثة غير متاحة — في انتظار تفعيل مساحة العمل بعد اكتمال الدفع</p>
+        <p className="text-[var(--color-text-secondary)] text-sm">{t('chat_unavailable_short')}</p>
       </div>
     );
   }
@@ -103,7 +105,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
   return (
     <div className="space-y-4">
       <div ref={chatRef} className="h-72 overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]">
-        {messages.length === 0 ? <EmptyState message="لا توجد رسائل بعد" /> : null}
+        {messages.length === 0 ? <EmptyState message={t('chat_no_messages')} /> : null}
         {messages.map((m, idx) => {
           const sentByClient = m.sender_type === 'App\\Models\\Client';
           const isSubUser = m.sender_type === 'App\\Models\\SubUser';
@@ -149,7 +151,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
               <div className="max-w-xs">
                 <div className={`px-3 py-2 text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white rounded-br-lg rounded-tl-lg rounded-tr-lg' : 'bg-[var(--color-card)] text-[var(--color-foreground)] rounded-bl-lg rounded-tl-lg rounded-tr-lg'}`}>
                   <p className={`text-xs mb-0.5 ${isClientTeam ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>
-                    {sentByClient ? (senderName || 'أنت') : isSubUser ? (m.sender?.name || 'عضو فريق') : ((m.sender?.role === 'super_admin' ? 'مشرف' : 'مدير حساب') + ': ' + (m.sender?.name || ''))}
+                    {sentByClient ? (senderName || t('sender_you')) : isSubUser ? (m.sender?.name || t('sender_team_member')) : ((m.sender?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager')) + ': ' + (m.sender?.name || ''))}
                   </p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
@@ -160,28 +162,28 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                   {m.type === 'file' && m.file_url && (
                     <div className="mb-1">
                       {m.file_url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
-                        <img src={resolveFileUrl(m.file_url)} alt="مرفق" className="max-w-full rounded-lg max-h-40" />
+                        <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
                       ) : (
-                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold)] underline text-xs">📎 عرض المرفق</a>
+                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold)] underline text-xs">{t('view_attachment')}</a>
                       )}
                     </div>
                   )}
                   {m.message}
-                  {isPending && <p className="text-xs text-red-500 mt-1 font-medium">🏷️ يتطلب موافقتك</p>}
+                  {isPending && <p className="text-xs text-red-500 mt-1 font-medium">{t('chat_requires_your_approval')}</p>}
                   {isResponded && <p className={`text-xs mt-1 font-medium ${m.action_result === 'approved' ? 'text-emerald-600' : m.action_result === 'rejected' ? 'text-red-600' : 'text-amber-600'}`}>{actionResultLabel[m.action_result || '']}</p>}
                   {approval?.certificate?.pdf_url && (
                     <a href={resolveFileUrl(approval.certificate.pdf_url)} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-[var(--color-primary)] text-white text-xs font-medium rounded-lg hover:bg-[var(--color-primary-dark)] transition-colors">
-                      📄 تحميل شهادة الموافقة
+                      {t('download_certificate')}
                     </a>
                   )}
                 </div>
                 {isPending && (
                   <div className="flex gap-1 mt-1">
                     <button onClick={() => respond(m.id, 'approved')} disabled={responding[m.id]}
-                      className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 disabled:opacity-50">✔ موافقة</button>
+                      className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 disabled:opacity-50">{t('chat_approve_button')}</button>
                     <button onClick={() => respond(m.id, 'edit_requested')} disabled={responding[m.id]}
-                      className="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 disabled:opacity-50">✎ تعديل</button>
+                      className="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 disabled:opacity-50">{t('chat_edit_button')}</button>
                   </div>
                 )}
               </div>
@@ -194,7 +196,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
       {replyTo && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-input-fill)] border border-[var(--color-primary)] border-r-4 rounded-lg text-sm relative">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-[var(--color-primary)]">↩ رد على {replyTo.sender?.name || '...'}</p>
+            <p className="text-[10px] font-medium text-[var(--color-primary)]">{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
@@ -204,19 +206,19 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
       <div className="flex gap-2 items-center">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1 flex-shrink-0" title="إرفاق ملف">📎</button>
+        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')}>📎</button>
         {uploadFile && <span className="text-xs text-[var(--color-gold)] self-center truncate max-w-24 flex-shrink-0">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
-          className="flex-1 border border-[var(--color-input-border)] rounded-full px-4 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" placeholder="اكتب رسالة..." />
-        <button onClick={send} className="bg-[var(--color-primary)] text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-primary-dark)] flex-shrink-0" title="إرسال">↑</button>
+          className="flex-1 border border-[var(--color-input-border)] rounded-full px-4 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" placeholder={t('chat_input_placeholder')} />
+        <button onClick={send} className="bg-[var(--color-primary)] text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-primary-dark)] flex-shrink-0" title={t('chat_send_title')}>↑</button>
       </div>
 
       {contextMenu && (
         <div className="fixed z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
           <button onClick={() => { setReplyTo(contextMenu.message); setContextMenu(null); }}
             className="bg-[var(--color-card)] border border-[var(--color-card-border)] shadow-lg rounded-lg px-4 py-2 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] whitespace-nowrap">
-            ↩ رد
+            {t('chat_context_reply')}
           </button>
         </div>
       )}

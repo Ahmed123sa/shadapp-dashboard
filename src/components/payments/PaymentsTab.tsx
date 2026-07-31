@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
@@ -20,6 +21,8 @@ function resolveFileUrl(url: string | string[]): string {
 }
 
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: any) => void }) {
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [payments, setPayments] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [taxSummary, setTaxSummary] = useState<any>(null);
@@ -51,8 +54,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   }, [wsId]);
 
   const methodLabels: Record<string, string> = {
-    bank_transfer: 'تحويل بنكي', swift: 'SWIFT', corporate_account: 'حساب شركة',
-    instapay: 'Instapay', vodafone_cash: 'فودافون كاش', mobile_wallet: 'محفظة موبايل',
+    bank_transfer: t('method_bank_transfer'), swift: t('method_swift'), corporate_account: t('method_corporate_account'),
+    instapay: t('method_instapay'), vodafone_cash: t('method_vodafone_cash'), mobile_wallet: t('method_mobile_wallet'),
   };
 
   const reviewPayment = async (pid: number, action: string) => {
@@ -65,7 +68,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   const addInstallment = () => {
     if (!scheduleForm.amount || !scheduleForm.due_date) return;
-    setInstallments((prev) => [...prev, { ...scheduleForm, installment_label: scheduleForm.installment_label || `القسط ${prev.length + 1}` }]);
+    setInstallments((prev) => [...prev, { ...scheduleForm, installment_label: scheduleForm.installment_label || `Installment ${prev.length + 1}` }]);
     setScheduleForm({ amount: '', currency: 'SAR', due_date: '', installment_label: '' });
   };
 
@@ -80,7 +83,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
       const { data: payRes } = await api.get(`/workspaces/${wsId}/payments`);
       setPayments(payRes.payments?.data || payRes.payments || []);
     } catch (e: any) {
-      alert('فشل جدولة الدفعات: ' + (e?.response?.data?.message || e?.message || 'خطأ غير معروف'));
+      alert(t('schedule_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
     }
   };
 
@@ -97,12 +100,12 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
       const { data: payRes } = await api.get(`/workspaces/${wsId}/payments`);
       setPayments(payRes.payments?.data || payRes.payments || []);
     } catch (e: any) {
-      alert('فشل إرسال الطلب: ' + (e?.response?.data?.message || e?.message || 'خطأ غير معروف'));
+      alert(t('request_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
     }
   };
 
   const deleteSchedule = async (pid: number) => {
-    if (!confirm('هل أنت متأكد من مسح هذا القسط؟')) return;
+    if (!confirm(t('confirm_delete_schedule'))) return;
     try {
       await api.delete(`/payments/${pid}/schedule`);
       setPayments((prev) => prev.filter((p) => p.id !== pid));
@@ -120,8 +123,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const isFullyPaid = grandTotal > 0 && totalPaid >= grandTotal;
   const progress = grandTotal > 0 ? Math.min(totalPaid / grandTotal, 1) : 0;
 
-  const installmentLabels = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة'];
-  const installmentName = (i: number) => i < installmentLabels.length ? `دفعة ${installmentLabels[i]}` : `دفعة ${i + 1}`;
+  const installmentLabels = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+  const installmentName = (i: number) => i < installmentLabels.length ? `Payment ${installmentLabels[i]}` : `Payment ${i + 1}`;
 
   return (
     <div className="space-y-4">
@@ -131,7 +134,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           <>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-green-400 text-lg">✅</span>
-              <p className="text-sm font-bold text-green-400">تم الدفع بالكامل</p>
+              <p className="text-sm font-bold text-green-400">{t('fully_paid')}</p>
             </div>
             <p className="text-2xl font-bold text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
               {totalPaid.toFixed(2)} {contractCurrency}
@@ -139,16 +142,16 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           </>
         ) : (
           <>
-            <p className="text-xs text-[var(--color-gold)] font-medium">إجمالي المدفوع</p>
+            <p className="text-xs text-[var(--color-gold)] font-medium">{t('total_paid_label')}</p>
             <p className="text-2xl font-bold text-[var(--color-gold)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
             <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-              من أصل {grandTotal.toFixed(2)} {contractCurrency} — متبقي {remaining.toFixed(2)}
+              {t('from_prefix_ext')}{grandTotal.toFixed(2)} {contractCurrency}{t('remaining_prefix')}{remaining.toFixed(2)}
             </p>
             {taxSummary && taxSummary.tax_percentage > 0 && (
               <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                القيمة: {Number(taxSummary.contracts_total).toFixed(2)} + ضريبة {taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
+                {t('value_detail')}{Number(taxSummary.contracts_total).toFixed(2)}{t('plus_tax')}{taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
               </p>
             )}
           </>
@@ -160,18 +163,18 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         </div>
       </div>
 
-      <p className="text-xs text-[var(--color-text-disabled)]">نسبة العميل: {client?.client_type === 'individual' ? 'فردي' : 'شركة'}</p>
+      <p className="text-xs text-[var(--color-text-disabled)]">{t('client_type_prefix')}{client?.client_type === 'individual' ? t('individual_type') : t('company_type')}</p>
       {!isSA && (
         <div className="flex gap-2">
           <button onClick={() => setShowRequest(true)} className="px-4 py-2 bg-[var(--color-gold)] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-            طلب دفعة
+            {t('request_payment')}
           </button>
           <button onClick={() => setShowSchedule(true)} className="px-4 py-2 border border-[var(--color-gold)] text-[var(--color-gold)] text-sm font-medium rounded-lg hover:bg-[var(--color-gold)]/10 transition-colors">
-            جدولة دفعات
+            {t('schedule_payments')}
           </button>
         </div>
       )}
-      {payments.length === 0 ? <EmptyState message="لا توجد مدفوعات" /> : null}
+      {payments.length === 0 ? <EmptyState message={t('no_payments')} /> : null}
       {payments.map((p, idx) => {
         const isPending = p.status === 'pending';
         const isApproved = p.status === 'approved';
@@ -181,7 +184,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         const isRequested = isManagerScheduled && !p.due_date;
         const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-yellow-400' : isOverdue ? 'text-red-400' : isRequested ? 'text-yellow-400' : isScheduled ? 'text-yellow-400' : 'text-[var(--color-text-disabled)]';
         const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-yellow-400' : isOverdue ? 'bg-red-400' : isRequested ? 'bg-yellow-400' : isScheduled ? 'bg-yellow-400' : 'bg-gray-500';
-        const statusText = isApproved ? 'تمت الموافقة' : isPending ? 'قيد الانتظار' : isOverdue ? 'متأخر' : isRequested ? 'طلب دفعة' : isScheduled ? 'مجدول' : p.status;
+        const statusText = isApproved ? t('approved_status') : isPending ? t('pending_status') : isOverdue ? t('overdue_status') : isRequested ? t('payment_request_status') : isScheduled ? t('scheduled_status') : p.status;
 
         return (
           <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>
@@ -196,7 +199,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               {p.due_date && (
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className={`text-xs ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
-                    📅 الاستحقاق: {p.due_date}
+                    {t('due_date_prefix')}{p.due_date}
                   </span>
                 </div>
               )}
@@ -222,18 +225,18 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               {p.proof_file_url && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs">📎</span>
-                  <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold)] hover:underline">عرض إثبات الدفع</a>
+                  <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold)] hover:underline">{t('view_proof')}</a>
                 </div>
               )}
               {isPending && canReview && (
                 <div className="pt-2 flex gap-2">
-                  <button onClick={() => reviewPayment(p.id, 'approved')} className="flex-1 text-sm bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 font-medium">اعتماد</button>
-                  <button onClick={() => reviewPayment(p.id, 'rejected')} className="flex-1 text-sm bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium">رفض</button>
+                  <button onClick={() => reviewPayment(p.id, 'approved')} className="flex-1 text-sm bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 font-medium">{t('approve_payment')}</button>
+                  <button onClick={() => reviewPayment(p.id, 'rejected')} className="flex-1 text-sm bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium">{t('reject_payment')}</button>
                 </div>
               )}
               {isManagerScheduled && (isScheduled || isOverdue) && (
                 <div className="pt-2 flex gap-2">
-                  <button onClick={() => deleteSchedule(p.id)} className="flex-1 text-sm bg-red-600/20 text-red-400 py-2 rounded-lg hover:bg-red-600/30 font-medium">مسح</button>
+                  <button onClick={() => deleteSchedule(p.id)} className="flex-1 text-sm bg-red-600/20 text-red-400 py-2 rounded-lg hover:bg-red-600/30 font-medium">{t('delete_schedule')}</button>
                 </div>
               )}
             </div>
@@ -244,29 +247,29 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowSchedule(false)}>
           <div className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">جدولة دفعات</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('schedule_title')}</h3>
               <button onClick={() => setShowSchedule(false)} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">المبلغ *</label>
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
                 <input type="number" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">الوصف (اختياري)</label>
-                <input type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="مثال: القسط الأول" />
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('description_optional')}</label>
+                <input type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('installment_ph')} />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">العملة</label>
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
                 <select value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">تاريخ الاستحقاق *</label>
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('due_date_required')}</label>
                 <input type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" />
               </div>
-              <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">+ إضافة قسط</button>
+              <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">{t('add_installment')}</button>
               {installments.length > 0 && (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {installments.map((inst, i) => (
@@ -275,13 +278,13 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
                         <p className="text-xs text-[var(--color-text-primary)]">{inst.installment_label}</p>
                         <p className="text-[10px] text-[var(--color-text-secondary)]">{inst.amount} {inst.currency} — {inst.due_date}</p>
                       </div>
-                      <button onClick={() => removeInstallment(i)} className="text-red-400 hover:text-red-300 text-xs">مسح</button>
+                      <button onClick={() => removeInstallment(i)} className="text-red-400 hover:text-red-300 text-xs">{t('remove_installment')}</button>
                     </div>
                   ))}
                 </div>
               )}
               <button onClick={submitSchedule} disabled={installments.length === 0} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-40">
-                جدولة ({installments.length} أقساط)
+                {t('schedule_count', { count: installments.length })}
               </button>
             </div>
           </div>
@@ -291,27 +294,27 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowRequest(false)}>
           <div className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">طلب دفعة</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('request_title')}</h3>
               <button onClick={() => setShowRequest(false)} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
-            <p className="text-xs text-[var(--color-text-secondary)] mb-4">ابعت طلب دفعة للعميل</p>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('request_desc')}</p>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">المبلغ *</label>
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
                 <input type="number" value={requestForm.amount} onChange={(e) => setRequestForm({ ...requestForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">العملة</label>
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
                 <select value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">ملاحظة (اختياري)</label>
-                <input type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="مثال: دفعة العقد الأول" />
+                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('notes_optional')}</label>
+                <input type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('payment_request_ph')} />
               </div>
               <button onClick={submitRequest} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90">
-                إرسال الطلب
+                {t('send_request')}
               </button>
             </div>
           </div>

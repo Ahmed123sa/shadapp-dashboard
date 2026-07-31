@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
 
 const CLIENT_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -14,6 +15,7 @@ function resolveFileUrl(url: string): string {
 }
 
 export default function ClientApprovals({ wsId, clientId }: { wsId: number; clientId: number }) {
+  const t = useTranslations('dashboard');
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,7 +24,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
   useEffect(() => {
     api.get(`/workspaces/${wsId}/approvals`)
       .then(({ data }) => setApprovals(data.approvals?.data || data.approvals || []))
-      .catch((e) => { console.error(e); setError('فشل تحميل طلبات الموافقة'); })
+      .catch((e) => { console.error(e); setError(t('approval_load_failed')); })
       .finally(() => setLoading(false));
   }, [wsId]);
 
@@ -45,22 +47,22 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
     edit_requested: 'bg-amber-900/30 text-amber-400',
   };
   const statusLabels: Record<string, string> = {
-    approved: '✅ تمت الموافقة',
-    pending: '⏳ قيد الانتظار',
-    rejected: '❌ مرفوض',
-    edit_requested: '✎ طلب تعديل',
+    approved: t('approval_approved_status'),
+    pending: t('approval_pending_status'),
+    rejected: t('approval_rejected_status'),
+    edit_requested: t('approval_edit_requested_status'),
   };
 
   return (
     <div className="space-y-3">
-      {approvals.length === 0 ? <EmptyState message="لا توجد طلبات موافقة" /> : null}
+      {approvals.length === 0 ? <EmptyState message={t('approval_no_approvals')} /> : null}
       {approvals.map((a) => (
         <div key={a.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
               <h4 className="font-medium">{a.title}</h4>
               {a.description && <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{a.description}</p>}
-              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">المرجع: {a.reference_no}</p>
+              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{t('approval_ref_prefix')}{a.reference_no}</p>
             </div>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[a.status] || ''}`}>
               {statusLabels[a.status] || a.status}
@@ -72,7 +74,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
               {a.files.map((f: any) => (
                 <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
-                  📎 {f.name || 'ملف'}
+                  📎 {f.name || t('approval_file_label')}
                 </a>
               ))}
             </div>
@@ -80,16 +82,16 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
 
           {a.certificate?.pdf_url && (
               <div className="mt-1 text-xs text-[var(--color-gold)]">
-                📄 <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer" className="hover:underline">شهادة الموافقة</a>
+                📄 <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer" className="hover:underline">{t('approval_certificate')}</a>
             </div>
           )}
 
           {a.status === 'pending' && (
             <div className="mt-3 flex gap-2">
               <button onClick={() => setRespondTarget({ id: a.id, action: 'approved' })}
-                className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">✔ موافقة</button>
+                className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">{t('approval_respond_approve')}</button>
               <button onClick={() => setRespondTarget({ id: a.id, action: 'edit_requested' })}
-                className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700">طلب تعديل</button>
+                className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700">{t('approval_respond_edit_request')}</button>
             </div>
           )}
         </div>
@@ -97,10 +99,10 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
 
       <ConfirmDialog
         open={!!respondTarget}
-        title={respondTarget?.action === 'approved' ? 'موافقة' : 'طلب تعديل'}
-        message={respondTarget?.action === 'approved' ? 'سيتم استخدام توقيعك الإلكتروني المحفوظ. هل أنت متأكد؟' : 'تأكيد طلب تعديل هذا الطلب؟'}
-        confirmLabel="تأكيد"
-        cancelLabel="إلغاء"
+        title={respondTarget?.action === 'approved' ? t('approval_confirm_approve_btn') : t('approval_confirm_edit_btn')}
+        message={respondTarget?.action === 'approved' ? t('approval_confirm_approve') : t('approval_confirm_edit_request')}
+        confirmLabel={t('approval_confirm_approve_btn')}
+        cancelLabel={t('approval_confirm_cancel')}
         variant="default"
         onConfirm={respond}
         onCancel={() => setRespondTarget(null)}

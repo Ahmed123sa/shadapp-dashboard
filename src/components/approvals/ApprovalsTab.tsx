@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -23,9 +24,10 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('dashboard');
 
   useEffect(() => {
-    api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])).catch((err) => { console.error('ApprovalsTab: GET /workspaces/${wsId}/approvals failed', err); setError('فشل تحميل طلبات الموافقة'); }).finally(() => setLoading(false));
+    api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])).catch((err) => { console.error('ApprovalsTab: GET /workspaces/${wsId}/approvals failed', err); setError(t('approvals_load_error')); }).finally(() => setLoading(false));
   }, [wsId]);
 
   const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
@@ -49,13 +51,13 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
     <div className="space-y-4">
       {!isSA && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
-          <h3 className="font-medium text-sm text-[var(--color-foreground)]">طلب موافقة جديد</h3>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان طلب الموافقة *" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="الوصف (اختياري)" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" rows={2} />
+          <h3 className="font-medium text-sm text-[var(--color-foreground)]">{t('new_approval_request')}</h3>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('approval_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('approval_desc_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" rows={2} />
 
           <div className="flex items-center gap-2">
             <input type="file" ref={fileRef} multiple className="hidden" onChange={(e) => { if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files!)]); }} />
-            <button onClick={() => fileRef.current?.click()} className="text-sm text-[var(--color-gold)] hover:underline">+ إرفاق ملفات</button>
+            <button onClick={() => fileRef.current?.click()} className="text-sm text-[var(--color-gold)] hover:underline">{t('attach_files')}</button>
             {files.length > 0 && (
               <div className="flex items-center gap-1">
                 {files.map((f, i) => (
@@ -69,12 +71,12 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
           </div>
 
           <button onClick={sendApproval} disabled={sending || !title} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-            {sending ? 'جاري الإرسال...' : 'إرسال طلب موافقة'}
+            {sending ? t('sending_label') : t('send_approval_request')}
           </button>
         </div>
       )}
 
-      {approvals.length === 0 ? <EmptyState message="لا توجد طلبات موافقة" /> : null}
+      {approvals.length === 0 ? <EmptyState message={t('no_approvals')} /> : null}
       {approvals.map((a) => {
         const statusColors: Record<string, string> = {
           approved: 'bg-emerald-900/30 text-emerald-400',
@@ -83,10 +85,10 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
           edit_requested: 'bg-amber-900/30 text-amber-400',
         };
         const statusLabels: Record<string, string> = {
-          approved: '✅ تمت الموافقة',
-          pending: '⏳ قيد الانتظار',
-          rejected: '❌ مرفوض',
-          edit_requested: '✎ طلب تعديل',
+          approved: t('approval_approved_status'),
+          pending: t('approval_pending_status'),
+          rejected: t('approval_rejected_status'),
+          edit_requested: t('approval_edit_requested_status'),
         };
         return (
           <div key={a.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
@@ -94,7 +96,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
               <div>
                 <h4 className="font-medium">{a.title}</h4>
                 {a.description && <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{a.description}</p>}
-                {a.reference_no && <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">مرجع: {a.reference_no}</p>}
+                {a.reference_no && <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{t('reference_prefix')}{a.reference_no}</p>}
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs ${statusColors[a.status] || 'bg-zinc-700/30 text-zinc-400'}`}>
                 {statusLabels[a.status] || a.status}
@@ -107,7 +109,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
                 {a.files.map((f: any) => (
                   <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
-                    📎 {f.name || 'ملف'}
+                    📎 {f.name || t('file_label')}
                   </a>
                 ))}
               </div>
@@ -116,7 +118,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
             {/* Certificate */}
             {a.certificate && (
               <div className="mt-2 text-xs text-[var(--color-gold)]">
-                <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer">📄 تحميل شهادة الموافقة</a>
+                <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer">{t('download_certificate')}</a>
               </div>
             )}
           </div>

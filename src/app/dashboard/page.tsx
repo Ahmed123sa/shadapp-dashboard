@@ -6,10 +6,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import Link from 'next/link';
+import { Users, FileText, CreditCard, MessageCircle, DollarSign, Clock, Calendar, Folder } from 'lucide-react';
+import { DashboardSkeleton } from '@/components/ui/LoadingSkeleton';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
+import { PaginatedView } from '@/components/dashboard/PaginatedView';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
 import ManagerTableRow from '@/components/dashboard/ManagerTableRow';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 type Client = {
   id: number; company_name: string; contact_person: string; email: string;
@@ -72,16 +76,16 @@ function resolveFileUrl(url: string): string {
   return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
 }
 
-function timeAgo(dateStr: string, locale: string): string {
+function timeAgo(dateStr: string, locale: string, t: any): string {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return locale === 'ar' ? 'الآن' : 'just now';
-  if (mins < 60) return locale === 'ar' ? `منذ ${mins} دقيقة` : `${mins}m ago`;
+  if (mins < 1) return t('just_now');
+  if (mins < 60) return t('minutes_ago', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return locale === 'ar' ? `منذ ${hrs} ساعة` : `${hrs}h ago`;
+  if (hrs < 24) return t('hours_ago', { count: hrs });
   const days = Math.floor(hrs / 24);
-  return locale === 'ar' ? `منذ ${days} يوم` : `${days}d ago`;
+  return t('days_ago', { count: days });
 }
 
 function formatDate(dateStr: string, locale: string): string {
@@ -98,9 +102,9 @@ function formatTime(dateStr: string, locale: string): string {
   });
 }
 
-function formatFileSize(bytes: number, locale: string): string {
-  if (!bytes) return '0 B';
-  const units = locale === 'ar' ? ['بايت', 'ك.ب', 'م.ب', 'ج.ب'] : ['B', 'KB', 'MB', 'GB'];
+function formatFileSize(bytes: number, locale: string, t: any): string {
+  if (!bytes) return `0 ${t('bytes_unit')}`;
+  const units = [t('bytes_unit'), t('kb_unit'), t('mb_unit'), t('gb_unit')];
   let idx = 0;
   let size = bytes;
   while (size >= 1024 && idx < units.length - 1) { size /= 1024; idx++; }
@@ -161,7 +165,7 @@ export default function DashboardHome() {
     }
   }, [isSA]);
 
-  if (loading) return <div className="text-center py-20 text-[var(--color-text-secondary)]">{t('title')}</div>;
+  if (loading) return <DashboardSkeleton />;
 
   if (isSA) {
     if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {
@@ -196,19 +200,24 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
   approvedContracts.forEach(c => {
-    activityItems.push({ color: 'green', text: `اعتُمد عقد <b>${c.workspace?.client?.company_name || 'عميل'}</b>`, time: timeAgo(c.created_at || new Date().toISOString(), locale) });
+    const name1 = c.workspace?.client?.company_name || t('client_label');
+    activityItems.push({ color: 'green', text: t('activity_am_contract_approved', { name: name1 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
   const pendingContracts = allContracts.filter(c => c.status === 'sent' || c.status === 'client_approved').slice(0, 2);
   pendingContracts.forEach(c => {
-    activityItems.push({ color: 'red', text: `عقد <b>${c.workspace?.client?.company_name || 'عميل'}</b> بانتظار المراجعة`, time: timeAgo(c.created_at || new Date().toISOString(), locale) });
+    const name2 = c.workspace?.client?.company_name || t('client_label');
+    activityItems.push({ color: 'red', text: t('activity_am_contract_pending', { name: name2 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
   const recentPayments = allPayments.slice(0, 2);
   recentPayments.forEach(p => {
-    activityItems.push({ color: 'gold', text: `دفعة <b>${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}</b> من <b>${p.workspace?.client?.company_name || 'عميل'}</b>`, time: timeAgo(p.created_at, locale) });
+    const amt3 = `${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}`;
+    const client3 = p.workspace?.client?.company_name || t('client_label');
+    activityItems.push({ color: 'gold', text: t('activity_am_payment_received', { amount: amt3, client: client3 }), time: timeAgo(p.created_at, locale, t) });
   });
   const recentMeetings = allMeetings.slice(0, 1);
   recentMeetings.forEach(m => {
-    activityItems.push({ color: 'blue', text: `اجتماع <b>${m.title}</b> مع <b>${m.workspace?.client?.company_name || 'عميل'}</b>`, time: timeAgo(m.created_at || m.scheduled_at, locale) });
+    const client4 = m.workspace?.client?.company_name || t('client_label');
+    activityItems.push({ color: 'blue', text: t('activity_am_meeting_held', { title: m.title, client: client4 }), time: timeAgo(m.created_at || m.scheduled_at, locale, t) });
   });
   activityItems.sort((a, b) => 0).slice(0, 5);
 
@@ -216,10 +225,10 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
     <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
       <div className="p-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <DashboardStatCard label={t('my_clients')} value={totalClients} icon="👥" color="crimson" subtitle={`+2 ${t('subtitle_this_month')}`} />
-          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon="📄" subtitle={`${pendingContractsCount} ${locale === 'ar' ? 'تنتظر رد' : 'awaiting response'}`} />
-          <DashboardStatCard label={t('pending_payments')} value={pendingPaymentsCount} icon="💳" color="gold" subtitle={t('subtitle_needs_action')} />
-          <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon="💬" color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />
+          <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" subtitle={`+2 ${t('subtitle_this_month')}`} />
+          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('awaiting_response', { count: pendingContractsCount })} />
+          <DashboardStatCard label={t('pending_payments')} value={pendingPaymentsCount} icon={CreditCard} color="gold" subtitle={t('subtitle_needs_action')} />
+          <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon={MessageCircle} color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
@@ -231,9 +240,9 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +255,7 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
                           <img src={resolveFileUrl(c.avatar_url)} alt="" className="w-[26px] h-[26px] rounded-full object-cover border border-[var(--border)] flex-shrink-0" />
                         ) : (
                           <div className="w-[26px] h-[26px] rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9.5px] font-bold text-[var(--color-gold)] flex-shrink-0">
-                            {c.company_name?.slice(0, 2) || '؟'}
+                            {c.company_name?.slice(0, 2) || '?'}
                           </div>
                         )}
                         <div>
@@ -262,7 +271,7 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
                       <StatusBadge status={c.workspace?.status || c.status} />
                     </td>
                     <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[10px] text-[var(--color-text-secondary)]">
-                      {timeAgo(c.updated_at, locale)}
+                      {timeAgo(c.updated_at, locale, t)}
                     </td>
                   </tr>
                 ))}
@@ -293,23 +302,30 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
   approvedContracts.forEach(c => {
-    activityItems.push({ color: 'green', text: `عقد <b>${c.workspace?.client?.company_name || '#' + c.id}</b> اعتُمد`, time: timeAgo(c.created_at || new Date().toISOString(), locale) });
+    const name1 = c.workspace?.client?.company_name || '#' + c.id;
+    activityItems.push({ color: 'green', text: t('activity_sa_contract_approved', { name: name1 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
   const clientApprovedContracts = allContracts.filter(c => c.status === 'client_approved').slice(0, 2);
   clientApprovedContracts.forEach(c => {
-    activityItems.push({ color: 'gold', text: `عميل <b>${c.workspace?.client?.company_name || '#' + c.id}</b> وافق على العقد`, time: timeAgo(c.created_at || new Date().toISOString(), locale) });
+    const name2 = c.workspace?.client?.company_name || '#' + c.id;
+    activityItems.push({ color: 'gold', text: t('activity_sa_client_approved', { name: name2 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
   const sentContracts = allContracts.filter(c => c.status === 'sent').slice(0, 1);
   sentContracts.forEach(c => {
-    activityItems.push({ color: 'blue', text: `تم إرسال عقد <b>${c.workspace?.client?.company_name || '#' + c.id}</b>`, time: timeAgo(c.created_at || new Date().toISOString(), locale) });
+    const name3 = c.workspace?.client?.company_name || '#' + c.id;
+    activityItems.push({ color: 'blue', text: t('activity_sa_contract_sent', { name: name3 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
   const recentPayments = allPayments.slice(0, 2);
   recentPayments.forEach(p => {
-    activityItems.push({ color: 'gold', text: `دفعة <b>${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}</b> من <b>${p.workspace?.client?.company_name || 'عميل'}</b>`, time: timeAgo(p.created_at, locale) });
+    const amt4 = `${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}`;
+    const client4 = p.workspace?.client?.company_name || t('client_label');
+    activityItems.push({ color: 'gold', text: t('activity_sa_payment_received', { amount: amt4, client: client4 }), time: timeAgo(p.created_at, locale, t) });
   });
   const recentMeetings = allMeetings.slice(0, 2);
   recentMeetings.forEach(m => {
-    activityItems.push({ color: 'blue', text: `اجتماع <b>${m.title}</b>${m.workspace?.client?.company_name ? ` مع <b>${m.workspace.client.company_name}</b>` : ''}`, time: timeAgo(m.created_at || m.scheduled_at, locale) });
+    const client5 = m.workspace?.client?.company_name;
+    const msg = client5 ? t('activity_sa_meeting_with_client', { title: m.title, client: client5 }) : t('activity_sa_meeting_held', { title: m.title });
+    activityItems.push({ color: 'blue', text: msg, time: timeAgo(m.created_at || m.scheduled_at, locale, t) });
   });
 
   const [expandedManager, setExpandedManager] = useState<number | null>(null);
@@ -338,10 +354,10 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
     <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
       <div className="p-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <DashboardStatCard label={t('total_clients')} value={totalClients} icon="👥" subtitle={`+6 ${t('subtitle_this_month')}`} />
-          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon="📄" subtitle={`+3 ${t('subtitle_this_week')}`} />
-          <DashboardStatCard label={t('monthly_revenue')} value={`${(monthlyRevenue / 1000).toFixed(0)}K`} icon="💰" color="gold" subtitle={`+12% ${locale === 'ar' ? 'عن الشهر السابق' : 'vs last month'}`} />
-          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovals.length} icon="⏳" color="red" subtitle={t('subtitle_urgent')} />
+          <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} subtitle={`+6 ${t('subtitle_this_month')}`} />
+          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={`+3 ${t('subtitle_this_week')}`} />
+          <DashboardStatCard label={t('monthly_revenue')} value={`${(monthlyRevenue / 1000).toFixed(0)}K`} icon={DollarSign} color="gold" subtitle={t('vs_last_month')} />
+          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovals.length} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
@@ -353,9 +369,9 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
-                  <th className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
+                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -371,9 +387,9 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
             {expandedManager && (
               <div className="border-t border-[var(--border)] bg-white/[0.015]">
                 {managerClientsLoading ? (
-                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{locale === 'ar' ? 'جاري تحميل العملاء...' : 'Loading clients...'}</div>
+                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{t('loading_clients')}</div>
                 ) : managerClients.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{locale === 'ar' ? 'لا يوجد عملاء' : 'No clients'}</div>
+                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{t('no_clients')}</div>
                 ) : (
                   <div className="divide-y divide-white/[0.04]">
                     {managerClients.map((c) => (
@@ -418,11 +434,11 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-bold truncate">{a.title}</div>
                       <div className="text-[10px] text-[var(--color-text-secondary)] truncate">
-                        {a.workspace?.client?.company_name || ''} — {timeAgo(a.created_at, locale)}
+                        {a.workspace?.client?.company_name || ''} — {timeAgo(a.created_at, locale, t)}
                       </div>
                     </div>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-gold-soft)] text-[var(--color-gold)] flex-shrink-0">
-                      {locale === 'ar' ? 'انتظار' : 'Pending'}
+                      {t('pending_status')}
                     </span>
                   </Link>
                 ))}
@@ -489,12 +505,12 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
 
   const isPaginated = view === 'meetings' || view === 'payments' || view === 'files';
 
-  const staticViewConfig: Record<string, { title: string; icon: string; items: any[]; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode }> = {
+  const staticViewConfig: Record<string, { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; items: any[]; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode }> = {
     contracts: {
       title: t('contracts_nav'),
-      icon: '📄',
+      icon: FileText,
       items: allContracts,
-      headers: [t('col_client'), locale === 'ar' ? 'العنوان' : 'Title', locale === 'ar' ? 'النوع' : 'Type', t('col_value'), locale === 'ar' ? 'التاريخ' : 'Date', t('col_status')],
+      headers: [t('col_client'), t('col_title'), t('col_type'), t('col_value'), t('col_date'), t('col_status')],
       getLink: (c: Contract) => `/dashboard/clients/${c.workspace?.client?.id}?tab=العقود`,
       renderRow: (c: Contract, loc: string) => (
         <>
@@ -513,7 +529,7 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
                 ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold)] border border-[var(--color-gold-border)]'
                 : 'bg-blue-900/30 text-blue-400'
             }`}>
-              {c.contract_type === 'main' || c.contract_type === null ? (loc === 'ar' ? 'أساسي' : 'Main') : (loc === 'ar' ? 'إضافي' : 'Additional')}
+              {c.contract_type === 'main' || c.contract_type === null ? t('main_contract') : t('additional_contract')}
             </span>
           </td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
@@ -526,10 +542,10 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
     },
   };
 
-  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: string; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode } | null => {
+  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode } | null => {
     if (viewType === 'meetings') return {
-      title: t('meetings_nav'), icon: '📅',
-      headers: [t('col_client'), locale === 'ar' ? 'العنوان' : 'Title', locale === 'ar' ? 'التاريخ والوقت' : 'Date & Time', locale === 'ar' ? 'المدة' : 'Duration', locale === 'ar' ? 'الحالة' : 'Status'],
+      title: t('meetings_nav'), icon: Calendar,
+      headers: [t('col_client'), t('col_title'), t('col_datetime'), t('col_duration'), t('col_status')],
       getLink: (m: Meeting) => `/dashboard/clients/${m.workspace?.client?.id}?tab=الاجتماعات`,
       renderRow: (m: Meeting, loc: string) => (
         <>
@@ -546,24 +562,24 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
             <div className="text-[11px]">{formatDate(m.scheduled_at, loc)}</div>
             <div className="text-[10px] text-[var(--color-text-secondary)]">{formatTime(m.scheduled_at, loc)}</div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{m.duration_minutes} {locale === 'ar' ? 'دقيقة' : 'min'}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{m.duration_minutes} {t('minutes_suffix')}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold ${
               m.status === 'completed' ? 'bg-green-900/30 text-green-400' :
               m.status === 'cancelled' ? 'bg-red-900/30 text-red-400' :
               'bg-blue-900/30 text-blue-400'
             }`}>
-              {m.status === 'completed' ? '✓ ' + (loc === 'ar' ? 'تم' : 'Done') :
-               m.status === 'cancelled' ? '✕ ' + (loc === 'ar' ? 'ملغي' : 'Cancelled') :
-               '● ' + (loc === 'ar' ? 'قادم' : 'Upcoming')}
+              {m.status === 'completed' ? '✓ ' + t('done_status') :
+               m.status === 'cancelled' ? '✕ ' + t('cancelled_status') :
+               '● ' + t('upcoming_status')}
             </span>
           </td>
         </>
       ),
     };
     if (viewType === 'payments') return {
-      title: t('payments_nav'), icon: '💳',
-      headers: [t('col_client'), locale === 'ar' ? 'العقد' : 'Contract', locale === 'ar' ? 'المبلغ' : 'Amount', locale === 'ar' ? 'الطريقة' : 'Method', locale === 'ar' ? 'التاريخ والوقت' : 'Date & Time', locale === 'ar' ? 'الحالة' : 'Status'],
+      title: t('payments_nav'), icon: CreditCard,
+      headers: [t('col_client'), t('col_contract'), t('col_amount'), t('col_method'), t('col_datetime'), t('col_status')],
       getLink: (p: Payment) => `/dashboard/clients/${p.workspace?.client?.id}?tab=المدفوعات`,
       renderRow: (p: Payment, loc: string) => (
         <>
@@ -589,8 +605,8 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
       ),
     };
     if (viewType === 'files') return {
-      title: t('files_nav'), icon: '📁',
-      headers: [t('col_client'), locale === 'ar' ? 'الملف' : 'File', locale === 'ar' ? 'النوع' : 'Type', locale === 'ar' ? 'الحجم' : 'Size', locale === 'ar' ? 'التاريخ' : 'Date'],
+      title: t('files_nav'), icon: Folder,
+      headers: [t('col_client'), t('col_file'), t('col_type'), t('col_size'), t('col_date')],
       getLink: (f: FileFile) => `/dashboard/clients/${f.workspace?.client?.id}?tab=الملفات`,
       renderRow: (f: FileFile, loc: string) => (
         <>
@@ -607,7 +623,7 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
             <div className="text-[10px] text-[var(--color-text-secondary)]">{f.uploaded_by?.name || ''}</div>
           </td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{f.type || '—'}</td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{formatFileSize(f.size, loc)}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{formatFileSize(f.size, loc, t)}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[10px] text-[var(--color-text-secondary)]">{formatDate(f.created_at, loc)}</td>
         </>
       ),
@@ -625,72 +641,17 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
   if (!config) return null;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
-      <div className="p-5">
-        <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2">
-              <span className="text-base">{config.icon}</span>
-              <span className="text-[12.5px] font-bold">{config.title}</span>
-              <span className="text-[10px] bg-[var(--color-card-border)] text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full">{total}</span>
-            </div>
-            <Link href="/dashboard" className="text-[10.5px] text-[var(--color-gold)]">{locale === 'ar' ? 'العودة للرئيسية' : 'Back to Dashboard'}</Link>
-          </div>
-          {apiLoading ? (
-            <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{locale === 'ar' ? 'جاري التحميل...' : 'Loading...'}</div>
-          ) : items.length === 0 ? (
-            <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">
-              {locale === 'ar' ? 'لا توجد بيانات' : 'No data'}
-            </div>
-          ) : (
-            <>
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    {config.headers.map((h: string, i: number) => (
-                      <th key={i} className="text-right text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any, i: number) => (
-                    <tr
-                      key={item.id}
-                      className="row-slide hover:bg-white/[0.025] cursor-pointer"
-                      style={{ animationDelay: `${(i + 1) * 50}ms` }}
-                      onClick={() => router.push(config.getLink(item))}
-                    >
-                      {config.renderRow(item, locale)}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {lastPage > 1 && (
-                <div className="flex items-center justify-center gap-2 py-3 border-t border-[var(--border)]">
-                  <button
-                    disabled={page <= 1}
-                    onClick={(e) => { e.stopPropagation(); setPage(p => p - 1); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {locale === 'ar' ? 'السابق' : 'Previous'}
-                  </button>
-                  <span className="text-[11px] text-[var(--color-text-secondary)]">
-                    {page} / {lastPage}
-                  </span>
-                  <button
-                    disabled={page >= lastPage}
-                    onClick={(e) => { e.stopPropagation(); setPage(p => p + 1); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {locale === 'ar' ? 'التالي' : 'Next'}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    <PaginatedView
+      config={config}
+      items={items}
+      total={total}
+      lastPage={lastPage}
+      page={page}
+      onPrevPage={() => setPage(p => p - 1)}
+      onNextPage={() => setPage(p => p + 1)}
+      locale={locale}
+      apiLoading={apiLoading}
+    />
   );
 }
 
@@ -699,30 +660,4 @@ function SAListView({ t, locale, view, clients, allContracts, allPayments, manag
   allContracts: Contract[]; allPayments: Payment[]; managers: Manager[];
 }) {
   return <AMListView t={t} locale={locale} view={view} clients={clients} allContracts={allContracts} allPayments={allPayments} />;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    active: 'bg-green-900/30 text-green-400',
-    pending: 'bg-yellow-900/30 text-yellow-400',
-    sent: 'bg-blue-900/30 text-blue-400',
-    client_approved: 'bg-green-900/30 text-green-400',
-    company_approved: 'bg-purple-900/30 text-purple-400',
-    completed: 'bg-emerald-900/30 text-emerald-400',
-    draft: 'bg-zinc-700/30 text-zinc-400',
-    inactive: 'bg-zinc-700/30 text-zinc-500',
-    approved: 'bg-green-900/30 text-green-400',
-    rejected: 'bg-red-900/30 text-red-400',
-  };
-  const labels: Record<string, string> = {
-    active: 'مفعّل', pending: 'بانتظار الدفع', sent: 'مرسل',
-    client_approved: 'بانتظار الموافقة', company_approved: 'معتمد',
-    completed: 'مكتمل', draft: 'مسودة', inactive: 'غير مفعل',
-    approved: 'مقبول', rejected: 'مرفوض',
-  };
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold ${colors[status] || 'bg-zinc-700/30 text-zinc-400'}`}>
-      {labels[status] || status}
-    </span>
-  );
 }

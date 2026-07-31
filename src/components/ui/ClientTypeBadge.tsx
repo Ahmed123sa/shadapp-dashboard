@@ -1,3 +1,8 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { Building2, User } from 'lucide-react';
+
 interface ClientTypeBadgeProps {
   clientType?: string | null;
   compact?: boolean;
@@ -7,7 +12,8 @@ export function ClientTypeBadge({ clientType, compact = false }: ClientTypeBadge
   if (!clientType) return null;
 
   const isBusiness = clientType === 'business';
-  const label = isBusiness ? 'شركة' : 'فردي';
+  const t = useTranslations('dashboard');
+  const label = isBusiness ? t('client_type_company') : t('client_type_individual');
 
   return (
     <span
@@ -19,7 +25,7 @@ export function ClientTypeBadge({ clientType, compact = false }: ClientTypeBadge
           : 'bg-[var(--color-card-border)] text-[var(--color-text-secondary)]'
       }`}
     >
-      {isBusiness ? '🏢' : '👤'}
+      {isBusiness ? <Building2 size={compact ? 12 : 14} strokeWidth={1.5} /> : <User size={compact ? 12 : 14} strokeWidth={1.5} />}
       {label}
     </span>
   );

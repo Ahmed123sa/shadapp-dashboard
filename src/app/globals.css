@@ -31,6 +31,8 @@
   --color-green: #97C459;
   --color-blue: #85B7EB;
   --color-red-accent: #E24B4A;
+  --border: #2A2A2A;
+  --bg-dark: #0D0D0D;
 }
 
 body {
@@ -43,12 +45,16 @@ body {
 .nav-item-active::after {
   content: '';
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   top: 15%;
   height: 70%;
   width: 2.5px;
   background: var(--color-gold);
   border-radius: 2px;
+}
+
+td.p-4 {
+  text-align: center;
 }
 
 .stat-card-hover {

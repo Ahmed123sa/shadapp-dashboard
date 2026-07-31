@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,6 +11,8 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
   const [contracts, setContracts] = useState<any[]>([]);
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = useTranslations('dashboard');
+  const tCal = useTranslations('calendar');
 
   useEffect(() => {
     Promise.all([
@@ -29,8 +32,8 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
   });
 
   contracts.forEach((c) => {
-    if (c.end_date) items.push({ date: c.end_date, title: `موعد نهائي: ${c.title}`, type: 'deadline', id: c.id });
-    if (c.start_date) items.push({ date: c.start_date, title: `بداية: ${c.title}`, type: 'start', id: c.id });
+    if (c.end_date) items.push({ date: c.end_date, title: `${t('deadline_prefix')}${c.title}`, type: 'deadline', id: c.id });
+    if (c.start_date) items.push({ date: c.start_date, title: `${t('start_prefix')}${c.title}`, type: 'start', id: c.id });
   });
 
   approvals.forEach((a) => {
@@ -53,18 +56,18 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
   };
 
   const typeLabels: Record<string, string> = {
-    meeting: 'اجتماع',
-    deadline: 'موعد نهائي',
-    start: 'بداية',
-    approval: 'موافقة',
+    meeting: tCal('meeting'),
+    deadline: tCal('deadline'),
+    start: tCal('start'),
+    approval: tCal('approval'),
   };
 
   return (
     <div className="space-y-3">
-      {Object.keys(grouped).length === 0 ? <EmptyState message="لا توجد أحداث" /> : null}
+      {Object.keys(grouped).length === 0 ? <EmptyState message={t('no_events')} /> : null}
       {Object.entries(grouped).map(([date, entries]) => (
         <div key={date}>
-          <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">{new Date(date + 'T12:00:00').toLocaleDateString('ar-SA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</h4>
+          <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">{new Date(date + 'T12:00:00').toLocaleDateString('en-SA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</h4>
           <div className="space-y-1 mr-4">
             {entries.map((i, idx) => (
               <div key={`${i.type}-${i.id}-${idx}`} className={`text-sm border-r-2 ${typeStyles[i.type] || 'border-zinc-300'} pr-3 py-1`}>

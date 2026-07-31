@@ -8,6 +8,10 @@ import { setLocaleCookie } from '@/lib/locale';
 import NotificationBell from '@/components/NotificationBell';
 import ToastNotification from '@/components/ToastNotification';
 import Link from 'next/link';
+import {
+  LayoutDashboard, Users, FileText, Calendar, CreditCard,
+  Folder, ClipboardList, Settings, UserCog, BarChart3,
+} from 'lucide-react';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -19,7 +23,7 @@ function resolveFileUrl(url: string): string {
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   badge?: number;
   badgeColor?: string;
   exact?: boolean;
@@ -43,29 +47,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_main'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: '📊', exact: true },
-        { href: '/dashboard/clients', label: t('my_clients'), icon: '👥' },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
+        { href: '/dashboard/clients', label: t('my_clients'), icon: Users },
       ],
     },
     {
       label: t('nav_group_comm'),
       items: [
-        { href: '/dashboard?view=contracts', label: t('contracts_nav'), icon: '📄' },
-        { href: '/dashboard?view=meetings', label: t('meetings_nav'), icon: '📅' },
+        { href: '/dashboard?view=contracts', label: t('contracts_nav'), icon: FileText },
+        { href: '/dashboard?view=meetings', label: t('meetings_nav'), icon: Calendar },
       ],
     },
     {
       label: t('nav_group_finance'),
       items: [
-        { href: '/dashboard?view=payments', label: t('payments_nav'), icon: '💳' },
-        { href: '/dashboard?view=files', label: t('files_nav'), icon: '📁' },
+        { href: '/dashboard?view=payments', label: t('payments_nav'), icon: CreditCard },
+        { href: '/dashboard?view=files', label: t('files_nav'), icon: Folder },
       ],
     },
     {
       label: t('nav_group_system'),
       items: [
-        { href: '/dashboard/audit-log', label: t('audit_log'), icon: '📋' },
-        { href: '/dashboard/settings', label: t('settings'), icon: '⚙' },
+        { href: '/dashboard/audit-log', label: t('audit_log'), icon: ClipboardList },
+        { href: '/dashboard/settings', label: t('settings'), icon: Settings },
       ],
     },
   ];
@@ -74,22 +78,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_admin'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: '📊', exact: true },
-        { href: '/dashboard/clients', label: t('all_clients'), icon: '👥' },
-        { href: '/dashboard/reports', label: t('reports'), icon: '📈' },
-        { href: '/dashboard/audit-log', label: t('audit_log'), icon: '📋' },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
+        { href: '/dashboard/clients', label: t('all_clients'), icon: Users },
+        { href: '/dashboard/reports', label: t('reports'), icon: BarChart3 },
+        { href: '/dashboard/audit-log', label: t('audit_log'), icon: ClipboardList },
       ],
     },
     {
       label: t('nav_group_team'),
       items: [
-        { href: '/dashboard/account-managers', label: t('account_managers'), icon: '🧑‍💼' },
+        { href: '/dashboard/account-managers', label: t('account_managers'), icon: UserCog },
       ],
     },
     {
       label: t('nav_group_system'),
       items: [
-        { href: '/dashboard/settings', label: t('settings'), icon: '⚙' },
+        { href: '/dashboard/settings', label: t('settings'), icon: Settings },
       ],
     },
   ];
@@ -106,7 +110,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const switchLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
     setLocaleCookie(next);
-    window.location.reload();
+    const params = new URLSearchParams(searchParams.toString());
+    const qs = params.toString();
+    window.location.href = pathname + (qs ? '?' + qs : '');
   };
 
   const isActive = (item: NavItem) => {
@@ -151,7 +157,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ToastNotification />
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 right-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-l border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 end-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-s border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
 
         {/* Logo */}
         <div className="px-3.5 py-5 mb-4">
@@ -200,7 +206,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <span className="text-[13px]">{item.icon}</span>
+                    <item.icon size={18} strokeWidth={1.5} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -211,7 +217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Logout */}
         <div className="px-3.5 py-2.5">
-          <button onClick={logout} className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-foreground)] transition-colors cursor-pointer w-full text-right">
+          <button onClick={logout} className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-foreground)] transition-colors cursor-pointer w-full text-end">
             {t('logout')} →
           </button>
         </div>
@@ -229,7 +235,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <h2 className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
               {getPageTitle()}
-              <span className="text-[11px] text-[var(--color-text-secondary)] font-normal mr-3" style={{ fontFamily: 'Tajawal' }}>
+              <span className="text-[11px] text-[var(--color-text-secondary)] font-normal me-3" style={{ fontFamily: 'Tajawal' }}>
                 {currentDate}
               </span>
             </h2>

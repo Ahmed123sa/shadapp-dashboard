@@ -1,9 +1,12 @@
 'use client';
 
+import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
@@ -15,13 +18,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function InputField({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 mr-0.5">*</span>}</label>
+      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 ms-0.5">*</span>}</label>
       <input className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
     </div>
   );
 }
 
 export default function ClientsPage() {
+  const t = useTranslations('dashboard');
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -56,11 +60,11 @@ export default function ClientsPage() {
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!form.company_name.trim()) errors.company_name = 'اسم الشركة مطلوب';
-    if (!form.contact_person.trim()) errors.contact_person = 'الشخص المسؤول مطلوب';
-    if (!form.email.trim()) errors.email = 'البريد الإلكتروني مطلوب';
-    else if (!form.email.includes('@')) errors.email = 'البريد الإلكتروني غير صالح';
-    if (!form.phone.trim()) errors.phone = 'رقم الهاتف مطلوب';
+    if (!form.company_name.trim()) errors.company_name = t('val_company_required');
+    if (!form.contact_person.trim()) errors.contact_person = t('val_contact_required');
+    if (!form.email.trim()) errors.email = t('val_email_required');
+    else if (!form.email.includes('@')) errors.email = t('val_email_invalid');
+    if (!form.phone.trim()) errors.phone = t('val_phone_required');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -71,7 +75,7 @@ export default function ClientsPage() {
     setCreateError('');
     try {
       const payload = { ...form };
-      if (autoPassword) delete payload.password;
+      if (autoPassword) delete (payload as any).password;
       const { data } = await api.post('/clients', payload);
       if (data.client?.id && avatarFile) {
         try {
@@ -88,17 +92,17 @@ export default function ClientsPage() {
       setAvatarFile(null);
       setAvatarPreview('');
     } catch (err: any) {
-      setCreateError(err?.response?.data?.message || 'فشل إنشاء العميل');
+      setCreateError(err?.response?.data?.message || t('create_failed'));
     }
   };
 
   const deleteClient = async (id: number) => {
-    if (!confirm('حذف العميل؟')) return;
+    if (!confirm(t('delete_confirm'))) return;
     const { data } = await api.delete(`/clients/${id}`).catch(() => ({ data: null }));
     if (data) setClients((prev) => prev.filter((c) => c.id !== id));
   };
 
-  if (loading) return <div className="text-center py-20 text-[var(--color-text-secondary)]">جاري التحميل...</div>;
+  if (loading) return <div className="p-4"><TableSkeleton rows={6} /></div>;
 
   const isSA = getUser()?.role === 'super_admin';
 
@@ -107,9 +111,9 @@ export default function ClientsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">العملاء</h2>
+        <h2 className="text-xl font-semibold">{t('clients')}</h2>
         {!isSA && <button onClick={() => setShowCreate(true)} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)]">
-          + عميل جديد
+          + {t('new_client')}
         </button>}
       </div>
 
@@ -118,17 +122,17 @@ export default function ClientsPage() {
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="بحث بالاسم، البريد، أو رقم الهاتف..."
-          className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pr-10 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none"
+          placeholder={t('client_search')}
+          className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none"
         />
-        <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
       </div>
 
       {newCreds && (
         <div className="bg-green-900/30 border border-green-900/30 rounded-xl p-4 mb-4">
-          <p className="text-green-400 font-medium mb-2">تم إنشاء العميل بنجاح</p>
-          <p className="text-sm text-green-400">البريد: {newCreds.email}</p>
-          <p className="text-sm text-green-400">كلمة المرور: {newCreds.password}</p>
+          <p className="text-green-400 font-medium mb-2">{t('client_created')}</p>
+          <p className="text-sm text-green-400">{t('email')}: {newCreds.email}</p>
+          <p className="text-sm text-green-400">{t('manager_password')}: {newCreds.password}</p>
         </div>
       )}
 
@@ -142,15 +146,15 @@ export default function ClientsPage() {
               {avatarPreview ? (
                 <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-3xl text-[var(--color-text-muted)]">🏢</span>
+                <Building2 size={32} strokeWidth={1} className="text-[var(--color-text-muted)]" />
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--color-foreground)]">صورة العميل</p>
-              <p className="text-[11px] text-[var(--color-text-muted)] mb-2">اختياري — صورة شخصية أو شعار الشركة</p>
+              <p className="text-sm font-medium text-[var(--color-foreground)]">{t('client_photo')}</p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mb-2">{t('client_photo_hint')}</p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] cursor-pointer hover:bg-[var(--color-input-fill)] transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                إضافة صورة
+                {t('add_photo')}
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAvatarFile(f); setAvatarPreview(URL.createObjectURL(f)); } }} />
               </label>
             </div>
@@ -158,16 +162,16 @@ export default function ClientsPage() {
 
           {/* نوع العميل */}
           <div>
-            <SectionLabel>نوع العميل</SectionLabel>
+            <SectionLabel>{t('client_type')}</SectionLabel>
             <div className="grid grid-cols-2 gap-3">
-              {(['business', 'individual'] as const).map(t => {
-                const active = form.client_type === t;
-                const isBiz = t === 'business';
+              {(['business', 'individual'] as const).map(ct => {
+                const active = form.client_type === ct;
+                const isBiz = ct === 'business';
                 return (
-                  <button type="button" key={t} onClick={() => update('client_type', t)}
+                  <button type="button" key={ct} onClick={() => update('client_type', ct)}
                     className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-muted)]'}`}>
-                    <span className="text-xl">{isBiz ? '🏢' : '👤'}</span>
-                    <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? 'شركة' : 'فرد'}</span>
+                    <span className="text-xl">{isBiz ? <Building2 size={20} strokeWidth={1.5} /> : <User size={20} strokeWidth={1.5} />}</span>
+                    <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
                     <span className="text-[9px] text-[var(--color-text-muted)]">{isBiz ? 'Business' : 'Individual'}</span>
                   </button>
                 );
@@ -177,32 +181,32 @@ export default function ClientsPage() {
 
           {/* بيانات الشركة */}
           <div>
-            <SectionLabel>بيانات الشركة</SectionLabel>
+            <SectionLabel>{t('company_data')}</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <InputField label="اسم الشركة" required placeholder="الاسم الرسمي للشركة" value={form.company_name} onChange={e => update('company_name', e.target.value)} />
-              <InputField label="الشخص المسؤول" required placeholder="اسم المسؤول عن الحساب" value={form.contact_person} onChange={e => update('contact_person', e.target.value)} />
-              <InputField label="البريد الإلكتروني" required type="email" placeholder="email@example.com" value={form.email} onChange={e => update('email', e.target.value)} dir="ltr" />
-              <InputField label="رقم الهاتف" required type="tel" placeholder="05xxxxxxxx" value={form.phone} onChange={e => update('phone', e.target.value)} dir="ltr" />
+              <InputField label={t('company_name')} required placeholder={t('company_name_ph')} value={form.company_name} onChange={e => update('company_name', e.target.value)} />
+              <InputField label={t('contact_person')} required placeholder={t('contact_person_ph')} value={form.contact_person} onChange={e => update('contact_person', e.target.value)} />
+              <InputField label={t('email')} required type="email" placeholder={t('email_ph')} value={form.email} onChange={e => update('email', e.target.value)} dir="ltr" />
+              <InputField label={t('phone')} required type="tel" placeholder={t('phone_ph')} value={form.phone} onChange={e => update('phone', e.target.value)} dir="ltr" />
             </div>
           </div>
 
           {/* تفاصيل إضافية */}
           <div>
-            <SectionLabel>تفاصيل إضافية</SectionLabel>
+            <SectionLabel>{t('additional_details')}</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <InputField label="البلد" placeholder="المملكة العربية السعودية" value={form.country} onChange={e => update('country', e.target.value)} />
-              <InputField label="المجال" placeholder="تقنية، عقارات، صحة..." value={form.industry} onChange={e => update('industry', e.target.value)} />
-              <InputField label="تاريخ الميلاد" type="date" value={form.date_of_birth} onChange={e => update('date_of_birth', e.target.value)} />
+              <InputField label={t('country')} placeholder={t('country_ph')} value={form.country} onChange={e => update('country', e.target.value)} />
+              <InputField label={t('industry')} placeholder={t('industry_ph')} value={form.industry} onChange={e => update('industry', e.target.value)} />
+              <InputField label={t('dob')} type="date" value={form.date_of_birth} onChange={e => update('date_of_birth', e.target.value)} />
             </div>
           </div>
 
           {/* كلمة المرور */}
           <div>
-            <SectionLabel>كلمة المرور</SectionLabel>
+            <SectionLabel>{t('manager_password')}</SectionLabel>
             <div className="flex items-center justify-between bg-[var(--color-card-border)]/30 rounded-lg px-4 py-3 border border-[var(--color-card-border)] mb-3">
               <div>
-                <p className="text-sm font-medium text-[var(--color-foreground)]">كلمة المرور التلقائية</p>
-                <p className="text-[11px] text-[var(--color-text-muted)]">سيتم إرسالها للعميل عبر البريد الإلكتروني</p>
+              <p className="text-sm font-medium text-[var(--color-foreground)]">{t('auto_password')}</p>
+              <p className="text-[11px] text-[var(--color-text-muted)]">{t('auto_password_hint')}</p>
               </div>
               <button type="button" onClick={() => setAutoPassword(!autoPassword)}
                 className={`relative w-10 h-5 rounded-full transition-colors ${autoPassword ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`}>
@@ -210,24 +214,24 @@ export default function ClientsPage() {
               </button>
             </div>
             {!autoPassword && (
-              <PasswordField value={form.password} onChange={(v) => update('password', v)} label="كلمة المرور" placeholder="أدخل كلمة مرور قوية" showStrength showRequirements />
+              <PasswordField value={form.password} onChange={(v) => update('password', v)} label={t('manager_password')} placeholder={t('manager_pw_ph')} showStrength showRequirements />
             )}
           </div>
 
           {/* ملاحظات */}
           <div>
-            <SectionLabel>ملاحظات</SectionLabel>
-            <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder="أي معلومات إضافية عن العميل..." value={form.notes} onChange={e => update('notes', e.target.value)} />
+            <SectionLabel>{t('notes')}</SectionLabel>
+            <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('notes_ph')} value={form.notes} onChange={e => update('notes', e.target.value)} />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-[var(--color-foreground)] cursor-pointer">
             <input type="checkbox" checked={form.send_email} onChange={(e) => setForm({ ...form, send_email: e.target.checked })} className="rounded" />
-            إرسال بيانات الدخول إلى البريد الإلكتروني للعميل
+            {t('send_login_email')}
           </label>
 
           <div className="flex gap-2 pt-1">
-            <button type="submit" className="bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors">إنشاء العميل</button>
-            <button type="button" onClick={() => setShowCreate(false)} className="bg-[var(--color-input-fill)] px-6 py-2.5 rounded-lg text-sm hover:bg-[var(--color-card-border)] transition-colors">إلغاء</button>
+            <button type="submit" className="bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors">{t('create')}</button>
+            <button type="button" onClick={() => setShowCreate(false)} className="bg-[var(--color-input-fill)] px-6 py-2.5 rounded-lg text-sm hover:bg-[var(--color-card-border)] transition-colors">{t('cancel')}</button>
           </div>
         </form>
       )}
@@ -236,12 +240,12 @@ export default function ClientsPage() {
         <table className="w-full text-sm">
           <thead className="bg-[var(--color-card-border)] border-b border-[var(--color-card-border)]">
             <tr>
-              <th className="text-right p-4 font-medium">Company</th>
-              <th className="text-right p-4 font-medium">Type</th>
-              <th className="text-right p-4 font-medium">Contact Person</th>
-              <th className="text-right p-4 font-medium">Status</th>
-              <th className="text-right p-4 font-medium">Workspace</th>
-              <th className="text-left p-4 font-medium"></th>
+              <th className="text-center p-4 font-medium">{t('col_company')}</th>
+              <th className="text-center p-4 font-medium">{t('col_type')}</th>
+              <th className="text-center p-4 font-medium">{t('col_contact')}</th>
+              <th className="text-center p-4 font-medium">{t('col_status')}</th>
+              <th className="text-center p-4 font-medium">{t('col_workspace')}</th>
+              <th className="text-center p-4 font-medium">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -255,10 +259,10 @@ export default function ClientsPage() {
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded-full text-xs ${client.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-zinc-700/30 text-zinc-400'}`}>{client.status}</span>
                 </td>
-                <td className="p-4">{client.workspace ? (client.workspace.status === 'active' ? '🟢 نشط' : '⏳ غير مفعل') : '—'}</td>
-                <td className="p-4 text-left whitespace-nowrap">
-                  {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title="إعدادات">⚙️</Link>}
-                  {!isSA && <button onClick={() => deleteClient(client.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title="حذف">🗑️</button>}
+                <td className="p-4">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
+                <td className="p-4 text-end whitespace-nowrap">
+                  {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+                  {!isSA && <button onClick={() => deleteClient(client.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
                 </td>
               </tr>
             ))}
@@ -267,10 +271,10 @@ export default function ClientsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 p-4 border-t border-[var(--color-card-border)]">
             <button onClick={() => { const p = page - 1; setPage(p); fetchClients(p); }} disabled={page <= 1}
-              className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">السابق</button>
-            <span className="text-sm text-[var(--color-text-secondary)]">الصفحة {page} من {totalPages}</span>
+              className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">{t('previous')}</button>
+            <span className="text-sm text-[var(--color-text-secondary)]">{t('page_of', { page, total: totalPages })}</span>
             <button onClick={() => { const p = page + 1; setPage(p); fetchClients(p); }} disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">التالي</button>
+              className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">{t('next')}</button>
           </div>
         )}
       </div>

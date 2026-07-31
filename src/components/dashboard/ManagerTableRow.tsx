@@ -30,7 +30,7 @@ export default function ManagerTableRow({ manager, index, expanded, onToggle }: 
   manager: Manager; index: number; expanded?: boolean; onToggle?: () => void;
 }) {
   const c = avatarColors[index % avatarColors.length];
-  const initials = manager.name?.slice(0, 2) || '؟';
+  const initials = manager.name?.slice(0, 2) || '?';
   const pending = manager.pending_count ?? 0;
   const badge = badgeStatus[pending] || { bg: 'var(--gold-soft)', color: 'var(--color-gold)' };
 

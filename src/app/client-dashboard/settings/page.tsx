@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { useTranslations } from 'next-intl';
 import { isClientAuthenticated, getClient, clientLogout } from '@/lib/client-auth';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
@@ -14,6 +15,8 @@ function resolveFileUrl(url: string): string {
 }
 
 export default function ClientSettingsPage() {
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const session = getClient();
@@ -76,18 +79,18 @@ export default function ClientSettingsPage() {
         <h1 className="text-lg font-bold">ShadApp</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-[var(--color-text-secondary)]">{session?.company_name}</span>
-          <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-zinc-200 px-3 py-1.5 rounded-lg">تسجيل خروج</button>
+          <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-zinc-200 px-3 py-1.5 rounded-lg">{t('logout')}</button>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto p-6 space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/client-dashboard')} className="text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">&larr; رجوع</button>
-          <h2 className="text-xl font-bold">الإعدادات</h2>
+          <button onClick={() => router.push('/client-dashboard')} className="text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">&larr; {tc('back')}</button>
+          <h2 className="text-xl font-bold">{t('settings_title')}</h2>
         </div>
 
         {success && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-700 text-sm">تم حفظ الإعدادات بنجاح</div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-700 text-sm">{t('settings_saved')}</div>
         )}
 
         <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">
@@ -103,32 +106,32 @@ export default function ClientSettingsPage() {
             </div>
             <button onClick={() => avatarInputRef.current?.click()} type="button"
               className="bg-[var(--color-input-fill)] hover:bg-zinc-200 px-4 py-2 rounded-lg text-sm transition-colors">
-              تغيير الصورة
+              {t('change_photo')}
             </button>
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">الاسم الظاهر</label>
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('display_name')}</label>
             <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">البريد الإلكتروني</label>
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
             <input value={session?.email || ''} disabled
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-card-border)] text-[var(--color-text-disabled)]" dir="ltr" />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">تاريخ الميلاد</label>
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('dob')}</label>
             <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           </div>
 
           <button onClick={save} disabled={saving}
             className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">
-            {saving ? '...' : 'حفظ الإعدادات'}
+            {saving ? '...' : t('save_settings')}
           </button>
         </div>
       </main>

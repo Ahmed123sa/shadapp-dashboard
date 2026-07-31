@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useTranslations } from 'next-intl';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
+  const t = useTranslations('dashboard');
   const [payments, setPayments] = useState<any[]>([]);
   const [methods, setMethods] = useState<string[]>([]);
   const [payableContract, setPayableContract] = useState<any>(null);
@@ -43,7 +45,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
         }
       } catch (e) {
         console.error(e);
-        setError('فشل تحميل المدفوعات');
+        setError(t('load_error'));
       }
     };
     loadAll().finally(() => setLoading(false));
@@ -52,8 +54,8 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   }, [wsId]);
 
   const methodLabels: Record<string, string> = {
-    bank_transfer: 'تحويل بنكي', swift: 'SWIFT', corporate_account: 'حساب شركة',
-    instapay: 'Instapay', vodafone_cash: 'فودافون كاش', mobile_wallet: 'محفظة موبايل',
+    bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
+    instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
   };
 
   const startEdit = (p: any) => {
@@ -112,8 +114,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const isFullyPaid = totalPaid >= grandTotal && grandTotal > 0;
   const progress = grandTotal > 0 ? Math.min(totalPaid / grandTotal, 1) : 0;
 
-  const installmentLabels = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة'];
-  const installmentName = (i: number) => i < installmentLabels.length ? `دفعة ${installmentLabels[i]}` : `دفعة ${i + 1}`;
+  const installmentName = (i: number) => t('pay_installment_num', { num: i + 1 });
 
   return (
     <div className="space-y-3">
@@ -123,7 +124,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           <>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[var(--color-success)] text-lg">✅</span>
-              <p className="text-sm font-bold text-[var(--color-success)]">تم الدفع بالكامل</p>
+              <p className="text-sm font-bold text-[var(--color-success)]">{t('pay_fully_paid')}</p>
             </div>
             <p className="text-2xl font-bold text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
               {totalPaid.toFixed(2)} {contractCurrency}
@@ -131,16 +132,16 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           </>
         ) : (
           <>
-            <p className="text-xs text-[var(--color-gold)] font-medium">إجمالي المدفوع</p>
+            <p className="text-xs text-[var(--color-gold)] font-medium">{t('pay_total_paid')}</p>
             <p className="text-2xl font-bold text-[var(--color-gold)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
             <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-              من أصل {grandTotal.toFixed(2)} {contractCurrency} — متبقي {remaining.toFixed(2)}
+              {t('pay_of_prefix', { total: grandTotal.toFixed(2), currency: contractCurrency, remaining: remaining.toFixed(2) })}
             </p>
             {taxSummary && taxSummary.tax_percentage > 0 && (
               <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                القيمة: {Number(taxSummary.contracts_total).toFixed(2)} + ضريبة {taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
+                {t('pay_value_detail', { value: Number(taxSummary.contracts_total).toFixed(2), taxPercent: taxSummary.tax_percentage, taxAmount: Number(taxSummary.tax_amount).toFixed(2), currency: contractCurrency })}
               </p>
             )}
           </>
@@ -155,7 +156,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
       {/* طرق الدفع المتاحة */}
       {methods.length > 0 && (
         <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-          <p className="text-sm font-medium mb-2">طرق الدفع المتاحة:</p>
+          <p className="text-sm font-medium mb-2">{t('pay_method_ph')}:</p>
           <div className="flex flex-wrap gap-2">
             {methods.map((m) => (
               <span key={m} className="px-3 py-1 bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-full text-xs font-medium">
@@ -170,7 +171,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
       {!pendingPayment && payableContract && (
         <div className="bg-[var(--color-card)] border border-[var(--color-gold)]/30 rounded-xl p-4">
           <p className="text-sm text-[var(--color-gold)] font-medium">
-            💳 عقد "{payableContract.title}" معتمد — المبلغ: {payableContract.value} ر.س{taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ضريبة` : ''}
+            💳 {t('pay_approved_contract_notice', { title: payableContract.title, value: payableContract.value, taxSuffix: taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ${t('plus_tax')}` : '' })}
           </p>
         </div>
       )}
@@ -182,45 +183,45 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
             <span className="text-2xl">💳</span>
             <div>
               {pendingPayment ? (
-                <p className="font-medium text-blue-800">مطلوب دفع مبلغ {pendingPayment.amount} ر.س</p>
+                <p className="font-medium text-blue-800">{t('pay_required_notice', { amount: pendingPayment.amount })}</p>
               ) : (
                 <p className="font-medium text-blue-800">
-                  إتمام الدفع للعقد "{payableContract?.title || ''}"
+                  {t('pay_complete_notice', { title: payableContract?.title || '' })}
                 </p>
               )}
-              <p className="text-xs text-[var(--color-gold)] mt-0.5">يرجى رفع إثبات الدفع بعد تحويل المبلغ</p>
+              <p className="text-xs text-[var(--color-gold)] mt-0.5">{t('pay_upload_proof_hint')}</p>
             </div>
           </div>
           <div className="space-y-3">
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="المبلغ"
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')}
               className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
             <select value={currency} onChange={(e) => setCurrency(e.target.value)}
               className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-              <option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option><option value="EUR">يورو (EUR)</option>
-              <option value="AED">درهم إماراتي (AED)</option><option value="EGP">جنيه مصري (EGP)</option><option value="KWD">دينار كويتي (KWD)</option>
-              <option value="QAR">ريال قطري (QAR)</option><option value="BHD">دينار بحريني (BHD)</option><option value="OMR">ريال عماني (OMR)</option>
+              <option value="SAR">{t('currency_sar')}</option><option value="USD">{t('currency_usd')}</option><option value="EUR">{t('currency_eur')}</option>
+              <option value="AED">{t('currency_aed')}</option><option value="EGP">{t('currency_egp')}</option><option value="KWD">{t('currency_kwd')}</option>
+              <option value="QAR">{t('currency_qar')}</option><option value="BHD">{t('currency_bhd')}</option><option value="OMR">{t('currency_omr')}</option>
             </select>
             <select value={methodType} onChange={(e) => setMethodType(e.target.value)}
               className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-              <option value="">طريقة الدفع</option>
+              <option value="">{t('pay_method_ph')}</option>
               {methods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
             </select>
             <label className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)]">
               <input type="file" accept="image/*,.pdf" className="hidden"
                 onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
               <span className="border border-blue-200 rounded-lg px-4 py-2 bg-[var(--color-card)]">
-                {proofFile ? proofFile.name : '+ اختيار ملف الإثبات'}
+                {proofFile ? proofFile.name : t('pay_choose_proof')}
               </span>
             </label>
             <div className="flex gap-2">
               <button onClick={submit} disabled={saving || !amount || !methodType}
                 className="flex-1 bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-                {saving ? 'جاري الحفظ...' : editingPayment ? 'تحديث' : 'إرسال إثبات الدفع'}
+                {saving ? t('pay_saving') : editingPayment ? t('pay_update') : t('pay_submit_proof')}
               </button>
               {editingPayment && (
                 <button onClick={cancelEdit} type="button"
                   className="bg-[var(--color-input-fill)] px-4 py-2.5 rounded-lg text-sm hover:bg-[var(--color-card-border)]">
-                  إلغاء
+                  {t('pay_cancel')}
                 </button>
               )}
             </div>
@@ -230,14 +231,14 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
 
       {/* قائمة المدفوعات السابقة أو رسالة عدم وجود مدفوعات */}
       {payments.length === 0 && !pendingPayment && !payableContract
-        ? <EmptyState message="لا توجد مدفوعات" />
+        ? <EmptyState message={t('pay_no_payments')} />
         : payments.map((p, idx) => {
           const linkedContract = p.contract;
           const isPending = p.status === 'pending';
           const isApproved = p.status === 'approved';
           const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-disabled)]';
           const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : 'bg-gray-500';
-          const statusText = isApproved ? 'تمت الموافقة' : isPending ? 'قيد الانتظار' : p.status;
+          const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : p.status;
 
           const FILE_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
           const proofRaw = Array.isArray(p.proof_file_url) ? (p.proof_file_url[0] || null) : (p.proof_file_url || null);
@@ -275,12 +276,12 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
               {proofUrl && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs">📎</span>
-                  <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold)] hover:underline">عرض إثبات الدفع</a>
+                  <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold)] hover:underline">{t('pay_view_proof')}</a>
                 </div>
               )}
               {isPending && (
                 <div className="pt-2">
-                  <button onClick={() => startEdit(p)} className="w-full text-sm text-[var(--color-gold)] hover:underline font-medium">✏️ تعديل</button>
+                  <button onClick={() => startEdit(p)} className="w-full text-sm text-[var(--color-gold)] hover:underline font-medium">{t('pay_edit')}</button>
                 </div>
               )}
             </div>

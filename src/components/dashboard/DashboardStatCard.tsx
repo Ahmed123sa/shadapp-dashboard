@@ -3,7 +3,7 @@
 interface DashboardStatCardProps {
   label: string;
   value: number | string;
-  icon: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   color?: 'default' | 'gold' | 'crimson' | 'red';
   subtitle?: string;
 }
@@ -17,11 +17,12 @@ const colorMap = {
 
 export default function DashboardStatCard({ label, value, icon, color = 'default', subtitle }: DashboardStatCardProps) {
   const c = colorMap[color] || colorMap.default;
+  const Icon = icon;
   return (
     <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl p-3.5 stat-card-hover">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] text-[var(--color-text-secondary)]">{label}</span>
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-gold-soft)] flex items-center justify-center text-[13px]">{icon}</div>
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-gold-soft)] flex items-center justify-center"><Icon size={16} strokeWidth={1.5} /></div>
       </div>
       <div className="text-[22px] font-bold" style={{ fontFamily: "'Playfair Display', serif", color: c.val || undefined }}>
         {value}

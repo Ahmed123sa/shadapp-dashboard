@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 
 export default function UploadFileModal({ wsId, definitions, onClose, onCreated }: {
@@ -9,6 +10,7 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
   onClose: () => void;
   onCreated: (file: any) => void;
 }) {
+  const t = useTranslations('dashboard');
   const [file, setFile] = useState<File | null>(null);
   const [definitionId, setDefinitionId] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,7 +29,7 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
       if (data) onCreated(data.file);
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'فشل رفع الملف');
+      setError(e?.response?.data?.message || e?.message || t('file_upload_failed'));
     }
     setSaving(false);
   };
@@ -36,26 +38,26 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
       <div className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">رفع مستند</h3>
+          <h3 className="font-bold">{t('file_upload_title')}</h3>
           <button onClick={onClose} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
         </div>
 
         <select value={definitionId} onChange={(e) => setDefinitionId(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-          <option value="">بدون تصنيف</option>
+          <option value="">{t('file_no_category')}</option>
           {definitions.map((d) => <option key={d.id} value={d.id}>{d.name}{d.is_required ? ' *' : ''}</option>)}
         </select>
 
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => { setFile(e.target.files?.[0] || null); setError(''); }} />
         <button type="button" onClick={() => fileRef.current?.click()}
           className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)] border border-blue-200 rounded-lg px-4 py-2 w-full">
-          {file ? file.name : '+ اختيار ملف'}
+          {file ? file.name : t('file_choose_file')}
         </button>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <button onClick={submit} disabled={saving || !file}
           className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-          {saving ? 'جاري الرفع...' : 'رفع'}
+          {saving ? t('file_uploading') : t('file_upload')}
         </button>
       </div>
     </div>

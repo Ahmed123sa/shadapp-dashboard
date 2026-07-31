@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { subscribeToNotifications, disconnectEcho } from '@/lib/echo';
 import { showToast } from './ToastNotification';
 
 export default function NotificationBell() {
+  const t = useTranslations('dashboard');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -50,19 +52,19 @@ export default function NotificationBell() {
   };
 
   const notificationTab: Record<string, string> = {
-    chat: 'المحادثة',
-    contract_sent: 'العقود',
-    contract_client_approved: 'العقود',
-    contract_client_signed: 'العقود',
-    contract_company_approved: 'العقود',
-    contract_completed: 'العقود',
-    contract_reminder: 'العقود',
-    payment_created: 'المدفوعات',
-    payment_reviewed: 'المدفوعات',
-    workspace_activated: 'المدفوعات',
-    approval_requested: 'الموافقات',
-    approval_responded: 'الموافقات',
-    meeting_reminder: 'الاجتماعات',
+    chat: t('tab_chat'),
+    contract_sent: t('tab_contracts'),
+    contract_client_approved: t('tab_contracts'),
+    contract_client_signed: t('tab_contracts'),
+    contract_company_approved: t('tab_contracts'),
+    contract_completed: t('tab_contracts'),
+    contract_reminder: t('tab_contracts'),
+    payment_created: t('tab_payments'),
+    payment_reviewed: t('tab_payments'),
+    workspace_activated: t('tab_payments'),
+    approval_requested: t('tab_approvals'),
+    approval_responded: t('tab_approvals'),
+    meeting_reminder: t('tab_meetings'),
   };
 
   const getHref = (n: any) => {
@@ -85,11 +87,11 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute left-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
           <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center">
-            <h3 className="text-sm font-bold">الإشعارات</h3>
-            <button onClick={() => { notifications.forEach((n) => { if (!n.read_at) markRead(n.id); }); }} className="text-xs text-[var(--color-gold)] hover:underline">تحديد الكل كمقروء</button>
+            <h3 className="text-sm font-bold">{t('notif_title')}</h3>
+            <button onClick={() => { notifications.forEach((n) => { if (!n.read_at) markRead(n.id); }); }} className="text-xs text-[var(--color-gold)] hover:underline">{t('notif_mark_all_read')}</button>
           </div>
           {notifications.length === 0 ? (
-            <p className="text-xs text-[var(--color-text-disabled)] p-4 text-center">لا توجد إشعارات</p>
+            <p className="text-xs text-[var(--color-text-disabled)] p-4 text-center">{t('notif_empty')}</p>
           ) : (
             notifications.map((n) => (
               <a key={n.id} href={getHref(n)} onClick={(e) => { if (!n.read_at) markRead(n.id); const href = getHref(n); if (href !== '#') { e.preventDefault(); router.push(href); } }}

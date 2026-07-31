@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 type Clause = { id: number; content: string; type: string; sort_order: number };
 type Contract = {
   id: number; title: string; value: string | null; start_date: string | null; end_date: string | null;
@@ -7,6 +9,7 @@ type Contract = {
 };
 
 export default function ChatContractCard({ contract, clientType, onAction }: { contract: Contract; clientType?: string; onAction?: (id: number, action: string) => void }) {
+  const t = useTranslations('dashboard');
   const statusBadge = (s: string) => {
     const m: Record<string, string> = {
       draft: 'bg-zinc-700/30 text-zinc-400', sent: 'bg-blue-900/30 text-blue-400',
@@ -15,9 +18,9 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
       archived: 'bg-zinc-700/30 text-zinc-400',
     };
     const l: Record<string, string> = {
-      draft: 'مسودة', sent: 'مرسل', client_approved: 'تمت موافقة العميل',
-      client_rejected: 'رفض العميل', company_approved: 'تمت موافقة الشركة',
-      completed: 'مكتمل', archived: 'مؤرشف',
+      draft: t('label_draft'), sent: t('label_sent'), client_approved: t('label_client_approved'),
+      client_rejected: t('label_client_rejected_badge'), company_approved: t('label_company_approved_badge'),
+      completed: t('label_completed'), archived: t('label_archived'),
     };
     return <span className={`px-2 py-0.5 rounded-full text-xs ${m[s] || 'bg-zinc-700/30 text-zinc-400'}`}>{l[s] || s}</span>;
   };
@@ -25,20 +28,20 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
   return (
     <div className="border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card)] overflow-hidden">
       <div className="bg-[var(--color-card-border)] px-4 py-2 border-b border-[var(--color-card-border)] flex items-center justify-between">
-        <span className="text-xs font-bold text-[var(--color-gold)]">عقد خدمة</span>
+        <span className="text-xs font-bold text-[var(--color-gold)]">{t('contract_card_service')}</span>
         {statusBadge(contract.status)}
       </div>
       <div className="p-4 space-y-2">
         <h4 className="font-bold text-[var(--color-foreground)]">{contract.title}</h4>
         {contract.value && <p className="text-sm text-[var(--color-text-secondary)]">{contract.value} SAR</p>}
-        {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">قيمة العقد غير شاملة الضريبة</p>}
+        {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_card_excl_vat')}</p>}
         {(contract.start_date || contract.end_date) && (
           <p className="text-xs text-[var(--color-text-disabled)]">
             {contract.start_date && contract.end_date
-              ? `من ${contract.start_date} إلى ${contract.end_date}`
+              ? t('contract_card_from_to', { start: contract.start_date, end: contract.end_date })
               : contract.start_date
-              ? `يبدأ من ${contract.start_date}`
-              : `ينتهي في ${contract.end_date}`}
+              ? t('contract_card_starts', { start: contract.start_date })
+              : t('contract_card_ends', { end: contract.end_date ?? '' })}
           </p>
         )}
         {contract.clauses?.length > 0 && (
@@ -51,12 +54,12 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
       </div>
       {onAction && contract.status === 'draft' && (
         <div className="px-4 pb-3 flex gap-2 flex-wrap">
-          <button onClick={() => onAction(contract.id, 'send')} className="text-xs bg-[var(--color-primary)] text-white px-3 py-1 rounded-lg hover:bg-[var(--color-primary-dark)]">إرسال للعميل</button>
+          <button onClick={() => onAction(contract.id, 'send')} className="text-xs bg-[var(--color-primary)] text-white px-3 py-1 rounded-lg hover:bg-[var(--color-primary-dark)]">{t('contract_card_send_to_client')}</button>
         </div>
       )}
       {onAction && contract.status === 'company_approved' && (
         <div className="px-4 pb-3 flex gap-2 flex-wrap">
-          <button onClick={() => onAction(contract.id, 'archive')} className="text-xs bg-zinc-500 text-white px-3 py-1 rounded-lg hover:bg-zinc-600">أرشفة</button>
+          <button onClick={() => onAction(contract.id, 'archive')} className="text-xs bg-zinc-500 text-white px-3 py-1 rounded-lg hover:bg-zinc-600">{t('contract_card_archive')}</button>
         </div>
       )}
     </div>

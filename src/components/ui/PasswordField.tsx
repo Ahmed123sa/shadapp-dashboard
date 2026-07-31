@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface PasswordFieldProps {
   value: string;
@@ -20,7 +21,7 @@ export default function PasswordField({
   value,
   onChange,
   label,
-  placeholder = 'أدخل كلمة المرور',
+  placeholder,
   showStrength = true,
   showRequirements = true,
   required = false,
@@ -29,6 +30,8 @@ export default function PasswordField({
   disabled = false,
   name,
 }: PasswordFieldProps) {
+  const t = useTranslations('dashboard');
+  const ph = placeholder || t('pw_default_placeholder');
   const [visible, setVisible] = useState(false);
 
   const hasMinChars = value.length >= 8;
@@ -39,7 +42,7 @@ export default function PasswordField({
   const strengthBar =
     strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-yellow-500' : 'bg-green-500';
   const strengthLabel =
-    strength <= 1 ? 'ضعيف' : strength === 2 ? 'متوسط' : 'قوي';
+    strength <= 1 ? t('pw_strength_weak') : strength === 2 ? t('pw_strength_medium') : t('pw_strength_strong');
   const strengthColor =
     strength <= 1 ? 'text-red-600' : strength === 2 ? 'text-yellow-600' : 'text-green-600';
 
@@ -51,7 +54,7 @@ export default function PasswordField({
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={ph}
           required={!opt ? required : false}
           disabled={disabled}
           name={name}
@@ -86,9 +89,9 @@ export default function PasswordField({
         </div>
       )}
       <div className="space-y-0.5">
-        <Req label="8 أحرف على الأقل" met={hasMinChars} />
-        <Req label="حرف إنجليزي واحد" met={hasLetter} />
-        <Req label="رقم واحد" met={hasDigit} />
+        <Req label={t('pw_req_min_chars')} met={hasMinChars} />
+        <Req label={t('pw_req_letter')} met={hasLetter} />
+        <Req label={t('pw_req_number')} met={hasDigit} />
       </div>
     </div>
   );
