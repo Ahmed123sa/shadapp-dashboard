@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock } from 'lucide-react';
+import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
@@ -29,7 +29,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', country: '', industry: '' });
+  const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', country: '', industry: '', address: '', maps_url: '' });
   const [autoPassword, setAutoPassword] = useState(true);
   const [newCreds, setNewCreds] = useState<any>(null);
   const [createError, setCreateError] = useState('');
@@ -87,7 +87,7 @@ export default function ClientsPage() {
       setClients((prev) => [data.client, ...prev]);
       setNewCreds(data.credentials);
       setShowCreate(false);
-      setForm({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business', country: '', industry: '' });
+      setForm({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business', country: '', industry: '', address: '', maps_url: '' });
       setAutoPassword(true);
       setAvatarFile(null);
       setAvatarPreview('');
@@ -197,6 +197,19 @@ export default function ClientsPage() {
               <InputField label={t('country')} placeholder={t('country_ph')} value={form.country} onChange={e => update('country', e.target.value)} />
               <InputField label={t('industry')} placeholder={t('industry_ph')} value={form.industry} onChange={e => update('industry', e.target.value)} />
               <InputField label={t('dob')} type="date" value={form.date_of_birth} onChange={e => update('date_of_birth', e.target.value)} />
+            </div>
+          </div>
+
+          {/* العنوان والموقع */}
+          <div>
+            <SectionLabel>{t('address_location')}</SectionLabel>
+            <div className="space-y-3">
+              <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('address_ph')} value={form.address} onChange={e => update('address', e.target.value)} />
+              <InputField label={t('maps_link')} placeholder={t('maps_link_ph')} value={form.maps_url} onChange={e => update('maps_url', e.target.value)} />
+              <button type="button" onClick={() => { const q = form.address.trim() || form.maps_url.trim(); if (q) window.open(q.startsWith('http') ? q : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition-colors">
+                <MapPin size={13} strokeWidth={1.5} /> {t('open_on_maps')}
+              </button>
             </div>
           </div>
 

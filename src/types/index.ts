@@ -15,6 +15,11 @@ export interface Client {
   signed_at?: string;
   avatar_url?: string;
   notes?: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  location_address?: string | null;
+  location_updated_at?: string | null;
+  location_updated_by_ip?: string | null;
   workspace?: Workspace | null;
   subUsers: any[];
   payments: any[];

@@ -40,6 +40,14 @@ export default function SettingsPage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sigUploadInputRef = useRef<HTMLInputElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [clauses, setClauses] = useState<any[]>([]);
+  const [clausesLoading, setClausesLoading] = useState(true);
+  const [clauseType, setClauseType] = useState<'fixed' | 'optional'>('optional');
+  const [clauseContent, setClauseContent] = useState('');
+  const [clauseCategory, setClauseCategory] = useState('');
+  const [editingClause, setEditingClause] = useState<any | null>(null);
+  const [clausesMsg, setClausesMsg] = useState('');
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   useEffect(() => {
     api.get('/auth/me').then(({ data }) => {
@@ -60,6 +68,8 @@ export default function SettingsPage() {
         const v = data.settings?.corporate_tax_percentage?.value;
         if (v !== undefined) setTaxPercentage(String(v));
       }).catch(() => {});
+      api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
+        .catch(() => {}).finally(() => setClausesLoading(false));
     }
   }, []);
 
@@ -203,6 +213,69 @@ export default function SettingsPage() {
     } finally {
       setSavingTax(false);
     }
+  };
+
+  const flashClausesMsg = (key: string) => {
+    setClausesMsg(t(key));
+    setTimeout(() => setClausesMsg(''), 3000);
+  };
+
+  const addClause = async () => {
+    if (!clauseContent.trim()) return;
+    const { data } = await api.post('/contract-clause-templates', {
+      type: clauseType,
+      content: clauseContent.trim(),
+      category: clauseCategory.trim() || undefined,
+    }).catch(() => ({ data: null }));
+    if (data) {
+      setClauses((prev) => [...prev, data.template]);
+      setClauseContent('');
+      setClauseCategory('');
+      flashClausesMsg('clause_added');
+    }
+  };
+
+  const updateClause = async (id: number, payload: any) => {
+    const { data } = await api.put(`/contract-clause-templates/${id}`, payload).catch(() => ({ data: null }));
+    if (data) {
+      setClauses((prev) => prev.map((cl) => cl.id === id ? data.template : cl));
+      setEditingClause(null);
+      flashClausesMsg('clause_updated');
+    }
+  };
+
+  const deleteClause = async (id: number) => {
+    if (!confirm(t('delete_clause_confirm'))) return;
+    await api.delete(`/contract-clause-templates/${id}`).catch(() => {});
+    setClauses((prev) => prev.filter((cl) => cl.id !== id));
+    flashClausesMsg('clause_deleted');
+  };
+
+  const saveEditClause = () => {
+    if (!editingClause || !editingClause.content.trim()) return;
+    updateClause(editingClause.id, {
+      content: editingClause.content,
+      type: editingClause.type,
+      category: editingClause.category || null,
+    });
+  };
+
+  const onDragStart = (idx: number) => setDragIdx(idx);
+  const onDragOver = (e: React.DragEvent) => e.preventDefault();
+  const onDrop = (targetIdx: number) => {
+    if (dragIdx === null || dragIdx === targetIdx) return;
+    setClauses((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+    setDragIdx(null);
+  };
+
+  const saveOrder = async () => {
+    const { data } = await api.post('/contract-clause-templates/reorder', { ordered_ids: clauses.map((cl) => cl.id) }).catch(() => ({ data: null }));
+    if (data) setClauses(data.templates);
   };
 
   return (
@@ -355,6 +428,93 @@ export default function SettingsPage() {
             {savingTax ? '...' : t('save')}
           </button>
         </div>
+      </div>}
+
+      {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">{t('contract_clauses')}</h2>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('clauses_description')}</p>
+        </div>
+        {clausesMsg && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">{clausesMsg}</div>}
+
+        <div className="border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            <select value={clauseType} onChange={(e) => setClauseType(e.target.value as 'fixed' | 'optional')}
+              className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm">
+              <option value="fixed">{t('clause_fixed')}</option>
+              <option value="optional">{t('clause_optional')}</option>
+            </select>
+            <input value={clauseCategory} onChange={(e) => setClauseCategory(e.target.value)}
+              className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm w-40" placeholder={t('clause_category_ph')} />
+          </div>
+          <textarea value={clauseContent} onChange={(e) => setClauseContent(e.target.value)}
+            className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm w-full min-h-[70px]"
+            placeholder={t('clause_content_ph')} />
+          <button onClick={addClause} className="bg-[var(--color-primary)] text-white px-5 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">
+            {t('add_clause')}
+          </button>
+        </div>
+
+        {clauses.length > 0 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('reorder_hint')}</p>
+            <button onClick={saveOrder} className="text-xs text-[var(--color-gold)] hover:underline">{t('save_order')}</button>
+          </div>
+        )}
+
+        {clausesLoading ? (
+          <p className="text-sm text-[var(--color-text-secondary)] py-4">{t('loading_clauses')}</p>
+        ) : clauses.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-secondary)] py-4">{t('clauses_empty')}</p>
+        ) : (
+          <div className="space-y-2">
+            {clauses.map((cl, idx) => (
+              <div key={cl.id} draggable onDragStart={() => onDragStart(idx)} onDragOver={onDragOver} onDrop={() => onDrop(idx)}
+                className={`border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)] transition ${dragIdx === idx ? 'opacity-50' : 'opacity-100'} ${editingClause?.id === cl.id ? 'ring-1 ring-[var(--color-primary)]' : ''}`}>
+                {editingClause?.id === cl.id ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <select value={editingClause.type} onChange={(e) => setEditingClause({ ...editingClause, type: e.target.value })}
+                        className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-1.5 text-xs">
+                        <option value="fixed">{t('clause_fixed')}</option>
+                        <option value="optional">{t('clause_optional')}</option>
+                      </select>
+                      <input value={editingClause.category || ''} onChange={(e) => setEditingClause({ ...editingClause, category: e.target.value })}
+                        className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-1.5 text-xs w-32" placeholder={t('clause_category_ph')} />
+                    </div>
+                    <textarea value={editingClause.content} onChange={(e) => setEditingClause({ ...editingClause, content: e.target.value })}
+                      className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm w-full" />
+                    <div className="flex gap-2">
+                      <button onClick={saveEditClause} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-xs hover:bg-[var(--color-primary-dark)]">{t('save')}</button>
+                      <button onClick={() => setEditingClause(null)} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-2">{t('cancel')}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <span className="cursor-grab text-[var(--color-text-disabled)] select-none" title={t('reorder_hint')}>⠿</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${cl.type === 'fixed' ? 'bg-red-900/30 text-red-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                          {cl.type === 'fixed' ? t('clause_fixed') : t('clause_optional')}
+                        </span>
+                        {cl.category && <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]">{cl.category}</span>}
+                        {cl.is_active ? <span className="text-[10px] text-emerald-500">{t('active')}</span> : <span className="text-[10px] text-[var(--color-text-disabled)]">{t('inactive')}</span>}
+                      </div>
+                      <p className="text-sm mt-1">{cl.content}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => updateClause(cl.id, { is_active: !cl.is_active })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] px-1.5 py-1">
+                        {cl.is_active ? t('deactivate') : t('activate')}
+                      </button>
+                      <button onClick={() => setEditingClause({ id: cl.id, content: cl.content, type: cl.type, category: cl.category })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1.5 py-1">{t('edit')}</button>
+                      <button onClick={() => deleteClause(cl.id)} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500 px-1.5 py-1">{t('delete')}</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>}
 
       <button onClick={saveProfile} disabled={saving}

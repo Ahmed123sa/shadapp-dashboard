@@ -1,16 +1,14 @@
 import axios from 'axios';
 
+// All requests go to the same-origin /api/proxy/* route handler, never
+// directly to the Laravel origin. The proxy attaches the Sanctum token
+// server-side from an httpOnly cookie — the browser/this axios instance
+// never sees or handles the token itself, which is the point (an XSS bug
+// elsewhere in the app can no longer steal it via localStorage).
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+  baseURL: '/api/proxy',
   headers: { Accept: 'application/json' },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token') || localStorage.getItem('client_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
@@ -27,11 +25,14 @@ api.interceptors.response.use(
     }
 
     if (err.response?.status === 401) {
-      const isClient = !!localStorage.getItem('client_token');
-      localStorage.removeItem('token');
+      const isClient = !!localStorage.getItem('client');
       localStorage.removeItem('user');
-      localStorage.removeItem('client_token');
       localStorage.removeItem('client');
+      try {
+        await fetch('/api/session/logout', { method: 'POST' });
+      } catch {
+        // Best-effort — still redirect below even if this fails.
+      }
       if (typeof window !== 'undefined') window.location.href = isClient ? '/client-login' : '/login';
     }
     return Promise.reject(err);

@@ -50,7 +50,6 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
   const create = async () => {
     if (!form.title) return;
     const clauses: any[] = [];
-    fixedTemplates.forEach((t: any) => clauses.push({ content: t.content, type: 'fixed' }));
     optionalTemplates.forEach((t: any) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional' }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom' }));
 

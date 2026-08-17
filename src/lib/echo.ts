@@ -3,6 +3,33 @@ import Pusher from 'pusher-js';
 import { getUser } from './auth';
 import { getClient } from './client-auth';
 
+// Private-channel auth used to attach the Sanctum bearer token read from
+// localStorage. The token now lives only in an httpOnly cookie, so instead
+// we point channel auth at the same-origin /api/proxy route (which reads
+// that cookie server-side) and let the browser send the cookie itself via
+// `credentials: 'include'`. See src/app/api/proxy/[...path]/route.ts.
+function channelAuthCustomHandler() {
+  return {
+    customHandler: (
+      { socketId, channelName }: { socketId: string; channelName: string },
+      callback: (error: Error | null, data: any) => void
+    ) => {
+      fetch('/api/proxy/broadcasting/auth', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ socket_id: socketId, channel_name: channelName }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`Channel auth failed: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => callback(null, data))
+        .catch((err) => callback(err, null));
+    },
+  };
+}
+
 let echoInstance: Echo<any> | null = null;
 
 export function getEcho(): Echo<any> | null {
@@ -12,18 +39,12 @@ export function getEcho(): Echo<any> | null {
   const user = getUser();
   if (!user) return null;
 
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-
   (window as any).Pusher = Pusher;
 
   echoInstance = new Echo({
     broadcaster: 'reverb',
     key: process.env.NEXT_PUBLIC_REVERB_KEY || 'shadapp-key',
-    authEndpoint: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/broadcasting/auth`,
-    auth: {
-      headers: { Authorization: `Bearer ${token}` },
-    },
+    channelAuthorization: channelAuthCustomHandler(),
     reverb: {
       driver: 'reverb',
       host: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
@@ -41,18 +62,15 @@ export function getClientEcho(): Echo<any> | null {
   if (typeof window === 'undefined') return null;
   if (clientEchoInstance) return clientEchoInstance;
 
-  const token = localStorage.getItem('client_token');
-  if (!token) return null;
+  const client = getClient();
+  if (!client) return null;
 
   (window as any).Pusher = Pusher;
 
   clientEchoInstance = new Echo({
     broadcaster: 'reverb',
     key: process.env.NEXT_PUBLIC_REVERB_KEY || 'shadapp-key',
-    authEndpoint: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/broadcasting/auth`,
-    auth: {
-      headers: { Authorization: `Bearer ${token}` },
-    },
+    channelAuthorization: channelAuthCustomHandler(),
     reverb: {
       driver: 'reverb',
       host: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',

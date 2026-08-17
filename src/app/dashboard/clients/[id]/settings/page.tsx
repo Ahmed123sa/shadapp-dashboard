@@ -7,7 +7,7 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
-import { Building2, User } from 'lucide-react';
+import { Building2, User, MapPin } from 'lucide-react';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -32,7 +32,7 @@ export default function ClientSettingsPage() {
   const [form, setForm] = useState({
     company_name: '', contact_person: '', phone: '', email: '',
     country: '', industry: '', notes: '', date_of_birth: '', password: '',
-    client_type: 'business' as 'business' | 'individual',
+    client_type: 'business' as 'business' | 'individual', address: '', maps_url: '',
   });
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +51,8 @@ export default function ClientSettingsPage() {
         date_of_birth: c.date_of_birth || '',
         password: '',
         client_type: c.client_type || 'business',
+        address: c.address || '',
+        maps_url: c.maps_url || '',
       });
       if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
     }).catch(() => {}).finally(() => setLoading(false));
@@ -86,6 +88,8 @@ export default function ClientSettingsPage() {
         notes: form.notes || null,
         date_of_birth: form.date_of_birth || null,
         client_type: form.client_type,
+        address: form.address || null,
+        maps_url: form.maps_url || null,
       };
       if (form.password) payload.password = form.password;
       await api.put(`/clients/${id}`, payload);
@@ -194,6 +198,26 @@ export default function ClientSettingsPage() {
             <label className="text-xs text-[var(--color-text-secondary)]">{t('notes')}</label>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full resize-none" rows={3} />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('address_location')}</label>
+            <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
+              placeholder={t('address_ph')}
+              className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full resize-none" rows={2} />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('maps_link')}</label>
+            <div className="flex gap-2">
+              <input value={form.maps_url} onChange={(e) => setForm({ ...form, maps_url: e.target.value })}
+                placeholder={t('maps_link_ph')} dir="ltr"
+                className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
+              <button type="button"
+                onClick={() => { const q = form.address.trim() || form.maps_url.trim(); if (q) window.open(q.startsWith('http') ? q : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition-colors whitespace-nowrap">
+                <MapPin size={13} strokeWidth={1.5} /> {t('open_on_maps')}
+              </button>
+            </div>
+            <p className="text-[11px] text-[var(--color-text-muted)]">{t('maps_link_hint')}</p>
           </div>
         </div>
 

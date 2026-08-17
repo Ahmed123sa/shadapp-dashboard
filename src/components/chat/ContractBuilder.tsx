@@ -33,7 +33,6 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   const create = async () => {
     if (!form.title) return;
     const clauses: any[] = [];
-    fixedTemplates.forEach((t) => clauses.push({ content: t.content, type: 'fixed', sort_order: clauses.length }));
     optionalTemplates.forEach((t) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional', sort_order: clauses.length }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom', sort_order: clauses.length }));
 

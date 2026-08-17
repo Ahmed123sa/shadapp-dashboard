@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -21,6 +21,7 @@ import ApprovalsTab from '@/components/approvals/ApprovalsTab';
 import MeetingsTab from '@/components/meetings/MeetingsTab';
 import CalendarTab from '@/components/calendar/CalendarTab';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
+import ClientProfileTab from '@/components/clients/ClientProfileTab';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -30,10 +31,11 @@ function resolveFileUrl(url: string): string {
   return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
 }
 
-const TABS = ['chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
+const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Record<Tab, string> = {
+  profile: 'tab_client_profile',
   chat: 'tab_chat',
   files: 'tab_files',
   contracts: 'tab_contracts',
@@ -58,6 +60,11 @@ export default function ClientWorkspace() {
   }, [searchParams]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
+
+  useEffect(() => {
+    tabRefs.current[activeTab]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeTab]);
 
   const load = () => api.get(`/clients/${id}`).then(({ data }) => { setClient(data.client); }).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, [id]);
@@ -109,14 +116,14 @@ export default function ClientWorkspace() {
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
         <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
           {TABS.map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+            <button key={tab} ref={(el) => { tabRefs.current[tab] = el; }} onClick={() => setActiveTab(tab)}
               className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
               {t(TAB_LABELS[tab])}
             </button>
           ))}
         </div>
         <div className="p-5">
-          {wsId ? <TabContent tab={activeTab} wsId={wsId} client={client} onClientRefresh={load} /> :
+          {wsId ? <TabContent tab={activeTab} wsId={wsId} client={client} onClientRefresh={load} onNavigate={(tab) => setActiveTab(tab)} /> :
             <NoWorkspace client={client} />}
         </div>
       </div>
@@ -135,9 +142,10 @@ export default function ClientWorkspace() {
   );
 }
 
-function TabContent({ tab, wsId, client, onClientRefresh }: { tab: Tab; wsId: number; client: Client; onClientRefresh?: () => void }) {
+function TabContent({ tab, wsId, client, onClientRefresh, onNavigate }: { tab: Tab; wsId: number; client: Client; onClientRefresh?: () => void; onNavigate?: (tab: Tab) => void }) {
   const wsActive = client.workspace?.status === 'active';
   switch (tab) {
+    case 'profile': return <ClientProfileTab clientId={client.id} onNavigate={(t) => onNavigate?.(t as Tab)} />;
     case 'chat': return <ChatTab wsId={wsId} wsActive={wsActive} clientType={client.client_type} />;
     case 'files': return <FilesTab wsId={wsId} />;
     case 'contracts': return <ContractsTab wsId={wsId} clientType={client.client_type} />;

@@ -32,7 +32,7 @@ export default function ClientLoginPage() {
             <Link href="/client-dashboard" className="bg-[#941414] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
               {t('client_enter_dashboard')}
             </Link>
-            <button onClick={() => { localStorage.removeItem('client_token'); localStorage.removeItem('client'); localStorage.removeItem('sub_user_token'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); window.location.reload(); }}
+            <button onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch {} window.location.reload(); }}
               className="bg-white/10 text-white/70 px-6 py-2 rounded-lg text-sm hover:bg-white/20">
               {t('client_logout_btn')}
             </button>
