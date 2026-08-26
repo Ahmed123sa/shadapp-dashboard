@@ -110,7 +110,11 @@ export default function ClientLoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-white/50 mt-6">
+          <p className="text-center text-sm text-white/50 mt-4">
+            <Link href="/forgot-password?type=client" className="text-[#D4AF37] hover:underline">{t('forgot_link')}</Link>
+          </p>
+
+          <p className="text-center text-sm text-white/50 mt-3">
             <Link href="/login" className="text-[#D4AF37] hover:underline">{t('client_admin_login_link')}</Link>
           </p>
         </div>

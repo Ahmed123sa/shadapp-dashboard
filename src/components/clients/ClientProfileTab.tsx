@@ -67,9 +67,9 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadActivity(); }, [loadActivity]);
 
-  const confirmLocation = async (lat: number, lng: number) => {
+  const confirmLocation = async (lat: number, lng: number, address: string) => {
     try {
-      await api.post(`/clients/${clientId}/location`, { latitude: lat, longitude: lng });
+      await api.post(`/clients/${clientId}/location`, { latitude: lat, longitude: lng, address: address || undefined });
       setMsg(t('profile_check_in_success'));
       setShowLocationPicker(false);
       load();
@@ -210,6 +210,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
         <LocationPickerModal
           initialLat={loc?.latitude}
           initialLng={loc?.longitude}
+          initialAddress={loc?.address || c.address}
           onConfirm={confirmLocation}
           onClose={() => setShowLocationPicker(false)}
         />

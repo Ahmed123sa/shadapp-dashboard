@@ -13,6 +13,14 @@ function resolveFileUrl(url: string): string {
   return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
 }
 
+// The backend has no `signature_type` field on users — signatures are
+// distinguished by shape, not a stored flag. Detecting it here directly
+// avoids the bug where an uploaded/drawn image signature would render as
+// raw path text instead of the actual image.
+function isImageSignature(val: string | null | undefined) {
+  return !!val && (val.startsWith('/storage/') || val.startsWith('http'));
+}
+
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const [user, setUser] = useState(getUser());
@@ -59,7 +67,7 @@ export default function SettingsPage() {
       if (u.date_of_birth) setDateOfBirth(String(u.date_of_birth).substring(0, 10));
       if (u.avatar_url) setAvatarPreview(resolveFileUrl(u.avatar_url));
       if (u.signature_data) {
-        setSavedSignature({ data: u.signature_data, type: u.signature_type || 'text' });
+        setSavedSignature({ data: u.signature_data, type: isImageSignature(u.signature_data) ? 'image' : 'text' });
       }
       localStorage.setItem('user', JSON.stringify(u));
     }).catch(() => {});
@@ -170,7 +178,7 @@ export default function SettingsPage() {
       }
       const { data } = await api.post('/auth/sign', form);
       if (data.user?.signature_data) {
-        setSavedSignature({ data: data.user.signature_data, type: data.user.signature_type || 'image' });
+        setSavedSignature({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text' });
         localStorage.setItem('user', JSON.stringify(data.user));
         setSigSuccess(true);
         setTimeout(() => setSigSuccess(false), 3000);

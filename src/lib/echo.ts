@@ -153,6 +153,23 @@ export function subscribeToWorkspace(
   };
 }
 
+// Used by api.ts to attach X-Socket-Id to outgoing requests, so
+// broadcast(...)->toOthers() on the backend can exclude the tab that
+// triggered the event. Without this, chat send requests never carried a
+// socket id, so ->toOthers() had nothing to exclude and the sender's own
+// browser received its own message a second time over the socket, on top of
+// the one already added optimistically/from the HTTP response.
+export function getActiveSocketId(): string | null {
+  try {
+    return (echoInstance?.socketId() as string | undefined)
+      ?? (clientEchoInstance?.socketId() as string | undefined)
+      ?? null;
+  } catch {
+    // socketId() throws if the connector isn't connected yet.
+    return null;
+  }
+}
+
 export function disconnectEcho(): void {
   if (echoInstance) {
     echoInstance.disconnect();

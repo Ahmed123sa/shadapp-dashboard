@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { X, Search, Check } from 'lucide-react';
@@ -19,20 +19,25 @@ const LocationPickerMap = dynamic(() => import('./LocationPickerMap'), {
 interface Props {
   initialLat?: number | null;
   initialLng?: number | null;
-  onConfirm: (lat: number, lng: number) => Promise<void> | void;
+  initialAddress?: string | null;
+  onConfirm: (lat: number, lng: number, address: string) => Promise<void> | void;
   onClose: () => void;
 }
 
-export default function LocationPickerModal({ initialLat, initialLng, onConfirm, onClose }: Props) {
+export default function LocationPickerModal({ initialLat, initialLng, initialAddress, onConfirm, onClose }: Props) {
   const t = useTranslations('dashboard');
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(
     typeof initialLat === 'number' && typeof initialLng === 'number' ? { lat: initialLat, lng: initialLng } : null
   );
+  const [address, setAddress] = useState(initialAddress || '');
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Search already gives us a display_name for the picked point — skip the
+  // extra reverse-geocode call that would otherwise fire right after.
+  const skipNextReverseGeocode = useRef(false);
 
   const runSearch = async () => {
     const q = query.trim();
@@ -46,9 +51,11 @@ export default function LocationPickerModal({ initialLat, initialLng, onConfirm,
         setSearchError(t('location_picker_search_no_results'));
         return;
       }
-      const { lat, lon } = results[0];
+      const { lat, lon, display_name } = results[0];
+      skipNextReverseGeocode.current = true;
       setFlyTo([parseFloat(lat), parseFloat(lon)]);
       setSelected({ lat: parseFloat(lat), lng: parseFloat(lon) });
+      if (display_name) setAddress(display_name);
     } catch {
       setSearchError(t('location_picker_search_failed'));
     } finally {
@@ -56,11 +63,26 @@ export default function LocationPickerModal({ initialLat, initialLng, onConfirm,
     }
   };
 
+  const handleMapChange = async (lat: number, lng: number) => {
+    setSelected({ lat, lng });
+    if (skipNextReverseGeocode.current) {
+      skipNextReverseGeocode.current = false;
+      return;
+    }
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      if (data?.display_name) setAddress(data.display_name);
+    } catch {
+      // Best-effort — the manager can still type the address manually below.
+    }
+  };
+
   const handleConfirm = async () => {
     if (!selected) return;
     setSaving(true);
     try {
-      await onConfirm(selected.lat, selected.lng);
+      await onConfirm(selected.lat, selected.lng, address.trim());
     } finally {
       setSaving(false);
     }
@@ -104,7 +126,7 @@ export default function LocationPickerModal({ initialLat, initialLng, onConfirm,
           initialLat={initialLat}
           initialLng={initialLng}
           flyTo={flyTo}
-          onChange={(lat, lng) => setSelected({ lat, lng })}
+          onChange={handleMapChange}
         />
 
         {selected && (
@@ -112,6 +134,16 @@ export default function LocationPickerModal({ initialLat, initialLng, onConfirm,
             {t('profile_latitude')}: {selected.lat.toFixed(6)} • {t('profile_longitude')}: {selected.lng.toFixed(6)}
           </p>
         )}
+
+        <div>
+          <label className="text-xs text-[var(--color-text-secondary)]">{t('location_picker_address_label')}</label>
+          <textarea
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            rows={2}
+            className="w-full mt-1 bg-[var(--color-input-fill)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-gold)] resize-none"
+          />
+        </div>
 
         <div className="flex items-center justify-end gap-2 pt-1">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs border border-[var(--color-card-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">

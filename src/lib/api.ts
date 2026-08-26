@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getActiveSocketId } from './echo';
 
 // All requests go to the same-origin /api/proxy/* route handler, never
 // directly to the Laravel origin. The proxy attaches the Sanctum token
@@ -9,6 +10,19 @@ const api = axios.create({
   baseURL: '/api/proxy',
   headers: { Accept: 'application/json' },
   withCredentials: true,
+});
+
+// Attach the current Echo socket id to every request. Cheap to do globally
+// (it's only ever read by broadcast(...)->toOthers() on endpoints that
+// actually broadcast) and means new broadcasting endpoints get the
+// sender-exclusion behavior for free instead of each call site having to
+// remember to wire it up.
+api.interceptors.request.use((config) => {
+  const socketId = getActiveSocketId();
+  if (socketId) {
+    config.headers['X-Socket-Id'] = socketId;
+  }
+  return config;
 });
 
 api.interceptors.response.use(

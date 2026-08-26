@@ -9,6 +9,14 @@ import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 
+// The backend has no `signature_type` field on users — signatures are
+// distinguished by shape, not a stored flag. Detecting it here directly
+// (rather than trusting an API field that doesn't exist) avoids the bug where
+// an uploaded image signature would render as raw path text.
+function isImageSignature(val: string | null | undefined) {
+  return !!val && (val.startsWith('/storage/') || val.startsWith('http'));
+}
+
 export default function ContractsTab({ wsId, clientType }: { wsId: number; clientType?: string }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
@@ -80,7 +88,7 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
     try {
       const { data } = await api.get('/auth/me');
       if (data.user?.signature_data) {
-        setSavedUserSig({ data: data.user.signature_data, type: data.user.signature_type || 'text' });
+        setSavedUserSig({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text' });
       }
     } catch {}
   };
