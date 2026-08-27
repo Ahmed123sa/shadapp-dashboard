@@ -54,7 +54,36 @@ npm run dev      # development server
 npm run build    # production build
 npm start        # serve the production build
 npm run lint     # ESLint
+npm test         # run the test suite once
+npm run test:watch  # re-run on file changes
 ```
+
+---
+
+## Tests
+
+Vitest + React Testing Library, `jsdom` environment. `src/test/setup.ts` mocks
+`next/link` globally (it reaches for App Router context that doesn't exist
+under Vitest) and clears `localStorage`/cookies between tests.
+
+Coverage focuses on what's expensive to get wrong silently: the auth/session
+helpers in `src/lib/` (including a regression test for a fixed fail-open bug
+in sub-user permission checks), the `api.ts` axios interceptors (429 retry,
+401 logout redirect), small reusable UI components, and the security- and
+data-critical components — `ActivityFeed` (XSS regression test),
+`LocationPickerModal` (search/geocode), and the login/forgot-password/
+reset-password pages.
+
+Components that call `useTranslations()`/`useLocale()` need
+`src/test/render.tsx`'s `renderWithIntl()` helper instead of RTL's plain
+`render()` — it wraps the component in `NextIntlClientProvider` using the
+real `messages/en.json`/`ar.json`, so a renamed or removed translation key
+fails the test the same way it would break the app.
+
+Not yet covered: the remaining feature tabs (chat, approvals, payments,
+files, contracts, meetings, calendar) and the client-portal mirror
+components. Same patterns as what's here — add as they change or as time
+allows.
 
 ---
 
