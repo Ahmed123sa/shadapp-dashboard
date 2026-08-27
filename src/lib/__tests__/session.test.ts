@@ -60,11 +60,11 @@ describe('sessionCookieOptions', () => {
 
   it('is marked secure in production, so the session cookie is never sent over plain HTTP', async () => {
     const originalEnv = process.env.NODE_ENV;
-    // @ts-expect-error
+    // @ts-expect-error - NODE_ENV is typed readonly, but this test needs to set it
     process.env.NODE_ENV = 'production';
     const { sessionCookieOptions } = await loadWithApiUrl(undefined);
     expect(sessionCookieOptions().secure).toBe(true);
-    // @ts-expect-error
+    // @ts-expect-error - restoring
     process.env.NODE_ENV = originalEnv;
   });
 });

@@ -9,10 +9,14 @@ interface ClientTypeBadgeProps {
 }
 
 export function ClientTypeBadge({ clientType, compact = false }: ClientTypeBadgeProps) {
+  // Hooks must run unconditionally on every render, so this needs to sit
+  // above the early return below — otherwise it's skipped whenever
+  // clientType is empty, which React (correctly) treats as a hooks-order
+  // violation.
+  const t = useTranslations('dashboard');
   if (!clientType) return null;
 
   const isBusiness = clientType === 'business';
-  const t = useTranslations('dashboard');
   const label = isBusiness ? t('client_type_company') : t('client_type_individual');
 
   return (

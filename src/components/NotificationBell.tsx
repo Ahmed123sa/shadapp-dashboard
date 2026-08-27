@@ -16,6 +16,35 @@ export default function NotificationBell() {
   const lastIdRef = useRef<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Declared ahead of load() below, which calls getHref() from inside a
+  // promise callback — harmless at runtime either way (the callback only
+  // runs after the whole component body has finished), but ESLint's
+  // ordering check flags a "used before declared" const, so the
+  // declaration order now matches the actual call order too.
+  const notificationTab: Record<string, string> = {
+    chat: t('tab_chat'),
+    contract_sent: t('tab_contracts'),
+    contract_client_approved: t('tab_contracts'),
+    contract_client_signed: t('tab_contracts'),
+    contract_company_approved: t('tab_contracts'),
+    contract_completed: t('tab_contracts'),
+    contract_reminder: t('tab_contracts'),
+    payment_created: t('tab_payments'),
+    payment_reviewed: t('tab_payments'),
+    workspace_activated: t('tab_payments'),
+    approval_requested: t('tab_approvals'),
+    approval_responded: t('tab_approvals'),
+    meeting_reminder: t('tab_meetings'),
+  };
+
+  const getHref = (n: any) => {
+    const d = n.data;
+    const clientId = d?.client_id || d?.workspace_id;
+    if (!clientId) return '#';
+    const tab = notificationTab[d?.type] || '';
+    return tab ? `/dashboard/clients/${clientId}?tab=${encodeURIComponent(tab)}` : `/dashboard/clients/${clientId}`;
+  };
+
   const load = () => {
     api.get('/notifications').then(({ data }) => {
       const items = data.notifications || [];
@@ -49,30 +78,6 @@ export default function NotificationBell() {
 
   const markRead = (id: string) => {
     api.post(`/notifications/${id}/read`).then(() => { load(); }).catch(() => {});
-  };
-
-  const notificationTab: Record<string, string> = {
-    chat: t('tab_chat'),
-    contract_sent: t('tab_contracts'),
-    contract_client_approved: t('tab_contracts'),
-    contract_client_signed: t('tab_contracts'),
-    contract_company_approved: t('tab_contracts'),
-    contract_completed: t('tab_contracts'),
-    contract_reminder: t('tab_contracts'),
-    payment_created: t('tab_payments'),
-    payment_reviewed: t('tab_payments'),
-    workspace_activated: t('tab_payments'),
-    approval_requested: t('tab_approvals'),
-    approval_responded: t('tab_approvals'),
-    meeting_reminder: t('tab_meetings'),
-  };
-
-  const getHref = (n: any) => {
-    const d = n.data;
-    const clientId = d?.client_id || d?.workspace_id;
-    if (!clientId) return '#';
-    const tab = notificationTab[d?.type] || '';
-    return tab ? `/dashboard/clients/${clientId}?tab=${encodeURIComponent(tab)}` : `/dashboard/clients/${clientId}`;
   };
 
   return (
