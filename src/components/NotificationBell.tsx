@@ -16,42 +16,66 @@ export default function NotificationBell() {
   const lastIdRef = useRef<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Declared ahead of load() below, which calls getHref() from inside a
-  // promise callback — harmless at runtime either way (the callback only
-  // runs after the whole component body has finished), but ESLint's
-  // ordering check flags a "used before declared" const, so the
-  // declaration order now matches the actual call order too.
+  const initialLoadDoneRef = useRef(false);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+
   const notificationTab: Record<string, string> = {
     chat: t('tab_chat'),
+    chat_message: t('tab_chat'),
     contract_sent: t('tab_contracts'),
     contract_client_approved: t('tab_contracts'),
     contract_client_signed: t('tab_contracts'),
     contract_company_approved: t('tab_contracts'),
     contract_completed: t('tab_contracts'),
     contract_reminder: t('tab_contracts'),
+    contract_edit_requested: t('tab_contracts'),
     payment_created: t('tab_payments'),
     payment_reviewed: t('tab_payments'),
     workspace_activated: t('tab_payments'),
+    payment_scheduled: t('tab_payments'),
+    payment_reminder: t('tab_payments'),
+    payment_schedule_updated: t('tab_payments'),
+    payment_schedule_deleted: t('tab_payments'),
     approval_requested: t('tab_approvals'),
     approval_responded: t('tab_approvals'),
+    meeting_created: t('tab_meetings'),
     meeting_reminder: t('tab_meetings'),
+    meeting_updated: t('tab_meetings'),
+    meeting_cancelled: t('tab_meetings'),
+    file_uploaded: t('tab_files'),
+    file_approved: t('tab_files'),
+    file_rejected: t('tab_files'),
+    birthday_reminder: t('tab_client_profile') || 'الملف التعريفي',
+    birthday_greeting: t('tab_client_profile') || 'الملف التعريفي',
   };
 
   const getHref = (n: any) => {
     const d = n.data;
-    const clientId = d?.client_id || d?.workspace_id;
-    if (!clientId) return '#';
+    const isClientPortal = typeof window !== 'undefined' && (window.location.pathname.startsWith('/client-dashboard') || window.location.pathname.startsWith('/client-login'));
     const tab = notificationTab[d?.type] || '';
+
+    if (isClientPortal) {
+      return tab ? `/client-dashboard?tab=${encodeURIComponent(tab)}` : '/client-dashboard';
+    }
+
+    const clientId = d?.client_id || d?.workspace_id;
+    if (!clientId) return '/dashboard';
     return tab ? `/dashboard/clients/${clientId}?tab=${encodeURIComponent(tab)}` : `/dashboard/clients/${clientId}`;
   };
 
   const load = () => {
     api.get('/notifications').then(({ data }) => {
       const items = data.notifications || [];
-      // Show toast for the newest notification if it arrived via WebSocket
-      if (items.length > 0) {
-        const newest = items[0];
-        if (newest.id !== lastIdRef.current && !newest.read_at) {
+      if (!initialLoadDoneRef.current) {
+        items.forEach((item: any) => knownIdsRef.current.add(item.id));
+        initialLoadDoneRef.current = true;
+        if (items.length > 0) {
+          lastIdRef.current = items[0]?.id || null;
+        }
+      } else {
+        const newlyArrived = items.filter((item: any) => !knownIdsRef.current.has(item.id) && !item.read_at);
+        newlyArrived.forEach((newest: any) => {
+          knownIdsRef.current.add(newest.id);
           const href = getHref(newest);
           showToast({
             id: newest.id,
@@ -59,8 +83,10 @@ export default function NotificationBell() {
             message: newest.data?.message || '',
             href,
           });
+        });
+        if (items.length > 0) {
+          lastIdRef.current = items[0]?.id || null;
         }
-        lastIdRef.current = items[0]?.id || null;
       }
       setNotifications(items);
       setUnread(data.unread_count || 0);

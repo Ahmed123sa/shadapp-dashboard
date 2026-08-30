@@ -80,6 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       items: [
         { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
         { href: '/dashboard/clients', label: t('all_clients'), icon: Users },
+        { href: '/dashboard/finance', label: locale === 'ar' ? 'المالية' : 'Finance', icon: CreditCard },
         { href: '/dashboard/reports', label: t('reports'), icon: BarChart3 },
         { href: '/dashboard/audit-log', label: t('audit_log'), icon: ClipboardList },
       ],

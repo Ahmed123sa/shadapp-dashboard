@@ -754,7 +754,7 @@
     "doc_upload_new": "رفع مستند جديد",
     "doc_upload": "رفع المستند",
     "doc_upload_failed": "فشل رفع المستند",
-    "contract_value": "القيمة: {value} ر.س",
+    "contract_value": "القيمة: {value} {currency}",
     "contract_excl_vat": "قيمة العقد غير شاملة الضريبة المضافة",
     "contract_date_range": "من: {start}{endSuffix}",
     "contract_date_to": " إلى {end}",
@@ -934,7 +934,11 @@
     "active": "مفعّل",
     "inactive": "معطّل",
     "activate": "تفعيل",
-    "deactivate": "تعطيل"
+    "deactivate": "تعطيل",
+    "contract_dates_setting": "تواريخ بداية ونهاية العقود",
+    "contract_dates_desc": "إظهار أو إخفاء حقول تاريخ بداية ونهاية العقد أثناء إنشاء العقود (في الويب والموبايل)",
+    "contract_dates_saved": "تم حفظ إعداد تواريخ العقود بنجاح",
+    "setting_saved": "تم حفظ الإعداد بنجاح"
   },
   "contracts": {
     "title": "العقود",

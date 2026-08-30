@@ -753,8 +753,8 @@
     "doc_uploading": "Uploading...",
     "doc_upload_new": "Upload New Document",
     "doc_upload": "Upload Document",
-    "doc_upload_failed": "Failed to upload document",
-    "contract_value": "Value: {value} SAR",
+    "doc_upload_failed": "Document upload failed",
+    "contract_value": "Value: {value} {currency}",
     "contract_excl_vat": "Contract value excludes VAT",
     "contract_date_range": "From: {start}{endSuffix}",
     "contract_date_to": " to {end}",
@@ -934,7 +934,11 @@
     "active": "Active",
     "inactive": "Inactive",
     "activate": "Activate",
-    "deactivate": "Deactivate"
+    "deactivate": "Deactivate",
+    "contract_dates_setting": "Contract Start & End Dates",
+    "contract_dates_desc": "Show or hide contract start and end date fields during contract creation (web & mobile)",
+    "contract_dates_saved": "Contract dates setting saved successfully",
+    "setting_saved": "Setting saved successfully"
   },
   "contracts": {
     "title": "Contracts",

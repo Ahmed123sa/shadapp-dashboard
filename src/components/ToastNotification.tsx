@@ -31,7 +31,14 @@ function playNotificationSound() {
   }
 }
 
+const seenToastIds = new Set<string>();
+
 export function showToast(item: ToastItem) {
+  if (!item.id) return;
+  if (seenToastIds.has(item.id)) return;
+  seenToastIds.add(item.id);
+  setTimeout(() => seenToastIds.delete(item.id), 15000);
+
   playNotificationSound();
   addToastExternal(item);
 }
@@ -46,9 +53,15 @@ export default function ToastNotification() {
 
   useEffect(() => {
     addToastExternal = (item: ToastItem) => {
-      const id = item.id + Date.now();
-      setToasts((prev) => [...prev.slice(-2), { ...item, id }]);
-      setTimeout(() => removeToast(id), 5000);
+      const uniqueKey = item.id + '-' + Date.now();
+      setToasts((prev) => {
+        // Prevent duplicate items in visible stack
+        if (prev.some((p) => p.id === item.id || (p.title === item.title && p.message === item.message))) {
+          return prev;
+        }
+        return [...prev.slice(-2), { ...item, id: item.id, uniqueKey } as any];
+      });
+      setTimeout(() => removeToast(item.id), 5000);
     };
     return () => { addToastExternal = () => {}; };
   }, [removeToast]);

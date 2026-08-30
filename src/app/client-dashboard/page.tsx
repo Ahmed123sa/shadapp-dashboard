@@ -50,11 +50,14 @@ export default function ClientDashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('العقود');
 
   useEffect(() => {
-    const t = searchParams.get('tab');
-    if (t && (ALL_TABS.map((t) => t.key) as readonly string[]).includes(t)) {
-      setActiveTab(t as Tab);
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      const match = ALL_TABS.find((item) => item.key === tabParam || TAB_LABELS[item.key] === tabParam || TAB_LABELS[item.key]?.toLowerCase() === tabParam.toLowerCase());
+      if (match) {
+        setActiveTab(match.key as Tab);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, TAB_LABELS]);
   const [loading, setLoading] = useState(true);
   const [fetchKey, setFetchKey] = useState(0);
   const session = getClient();
