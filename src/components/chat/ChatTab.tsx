@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
@@ -10,6 +10,7 @@ import ContractBuilder from '@/components/chat/ContractBuilder';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
+import { Check, CheckCheck } from 'lucide-react';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -21,6 +22,7 @@ function resolveFileUrl(url: string): string {
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const [messages, setMessages] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [text, setText] = useState('');
@@ -36,7 +38,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
   const load = () => {
     Promise.all([
-      api.get(`/workspaces/${wsId}/chat`).then(({ data }) => setMessages(data.messages || [])),
+      api.get(`/workspaces/${wsId}/chat`).then(({ data }) => {
+        setMessages(data.messages || []);
+        api.post(`/workspaces/${wsId}/chat/mark-read`).catch(() => {});
+      }),
       api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
     ]).catch(() => {}).finally(() => setLoading(false));
   };
@@ -244,6 +249,20 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                       {t('download_certificate')}
                     </a>
                   )}
+                  <div className="flex items-center justify-between gap-3 mt-1.5 pt-0.5 border-t border-white/5">
+                    <span className="text-[9px] text-[var(--color-text-disabled)]">
+                      {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                    {!isClientTeam && (
+                      <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
+                        {m.read_at ? (
+                          <CheckCheck size={13} className="text-sky-400" strokeWidth={2.2} />
+                        ) : (
+                          <Check size={13} className="text-[var(--color-text-disabled)]" strokeWidth={2} />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {isClientTeam && (
                   <div className="w-7 h-7 rounded-full bg-zinc-200 overflow-hidden flex-shrink-0 mt-1">

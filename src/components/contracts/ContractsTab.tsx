@@ -17,7 +17,7 @@ function isImageSignature(val: string | null | undefined) {
   return !!val && (val.startsWith('/storage/') || val.startsWith('http'));
 }
 
-export default function ContractsTab({ wsId, clientType }: { wsId: number; clientType?: string }) {
+export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const [contracts, setContracts] = useState<any[]>([]);
@@ -34,6 +34,7 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
   const [useSavedSig, setUseSavedSig] = useState(false);
   const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
   const [newReqDoc, setNewReqDoc] = useState('');
+  const [showDates, setShowDates] = useState(true);
 
   const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
   const resolveFileUrl = (url: string) => {
@@ -46,6 +47,10 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
     Promise.all([
       api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
       api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])),
+      api.get('/settings').then(({ data }) => {
+        const cd = data.settings?.show_contract_dates?.value;
+        if (cd !== undefined) setShowDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
+      }).catch(() => {}),
     ]).catch((err) => { console.error('ContractsTab: GET /workspaces/${wsId}/contracts failed', err); setError(t('contracts_load_error')); }).finally(() => setLoading(false));
   }, [wsId]);
 
@@ -62,8 +67,9 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom' }));
 
     const required_documents = requiredDocs.map((name) => ({ name }));
+    const contract_type = wsActive ? 'additional' : 'main';
 
-    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, clauses, required_documents }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, contract_type, clauses, required_documents }).catch(() => ({ data: null }));
     if (data) { setContracts((prev) => [...prev, data.contract]); setShowForm(false); setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' }); setSelectedOptional({}); setCustomClauses([]); setNewCustom(''); setRequiredDocs([]); setNewReqDoc(''); }
   };
 
@@ -108,7 +114,11 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
 
   return (
     <div className="space-y-3">
-      {!isSA && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline">{t('new_contract')}</button>}
+      {!isSA && (
+        <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
+          {wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`}
+        </button>
+      )}
       {!isSA && showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('contract_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
@@ -119,8 +129,12 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
               <option value="AED">AED</option><option value="EGP">EGP</option><option value="KWD">KWD</option>
               <option value="QAR">QAR</option><option value="BHD">BHD</option><option value="OMR">OMR</option>
             </select>
-            <input value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
-            <input value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+            {showDates && (
+              <>
+                <input value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+                <input value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+              </>
+            )}
           </div>
           {fixedTemplates.length > 0 && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
@@ -180,7 +194,7 @@ export default function ContractsTab({ wsId, clientType }: { wsId: number; clien
         <div key={c.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div><h4 className="font-medium">{c.title}</h4>
-              {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {t('sar_currency')}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
+              {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
               {c.required_documents?.length > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents.length}{t('doc_required_suffix')}</p>}
             </div>

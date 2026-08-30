@@ -53,11 +53,14 @@ export default function ClientWorkspace() {
   const [activeTab, setActiveTab] = useState<Tab>('chat');
 
   useEffect(() => {
-    const t = searchParams.get('tab');
-    if (t && (TABS as readonly string[]).includes(t)) {
-      setActiveTab(t as Tab);
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      const match = TABS.find((k) => k === tabParam || t(TAB_LABELS[k]) === tabParam || t(TAB_LABELS[k])?.toLowerCase() === tabParam.toLowerCase());
+      if (match) {
+        setActiveTab(match);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
@@ -148,7 +151,7 @@ function TabContent({ tab, wsId, client, onClientRefresh, onNavigate }: { tab: T
     case 'profile': return <ClientProfileTab clientId={client.id} onNavigate={(t) => onNavigate?.(t as Tab)} />;
     case 'chat': return <ChatTab wsId={wsId} wsActive={wsActive} clientType={client.client_type} />;
     case 'files': return <FilesTab wsId={wsId} />;
-    case 'contracts': return <ContractsTab wsId={wsId} clientType={client.client_type} />;
+    case 'contracts': return <ContractsTab wsId={wsId} clientType={client.client_type} wsActive={wsActive} />;
     case 'payments': return <PaymentsTab wsId={wsId} client={client} onWorkspaceUpdate={onClientRefresh} />;
     case 'approvals': return <ApprovalsTab wsId={wsId} />;
     case 'meetings': return <MeetingsTab wsId={wsId} />;

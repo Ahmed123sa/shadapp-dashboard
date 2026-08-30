@@ -54,6 +54,22 @@ function getActionBadgeClass(action: string): string {
   return 'ab-default';
 }
 
+function resolveActor(log: any): { name: string; isClient: boolean } {
+  if (log.user?.name) return { name: log.user.name, isClient: false };
+  if (log.client?.company_name) return { name: log.client.company_name, isClient: true };
+  if (log.client?.contact_person) return { name: log.client.contact_person, isClient: true };
+  if (log.client?.name) return { name: log.client.name, isClient: true };
+  const auditable = log.auditable;
+  const type = log.auditable_type || '';
+  if (type.includes('Client') && (auditable?.company_name || auditable?.contact_person || auditable?.name)) {
+    return { name: auditable.company_name || auditable.contact_person || auditable.name, isClient: true };
+  }
+  if ((type.includes('Contract') || type.includes('Payment') || type.includes('Approval') || type.includes('ChatMessage')) && auditable?.workspace?.client?.company_name) {
+    return { name: auditable.workspace.client.company_name, isClient: true };
+  }
+  return { name: '—', isClient: false };
+}
+
 function resolveClientName(log: any): string {
   if (log.client?.company_name) return log.client.company_name;
   if (log.client?.name) return log.client.name;
@@ -248,7 +264,8 @@ export default function AuditLogPage() {
                 <tbody>
                   {logs.map((log) => {
                     const { date, time } = formatDateTime(log.created_at, locale, t);
-                    const colors = getAvatarColors(log.user?.name || '');
+                    const actor = resolveActor(log);
+                    const colors = getAvatarColors(actor.name === '—' ? '?' : actor.name);
                     const entityName = resolveEntityName(log, t);
                     return (
                       <tr key={log.id}>
@@ -261,9 +278,16 @@ export default function AuditLogPage() {
                         <td>
                           <div className="td-user">
                             <div className="td-av" style={{ background: colors.bg, borderColor: colors.border, color: colors.text }}>
-                              {log.user?.name?.slice(0, 2) || '?'}
+                              {actor.name !== '—' ? actor.name.slice(0, 2) : '?'}
                             </div>
-                            <span>{log.user?.name || '—'}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{actor.name}</span>
+                              {actor.isClient && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
+                                  {locale === 'ar' ? 'عميل' : 'Client'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>{entityName}</td>

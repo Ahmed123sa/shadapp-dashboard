@@ -52,7 +52,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         <ContractStatusStepper status={contract.status} />
 
         {contract.value > 0 && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_value', { value: contract.value })}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_value', { value: contract.value, currency: contract.currency || 'SAR' })}</p>
         )}
         {clientType === 'business' && contract.value > 0 && (
           <p className="text-xs text-[var(--color-text-disabled)] mb-1">{t('contract_excl_vat')}</p>

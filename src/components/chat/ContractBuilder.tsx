@@ -9,13 +9,18 @@ type Template = { id: number; content: string; type: string };
 export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: any) => void; onCancel: () => void }) {
   const t = useTranslations('dashboard');
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [form, setForm] = useState({ title: '', value: '', start_date: '', end_date: '' });
+  const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
+  const [showDates, setShowDates] = useState(true);
   const [selectedOptional, setSelectedOptional] = useState<Record<number, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
 
   useEffect(() => {
     api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])).catch(() => {});
+    api.get('/settings').then(({ data }) => {
+      const cd = data.settings?.show_contract_dates?.value;
+      if (cd !== undefined) setShowDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
+    }).catch(() => {});
   }, []);
 
   const fixedTemplates = templates.filter((t) => t.type === 'fixed');
@@ -47,9 +52,18 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('builder_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
 
       <div className="flex gap-2">
-        <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} type="number" placeholder={t('builder_value_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-32 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
-        <input value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
-        <input value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+        <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} type="number" placeholder={t('builder_value_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-28 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+        <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-24 bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
+          <option value="SAR">SAR</option><option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="AED">AED</option><option value="EGP">EGP</option><option value="KWD">KWD</option>
+          <option value="QAR">QAR</option><option value="BHD">BHD</option><option value="OMR">OMR</option>
+        </select>
+        {showDates && (
+          <>
+            <input value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+            <input value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+          </>
+        )}
       </div>
 
       {fixedTemplates.length > 0 && (

@@ -53,7 +53,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           <div className="flex justify-between items-start">
             <div>
               <h4 className="font-medium">{c.title}</h4>
-              {c.value > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {t('sar_currency')}</p>}
+              {c.value > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}</p>}
               {c.required_documents?.length > 0 && <p className="text-xs text-amber-600 mt-0.5">{t('contract_docs_required', { count: c.required_documents.length })}</p>}
             </div>
             <StatusBadge status={c.status} />

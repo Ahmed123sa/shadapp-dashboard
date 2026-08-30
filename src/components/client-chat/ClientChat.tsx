@@ -6,7 +6,8 @@ import { subscribeToWorkspace } from '@/lib/echo';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { useTranslations } from 'next-intl';
+import { Check, CheckCheck } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 
 const CLIENT_FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -17,6 +18,7 @@ function resolveFileUrl(url: string): string {
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,11 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
 
   const load = () => {
     api.get(`/workspaces/${wsId}/chat`)
-      .then(({ data }) => { setMessages(data.messages || []); setError(''); })
+      .then(({ data }) => {
+        setMessages(data.messages || []);
+        setError('');
+        api.post(`/workspaces/${wsId}/chat/mark-read`).catch(() => {});
+      })
       .catch(() => setError(t('chat_load_error')))
       .finally(() => setLoading(false));
   };
@@ -177,6 +183,20 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                       {t('download_certificate')}
                     </a>
                   )}
+                  <div className="flex items-center justify-between gap-3 mt-1.5 pt-0.5 border-t border-white/10">
+                    <span className="text-[9px] opacity-70">
+                      {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                    {isClientTeam && (
+                      <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
+                        {m.read_at ? (
+                          <CheckCheck size={13} className="text-sky-300" strokeWidth={2.2} />
+                        ) : (
+                          <Check size={13} className="text-white/60" strokeWidth={2} />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {isPending && (
                   <div className="flex gap-1 mt-1">

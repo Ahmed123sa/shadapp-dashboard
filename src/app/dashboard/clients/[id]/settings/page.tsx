@@ -48,7 +48,7 @@ export default function ClientSettingsPage() {
         country: c.country || '',
         industry: c.industry || '',
         notes: c.notes || '',
-        date_of_birth: c.date_of_birth || '',
+        date_of_birth: c.date_of_birth ? String(c.date_of_birth).substring(0, 10) : '',
         password: '',
         client_type: c.client_type || 'business',
         address: c.address || '',

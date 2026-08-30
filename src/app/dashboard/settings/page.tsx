@@ -44,6 +44,9 @@ export default function SettingsPage() {
   const [taxPercentage, setTaxPercentage] = useState('15');
   const [savingTax, setSavingTax] = useState(false);
   const [taxSuccess, setTaxSuccess] = useState(false);
+  const [showContractDates, setShowContractDates] = useState(true);
+  const [savingDates, setSavingDates] = useState(false);
+  const [datesSuccess, setDatesSuccess] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sigUploadInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +78,8 @@ export default function SettingsPage() {
       api.get('/settings').then(({ data }) => {
         const v = data.settings?.corporate_tax_percentage?.value;
         if (v !== undefined) setTaxPercentage(String(v));
+        const cd = data.settings?.show_contract_dates?.value;
+        if (cd !== undefined) setShowContractDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
       }).catch(() => {});
       api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
         .catch(() => {}).finally(() => setClausesLoading(false));
@@ -220,6 +225,21 @@ export default function SettingsPage() {
       // ignore
     } finally {
       setSavingTax(false);
+    }
+  };
+
+  const toggleContractDates = async (enabled: boolean) => {
+    setShowContractDates(enabled);
+    setSavingDates(true);
+    setDatesSuccess(false);
+    try {
+      await api.put('/settings', { key: 'show_contract_dates', value: enabled ? '1' : '0' });
+      setDatesSuccess(true);
+      setTimeout(() => setDatesSuccess(false), 3000);
+    } catch {
+      setShowContractDates(!enabled);
+    } finally {
+      setSavingDates(false);
     }
   };
 
@@ -436,6 +456,32 @@ export default function SettingsPage() {
             {savingTax ? '...' : t('save')}
           </button>
         </div>
+      </div>}
+
+      {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">{t('contract_dates_setting') || 'تواريخ بداية ونهاية العقود'}</h2>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+              {t('contract_dates_desc') || 'إظهار أو إخفاء حقول تاريخ بداية ونهاية العقد أثناء إنشاء العقود (في الويب والموبايل)'}
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showContractDates}
+              onChange={(e) => toggleContractDates(e.target.checked)}
+              disabled={savingDates}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)]"></div>
+          </label>
+        </div>
+        {datesSuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">
+            ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
+          </div>
+        )}
       </div>}
 
       {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
