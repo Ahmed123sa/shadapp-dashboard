@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
 
-export default function UploadProofModal({ wsId, availableMethods, onClose, onCreated }: {
+export default function UploadProofModal({ wsId, availableMethods, allowedCurrencies, onClose, onCreated }: {
   wsId: number;
   availableMethods: string[];
+  allowedCurrencies?: string[];
   onClose: () => void;
   onCreated: (payment: any) => void;
 }) {
   const t = useTranslations('dashboard');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('SAR');
+  const [currency, setCurrency] = useState('');
   const [methodType, setMethodType] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -21,6 +22,21 @@ export default function UploadProofModal({ wsId, availableMethods, onClose, onCr
     bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
     instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
   };
+
+  const currencyLabels: Record<string, string> = {
+    SAR: t('currency_sar'), USD: t('currency_usd'), EUR: t('currency_eur'),
+    AED: t('currency_aed'), EGP: t('currency_egp'), KWD: t('currency_kwd'),
+    QAR: t('currency_qar'), BHD: t('currency_bhd'), OMR: t('currency_omr'),
+  };
+
+  const currencyOptions = useMemo(
+    () => (allowedCurrencies && allowedCurrencies.length > 0 ? allowedCurrencies : Object.keys(currencyLabels)),
+    [allowedCurrencies, currencyLabels],
+  );
+
+  useEffect(() => {
+    setCurrency((cur) => cur || currencyOptions[0] || 'SAR');
+  }, [currencyOptions]);
 
   const submit = async () => {
     if (!amount || !methodType) return;
@@ -47,9 +63,7 @@ export default function UploadProofModal({ wsId, availableMethods, onClose, onCr
           className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
 
         <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-          <option value="SAR">{t('currency_sar')}</option><option value="USD">{t('currency_usd')}</option><option value="EUR">{t('currency_eur')}</option>
-          <option value="AED">{t('currency_aed')}</option><option value="EGP">{t('currency_egp')}</option><option value="KWD">{t('currency_kwd')}</option>
-          <option value="QAR">{t('currency_qar')}</option><option value="BHD">{t('currency_bhd')}</option><option value="OMR">{t('currency_omr')}</option>
+          {currencyOptions.map((c) => <option key={c} value={c}>{currencyLabels[c] || c}</option>)}
         </select>
 
         <select value={methodType} onChange={(e) => setMethodType(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">

@@ -41,7 +41,11 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
         if (payableList.length > 0) {
           setPayableContract(payableList[0]);
           setPayableContracts(payableList);
-          if (!payData.payments?.length) setAmount(String(taxSummary?.grand_total ?? payableList[0].value));
+          const initialCur = payableList[0].currency || 'SAR';
+          setCurrency(initialCur);
+          if (!payData.payments?.length) setAmount(String(payData.tax_summary?.grand_total ?? payableList[0].value));
+        } else if (contracts.length > 0 && contracts[0].currency) {
+          setCurrency(contracts[0].currency);
         }
       } catch (e) {
         console.error(e);
@@ -51,17 +55,23 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
     loadAll().finally(() => setLoading(false));
     const interval = setInterval(loadAll, 30000);
     return () => clearInterval(interval);
-  }, [wsId]);
+  }, [wsId, t]);
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
     instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
   };
 
+  const availableCurrencies = Array.from(new Set(
+    (payableContracts.length > 0 ? payableContracts : (payableContract ? [payableContract] : []))
+      .map((c: any) => c.currency || 'SAR')
+  ));
+  const effectiveCurrencies = availableCurrencies.length > 0 ? availableCurrencies : ['SAR'];
+
   const startEdit = (p: any) => {
     setEditingPayment(p);
     setAmount(String(p.amount));
-    setCurrency(p.currency || 'SAR');
+    setCurrency(p.currency || payableContract?.currency || 'SAR');
     setMethodType(p.method_type);
     setProofFile(null);
   };
@@ -69,7 +79,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const cancelEdit = () => {
     setEditingPayment(null);
     setAmount('');
-    setCurrency('SAR');
+    setCurrency(payableContract?.currency || 'SAR');
     setMethodType('');
     setProofFile(null);
   };
@@ -195,12 +205,21 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           <div className="space-y-3">
             <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')}
               className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-              className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-              <option value="SAR">{t('currency_sar')}</option><option value="USD">{t('currency_usd')}</option><option value="EUR">{t('currency_eur')}</option>
-              <option value="AED">{t('currency_aed')}</option><option value="EGP">{t('currency_egp')}</option><option value="KWD">{t('currency_kwd')}</option>
-              <option value="QAR">{t('currency_qar')}</option><option value="BHD">{t('currency_bhd')}</option><option value="OMR">{t('currency_omr')}</option>
-            </select>
+            
+            {effectiveCurrencies.length === 1 ? (
+              <div className="border border-[var(--color-input-border)] rounded-lg px-4 py-2.5 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)]">{t('currency') || 'العملة'}</span>
+                <span className="font-semibold text-[var(--color-gold)]">{effectiveCurrencies[0]}</span>
+              </div>
+            ) : (
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
+                {effectiveCurrencies.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+
             <select value={methodType} onChange={(e) => setMethodType(e.target.value)}
               className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
               <option value="">{t('pay_method_ph')}</option>
