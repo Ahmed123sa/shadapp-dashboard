@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { getMeetingJoinStatus } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,7 +26,8 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
   const create = async () => {
     if (!form.title || !form.date) return;
-    const payload: any = { title: form.title, scheduled_at: `${form.date} ${form.time}`, duration_minutes: form.duration, notes: form.notes };
+    const localDate = new Date(`${form.date}T${form.time || '00:00'}`);
+    const payload: any = { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
     if (form.contract_id) payload.contract_id = form.contract_id;
     if (form.approval_id) payload.approval_id = form.approval_id;
     const { data } = await api.post(`/workspaces/${wsId}/meetings`, payload).catch(() => ({ data: null }));
@@ -104,7 +106,9 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
 function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: any; isSA: boolean; onComplete: (id: number) => void; onCancel: (id: number) => void }) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const isScheduled = m.status === 'scheduled';
+  const joinStatus = m.scheduled_at ? getMeetingJoinStatus(m.scheduled_at, locale) : null;
   return (
     <div className="border border-[var(--color-card-border)] rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -114,6 +118,18 @@ function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: any;
         </div>
         <StatusBadge status={m.status} />
       </div>
+      {isScheduled && m.link && joinStatus && (
+        <div className="mt-3">
+          {joinStatus.canJoin ? (
+            <a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">🎥 {t('meeting_chip_join_now')}</a>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-600/40 text-gray-400 px-3 py-1.5 rounded-lg">⏳ {joinStatus.label}</span>
+          )}
+        </div>
+      )}
+      {m.passcode && (
+        <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('meeting_passcode', { code: m.passcode })}</p>
+      )}
       {isScheduled && !isSA && (
         <div className="flex gap-2 mt-3">
           <button onClick={() => onComplete(m.id)} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">{t('meeting_complete')}</button>
