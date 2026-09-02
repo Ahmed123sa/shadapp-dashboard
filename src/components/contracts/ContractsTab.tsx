@@ -194,7 +194,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             <div><h4 className="font-medium">{c.title}</h4>
               {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
-              {c.required_documents?.length > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents.length}{t('doc_required_suffix')}</p>}
+              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents?.length}{t('doc_required_suffix')}</p>}
             </div>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${
