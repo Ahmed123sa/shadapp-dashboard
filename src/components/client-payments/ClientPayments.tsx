@@ -36,8 +36,8 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
         setMethods(payData.available_methods || []);
         setTaxSummary(payData.tax_summary || null);
 
-        const contracts = contRes.data.contracts?.data ?? contRes.data.contracts ?? [];
-        const payableList = contracts.filter((c: any) =>
+        const contracts: Contract[] = contRes.data.contracts?.data ?? contRes.data.contracts ?? [];
+        const payableList = contracts.filter((c) =>
           c.status === 'company_approved' || c.status === 'completed'
         );
         if (payableList.length > 0) {
@@ -66,11 +66,11 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
 
   const availableCurrencies = Array.from(new Set(
     (payableContracts.length > 0 ? payableContracts : (payableContract ? [payableContract] : []))
-      .map((c: any) => c.currency || 'SAR')
+      .map((c) => c.currency || 'SAR')
   ));
   const effectiveCurrencies = availableCurrencies.length > 0 ? availableCurrencies : ['SAR'];
 
-  const startEdit = (p: any) => {
+  const startEdit = (p: Payment) => {
     setEditingPayment(p);
     setAmount(String(p.amount));
     setCurrency(p.currency || payableContract?.currency || 'SAR');
@@ -183,7 +183,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
       {!pendingPayment && payableContract && (
         <div className="bg-[var(--color-card)] border border-[var(--color-gold)]/30 rounded-xl p-4">
           <p className="text-sm text-[var(--color-gold)] font-medium">
-            💳 {t('pay_approved_contract_notice', { title: payableContract.title, value: payableContract.value, taxSuffix: taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ${t('plus_tax')}` : '' })}
+            💳 {t('pay_approved_contract_notice', { title: payableContract.title, value: payableContract.value ?? '', taxSuffix: taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ${t('plus_tax')}` : '' })}
           </p>
         </div>
       )}
