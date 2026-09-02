@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { reportError } from '@/lib/error-reporting';
 
 export default function CalendarTab({ wsId }: { wsId: number }) {
   const [meetings, setMeetings] = useState<any[]>([]);
@@ -19,7 +20,7 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
       api.get(`/workspaces/${wsId}/meetings`).then(({ data }) => setMeetings(data.meetings?.data || data.meetings || [])),
       api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
       api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])),
-    ]).catch(() => {}).finally(() => setLoading(false));
+    ]).catch((err) => reportError('CalendarTab.load', err)).finally(() => setLoading(false));
   }, [wsId]);
 
   if (loading) return <LoadingSkeleton />;

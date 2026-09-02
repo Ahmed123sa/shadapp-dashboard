@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { subscribeToNotifications, disconnectEcho } from '@/lib/echo';
 import { showToast } from './ToastNotification';
+import { reportError } from '@/lib/error-reporting';
 
 export default function NotificationBell() {
   const t = useTranslations('dashboard');
@@ -90,7 +91,7 @@ export default function NotificationBell() {
       }
       setNotifications(items);
       setUnread(data.unread_count || 0);
-    }).catch(() => {});
+    }).catch((err) => reportError('NotificationBell.load', err));
   };
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function NotificationBell() {
   }, []);
 
   const markRead = (id: string) => {
-    api.post(`/notifications/${id}/read`).then(() => { load(); }).catch(() => {});
+    api.post(`/notifications/${id}/read`).then(() => { load(); }).catch((err) => reportError('NotificationBell.markRead', err));
   };
 
   return (

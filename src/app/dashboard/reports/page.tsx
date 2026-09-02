@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, PieChart, Pie } from 'recharts';
 import { Users, DollarSign, FileText, Clock, Building2, BarChart3, Settings, X } from 'lucide-react';
 import { ReportsSkeleton } from '@/components/ui/LoadingSkeleton';
+import { reportError } from '@/lib/error-reporting';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: '#606060', sent: '#60A5FA', client_approved: '#22C55E', client_rejected: '#EF4444',
@@ -84,12 +85,12 @@ export default function ReportsPage() {
     if (clientList.length === 0) {
       api.get('/clients?per_page=200').then(({ data }) => {
         setClientList(data.clients?.data || data.clients || []);
-      }).catch(() => {});
+      }).catch((err) => reportError('ReportsPage.loadClientList', err));
     }
     if (managerList.length === 0) {
       api.get('/account-managers').then(({ data }) => {
         setManagerList(data.managers || []);
-      }).catch(() => {});
+      }).catch((err) => reportError('ReportsPage.loadManagerList', err));
     }
   }, []);
 

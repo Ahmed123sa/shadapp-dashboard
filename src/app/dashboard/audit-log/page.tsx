@@ -7,6 +7,7 @@ import { getUser } from '@/lib/auth';
 import { Search } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
+import { reportError } from '@/lib/error-reporting';
 
 const ACTION_LABELS_FN = (t: (key: string) => string): Record<string, string> => ({
   'contract.created': t('audit_contract_created'),
@@ -165,13 +166,13 @@ export default function AuditLogPage() {
       setLogs(paginated?.data || []);
       setTotalPages(paginated?.last_page || 1);
       setTotal(paginated?.total || 0);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => reportError('AuditLogPage.fetchLogs', err)).finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchLogs(1);
     setPage(1);
-    api.get('/users').then(({ data }) => setUsers(Array.isArray(data) ? data : data.users || [])).catch(() => {});
+    api.get('/users').then(({ data }) => setUsers(Array.isArray(data) ? data : data.users || [])).catch((err) => reportError('AuditLogPage.loadUsers', err));
   }, []);
 
   const applyFilters = () => { setPage(1); fetchLogs(1); };

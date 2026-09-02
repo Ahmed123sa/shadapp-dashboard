@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 const resolveFileUrl = (url: string) => {
@@ -26,7 +27,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');
 
-  const load = () => api.get(`/workspaces/${wsId}/files`).then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); }).catch(() => {}).finally(() => setLoading(false));
+  const load = () => api.get(`/workspaces/${wsId}/files`).then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); }).catch((err) => reportError('FilesTab.load', err)).finally(() => setLoading(false));
   useEffect(() => { load(); }, [wsId]);
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {

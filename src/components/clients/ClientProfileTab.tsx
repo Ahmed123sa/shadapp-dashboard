@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import LocationPickerModal from './LocationPickerModal';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -56,12 +57,12 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
   const isAM = getUser()?.role === 'account_manager';
 
   const load = useCallback(() => {
-    api.get(`/clients/${clientId}/profile`).then(({ data }) => setProfile(data)).catch(() => {}).finally(() => setLoading(false));
+    api.get(`/clients/${clientId}/profile`).then(({ data }) => setProfile(data)).catch((err) => reportError('ClientProfileTab.loadProfile', err)).finally(() => setLoading(false));
   }, [clientId]);
 
   const loadActivity = useCallback(() => {
     setActivityLoading(true);
-    api.get(`/clients/${clientId}/activity`).then(({ data }) => setActivity(data.activity || [])).catch(() => {}).finally(() => setActivityLoading(false));
+    api.get(`/clients/${clientId}/activity`).then(({ data }) => setActivity(data.activity || [])).catch((err) => reportError('ClientProfileTab.loadActivity', err)).finally(() => setActivityLoading(false));
   }, [clientId]);
 
   useEffect(() => { load(); }, [load]);

@@ -11,6 +11,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck } from 'lucide-react';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 function resolveFileUrl(url: string): string {
@@ -40,10 +41,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     Promise.all([
       api.get(`/workspaces/${wsId}/chat`).then(({ data }) => {
         setMessages(data.messages || []);
-        api.post(`/workspaces/${wsId}/chat/mark-read`).catch(() => {});
+        api.post(`/workspaces/${wsId}/chat/mark-read`).catch((err) => reportError('ChatTab.markRead', err));
       }),
       api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
-    ]).catch(() => {}).finally(() => setLoading(false));
+    ]).catch((err) => reportError('ChatTab.load', err)).finally(() => setLoading(false));
   };
 
   useEffect(() => {

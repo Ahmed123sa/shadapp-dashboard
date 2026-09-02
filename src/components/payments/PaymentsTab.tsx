@@ -7,6 +7,7 @@ import { getUser } from '@/lib/auth';
 import type { Client } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { reportError } from '@/lib/error-reporting';
 
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
 type RequestForm = { amount: string; currency: string; notes: string };
@@ -46,7 +47,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         setTaxSummary(payRes.data.tax_summary || null);
         const raw = contRes.data.contracts;
         setContracts(Array.isArray(raw) ? raw : (raw?.data || []));
-      }).catch(() => {});
+      }).catch((err) => reportError('PaymentsTab.load', err));
     };
     load().finally(() => setLoading(false));
     const interval = setInterval(load, 30000);
@@ -109,7 +110,9 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
     try {
       await api.delete(`/payments/${pid}/schedule`);
       setPayments((prev) => prev.filter((p) => p.id !== pid));
-    } catch { }
+    } catch (err) {
+      reportError('PaymentsTab.deleteSchedule', err);
+    }
   };
 
   if (loading) return <LoadingSkeleton />;

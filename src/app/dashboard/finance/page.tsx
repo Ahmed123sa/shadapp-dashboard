@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { reportError } from '@/lib/error-reporting';
 import {
   CreditCard, Search, Download, RefreshCw, CheckCircle2,
   Clock, AlertCircle, DollarSign, ChevronLeft, ChevronRight, ExternalLink
@@ -48,12 +49,12 @@ export default function FinancePage() {
   useEffect(() => {
     api.get('/clients?per_page=100').then(({ data }) => {
       setClients(data.clients?.data || data.clients || []);
-    }).catch(() => {});
+    }).catch((err) => reportError('FinancePage.loadClients', err));
 
     api.get('/account-managers').then(({ data }) => {
       setManagers(data.account_managers || data.users || []);
     }).catch(() => {
-      api.get('/users').then(({ data }) => setManagers(data || [])).catch(() => {});
+      api.get('/users').then(({ data }) => setManagers(data || [])).catch((err) => reportError('FinancePage.loadManagers', err));
     });
   }, []);
 

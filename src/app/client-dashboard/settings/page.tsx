@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import { isClientAuthenticated, getClient, clientLogout } from '@/lib/client-auth';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -42,7 +43,7 @@ export default function ClientSettingsPage() {
       setDisplayName(c.contact_person || '');
       if (c.date_of_birth) setDateOfBirth(String(c.date_of_birth).substring(0, 10));
       if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
-    }).catch(() => {});
+    }).catch((err) => reportError('ClientSettingsPage.loadClient', err));
   }, [session?.id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -5,6 +5,7 @@ import { clientLogin, getClient, getSubUser, isSubUser } from '@/lib/client-auth
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import { reportError } from '@/lib/error-reporting';
 
 export default function ClientLoginPage() {
   const [email, setEmail] = useState('');
@@ -32,7 +33,7 @@ export default function ClientLoginPage() {
             <Link href="/client-dashboard" className="bg-[#941414] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
               {t('client_enter_dashboard')}
             </Link>
-            <button onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch {} window.location.reload(); }}
+            <button onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch (err) { reportError('client-login.logout', err); } window.location.reload(); }}
               className="bg-white/10 text-white/70 px-6 py-2 rounded-lg text-sm hover:bg-white/20">
               {t('client_logout_btn')}
             </button>

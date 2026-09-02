@@ -22,6 +22,7 @@ import MeetingsTab from '@/components/meetings/MeetingsTab';
 import CalendarTab from '@/components/calendar/CalendarTab';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -69,11 +70,11 @@ export default function ClientWorkspace() {
     tabRefs.current[activeTab]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [activeTab]);
 
-  const load = () => api.get(`/clients/${id}`).then(({ data }) => { setClient(data.client); }).catch(() => {}).finally(() => setLoading(false));
+  const load = () => api.get(`/clients/${id}`).then(({ data }) => { setClient(data.client); }).catch((err) => reportError('ClientWorkspace.load', err)).finally(() => setLoading(false));
   useEffect(() => { load(); }, [id]);
 
   const deleteClient = async () => {
-    await api.delete(`/clients/${id}`).catch(() => {});
+    await api.delete(`/clients/${id}`).catch((err) => reportError('ClientWorkspace.deleteClient', err));
     window.location.href = '/dashboard/clients';
   };
 

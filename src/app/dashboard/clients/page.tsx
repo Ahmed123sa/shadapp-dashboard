@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
+import { reportError } from '@/lib/error-reporting';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] tracking-wider font-medium text-[var(--color-text-muted)] uppercase mb-2">{children}</p>;
@@ -53,7 +54,7 @@ export default function ClientsPage() {
     api.get(`/clients?${params}`).then(({ data }) => {
       setClients(data.clients?.data || data.clients || []);
       setTotalPages(data.clients?.last_page || 1);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => reportError('ClientsPage.fetchClients', err)).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { setPage(1); fetchClients(1, debouncedQuery); }, [debouncedQuery]);
@@ -82,7 +83,9 @@ export default function ClientsPage() {
           const fd = new FormData();
           fd.append('avatar', avatarFile);
           await api.post(`/clients/${data.client.id}/profile`, fd);
-        } catch (_) {}
+        } catch (err) {
+          reportError('ClientsPage.createClient.uploadAvatar', err);
+        }
       }
       setClients((prev) => [data.client, ...prev]);
       setNewCreds(data.credentials);

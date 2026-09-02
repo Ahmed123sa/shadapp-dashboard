@@ -8,6 +8,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { Building2, User, MapPin } from 'lucide-react';
+import { reportError } from '@/lib/error-reporting';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
@@ -55,7 +56,7 @@ export default function ClientSettingsPage() {
         maps_url: c.maps_url || '',
       });
       if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => reportError('ClientSettingsPage.loadClient', err)).finally(() => setLoading(false));
   }, [id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

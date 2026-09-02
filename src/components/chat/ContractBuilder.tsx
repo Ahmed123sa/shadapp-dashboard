@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { asSettingFlag } from '@/lib/utils';
+import { reportError } from '@/lib/error-reporting';
 
 type Template = { id: number; content: string; type: string };
 
@@ -17,11 +18,11 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   const [newCustom, setNewCustom] = useState('');
 
   useEffect(() => {
-    api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])).catch(() => {});
+    api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])).catch((err) => reportError('ContractBuilder.loadTemplates', err));
     api.get('/settings').then(({ data }) => {
       const cd = data.settings?.show_contract_dates?.value;
       if (cd !== undefined) setShowDates(asSettingFlag(cd));
-    }).catch(() => {});
+    }).catch((err) => reportError('ContractBuilder.loadSettings', err));
   }, []);
 
   const fixedTemplates = templates.filter((t) => t.type === 'fixed');

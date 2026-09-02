@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
@@ -36,7 +37,7 @@ export default function ProfilePage() {
       setEmail(u.email || '');
       if (u.avatar_url) setAvatarPreview(resolveFileUrl(u.avatar_url));
       localStorage.setItem('user', JSON.stringify(u));
-    }).catch(() => {});
+    }).catch((err) => reportError('ProfilePage.loadUser', err));
   }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

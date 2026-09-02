@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
+import { reportError } from '@/lib/error-reporting';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
@@ -37,7 +38,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
       .then(({ data }) => {
         setMessages(data.messages || []);
         setError('');
-        api.post(`/workspaces/${wsId}/chat/mark-read`).catch(() => {});
+        api.post(`/workspaces/${wsId}/chat/mark-read`).catch((err) => reportError('ClientChat.markRead', err));
       })
       .catch(() => setError(t('chat_load_error')))
       .finally(() => setLoading(false));

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
 import { asSettingFlag } from '@/lib/utils';
+import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
@@ -74,16 +75,16 @@ export default function SettingsPage() {
         setSavedSignature({ data: u.signature_data, type: isImageSignature(u.signature_data) ? 'image' : 'text' });
       }
       localStorage.setItem('user', JSON.stringify(u));
-    }).catch(() => {});
+    }).catch((err) => reportError('SettingsPage.loadUser', err));
     if (!isAM) {
       api.get('/settings').then(({ data }) => {
         const v = data.settings?.corporate_tax_percentage?.value;
         if (v !== undefined) setTaxPercentage(String(v));
         const cd = data.settings?.show_contract_dates?.value;
         if (cd !== undefined) setShowContractDates(asSettingFlag(cd));
-      }).catch(() => {});
+      }).catch((err) => reportError('SettingsPage.loadSettings', err));
       api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
-        .catch(() => {}).finally(() => setClausesLoading(false));
+        .catch((err) => reportError('SettingsPage.loadClauses', err)).finally(() => setClausesLoading(false));
     }
   }, []);
 
@@ -275,7 +276,7 @@ export default function SettingsPage() {
 
   const deleteClause = async (id: number) => {
     if (!confirm(t('delete_clause_confirm'))) return;
-    await api.delete(`/contract-clause-templates/${id}`).catch(() => {});
+    await api.delete(`/contract-clause-templates/${id}`).catch((err) => reportError('SettingsPage.deleteClause', err));
     setClauses((prev) => prev.filter((cl) => cl.id !== id));
     flashClausesMsg('clause_deleted');
   };

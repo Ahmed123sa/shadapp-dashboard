@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { isClientAuthenticated, getClient, clientLogout, isSubUser, hasSubUserPermission, getSubUser } from '@/lib/client-auth';
 import api from '@/lib/api';
+import { reportError } from '@/lib/error-reporting';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import ClientContracts from '@/components/client-contracts/ClientContracts';
 import ClientPayments from '@/components/client-payments/ClientPayments';
@@ -75,9 +76,9 @@ export default function ClientDashboardPage() {
       setClient(data.client);
       const ws = data.client.workspace;
       if (ws?.id) {
-        api.get(`/workspaces/${ws.id}`).then(({ data: wsData }) => setWorkspace(wsData.workspace)).catch(() => {});
+        api.get(`/workspaces/${ws.id}`).then(({ data: wsData }) => setWorkspace(wsData.workspace)).catch((err) => reportError('ClientDashboardPage.loadWorkspace', err));
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => reportError('ClientDashboardPage.loadClient', err)).finally(() => setLoading(false));
   }, [session?.id, fetchKey]);
 
   // Periodic workspace refresh — must be before any early return
@@ -85,7 +86,7 @@ export default function ClientDashboardPage() {
     const id = workspace?.id;
     if (!id) return;
     const interval = setInterval(() => {
-      api.get(`/workspaces/${id}`).then(({ data }) => setWorkspace(data.workspace)).catch(() => {});
+      api.get(`/workspaces/${id}`).then(({ data }) => setWorkspace(data.workspace)).catch((err) => reportError('ClientDashboardPage.pollWorkspace', err));
     }, 10000);
     return () => clearInterval(interval);
   }, [workspace?.id]);

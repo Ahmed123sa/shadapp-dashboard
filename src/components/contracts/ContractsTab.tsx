@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { reportError } from '@/lib/error-reporting';
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -51,8 +52,8 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       api.get('/settings').then(({ data }) => {
         const cd = data.settings?.show_contract_dates?.value;
         if (cd !== undefined) setShowDates(asSettingFlag(cd));
-      }).catch(() => {}),
-    ]).catch((err) => { console.error('ContractsTab: GET /workspaces/${wsId}/contracts failed', err); setError(t('contracts_load_error')); }).finally(() => setLoading(false));
+      }).catch((err) => reportError('ContractsTab.loadSettings', err)),
+    ]).catch((err) => { reportError('ContractsTab.load', err); setError(t('contracts_load_error')); }).finally(() => setLoading(false));
   }, [wsId]);
 
   const user = getUser();
@@ -97,7 +98,9 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       if (data.user?.signature_data) {
         setSavedUserSig({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text' });
       }
-    } catch {}
+    } catch (err) {
+      reportError('ContractsTab.openApproveSig', err);
+    }
   };
 
   const doCompanyApprove = async () => {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 import PasswordField from '@/components/ui/PasswordField';
 
@@ -23,7 +24,7 @@ export default function AccountManagersPage() {
   const user = getUser();
 
   const load = () => {
-    api.get('/account-managers').then(({ data }) => setManagers(data.managers || [])).catch(() => {});
+    api.get('/account-managers').then(({ data }) => setManagers(data.managers || [])).catch((err) => reportError('AccountManagersPage.load', err));
   };
 
   useEffect(() => {
