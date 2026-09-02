@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import type { Client } from '@/types';
+import type { Client, Payment, Contract } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
@@ -16,8 +16,8 @@ type RequestForm = { amount: string; currency: string; notes: string };
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: any) => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [payments, setPayments] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [taxSummary, setTaxSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -109,7 +109,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   if (loading) return <LoadingSkeleton />;
 
-  const payableContracts = contracts.filter((c: any) => c.status === 'company_approved' || c.status === 'completed');
+  const payableContracts = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
   const contractValue = payableContracts.reduce((s, c) => s + Number(c.value), 0);
   const contractCurrency = payableContracts.length > 0 ? (payableContracts[0]?.currency || 'SAR') : 'SAR';
   const totalPaid = payments.filter(p => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0);

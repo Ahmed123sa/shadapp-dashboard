@@ -6,13 +6,14 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Payment, Contract } from '@/types';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [methods, setMethods] = useState<string[]>([]);
-  const [payableContract, setPayableContract] = useState<any>(null);
-  const [payableContracts, setPayableContracts] = useState<any[]>([]);
+  const [payableContract, setPayableContract] = useState<Contract | null>(null);
+  const [payableContracts, setPayableContracts] = useState<Contract[]>([]);
   const [taxSummary, setTaxSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,7 +22,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const [methodType, setMethodType] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     const loadAll = async () => {

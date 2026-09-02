@@ -34,6 +34,7 @@ export interface Contract {
   status: ContractStatus;
   contract_type?: string;
   value: string | null;
+  currency?: string;
   start_date?: string;
   end_date?: string;
   pdf_url?: string;
@@ -63,13 +64,19 @@ export interface Payment {
   workspace_id: number;
   client_id: number;
   amount: string | number;
+  currency?: string;
   method_type: string;
   proof_file_url?: string | string[];
-  status: 'pending' | 'approved';
+  // 'rejected' | 'scheduled' | 'overdue' cover manager-scheduled installments
+  // (see PaymentsTab.tsx / FinancePage), not just the client-submitted flow.
+  status: 'pending' | 'approved' | 'rejected' | 'scheduled' | 'overdue';
+  due_date?: string | null;
+  requested_by_manager?: boolean;
   notes?: string;
   reviewed_by?: number;
   reviewed_at?: string;
   contract_id?: number;
+  contract?: Contract;
   client?: Client;
   workspace?: Workspace;
   created_at: string;
