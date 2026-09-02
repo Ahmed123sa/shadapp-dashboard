@@ -10,6 +10,7 @@ import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
+import type { Contract, ContractClauseTemplate } from '@/types';
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -22,8 +23,8 @@ function isImageSignature(val: string | null | undefined) {
 export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [templates, setTemplates] = useState<ContractClauseTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
@@ -52,13 +53,13 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const user = getUser();
   const isSA = user?.role === 'super_admin';
 
-  const fixedTemplates = templates.filter((t: any) => t.type === 'fixed');
-  const optionalTemplates = templates.filter((t: any) => t.type === 'optional');
+  const fixedTemplates = templates.filter((tpl) => tpl.type === 'fixed');
+  const optionalTemplates = templates.filter((tpl) => tpl.type === 'optional');
 
   const create = async () => {
     if (!form.title) return;
-    const clauses: any[] = [];
-    optionalTemplates.forEach((t: any) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional' }); });
+    const clauses: { content: string; type: 'optional' | 'custom' }[] = [];
+    optionalTemplates.forEach((tpl) => { if (selectedOptional[tpl.id]) clauses.push({ content: tpl.content, type: 'optional' }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom' }));
 
     const required_documents = requiredDocs.map((name) => ({ name }));
@@ -136,10 +137,10 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           {fixedTemplates.length > 0 && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h4>
-              {fixedTemplates.map((t: any) => (
-                <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
+              {fixedTemplates.map((tpl) => (
+                <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                   <input type="checkbox" checked disabled className="mt-0.5" />
-                  <span>{t.content}</span>
+                  <span>{tpl.content}</span>
                 </label>
               ))}
             </div>
@@ -147,10 +148,10 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           {optionalTemplates.length > 0 && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('optional_clauses_heading')}</h4>
-              {optionalTemplates.map((t: any) => (
-                <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold)]">
-                  <input type="checkbox" checked={!!selectedOptional[t.id]} onChange={() => toggleOptional(t.id)} className="mt-0.5" />
-                  <span>{t.content}</span>
+              {optionalTemplates.map((tpl) => (
+                <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold)]">
+                  <input type="checkbox" checked={!!selectedOptional[tpl.id]} onChange={() => toggleOptional(tpl.id)} className="mt-0.5" />
+                  <span>{tpl.content}</span>
                 </label>
               ))}
             </div>
@@ -209,7 +210,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           <ContractStatusStepper status={c.status} compact />
           {c.clauses?.length > 0 && (
             <div className="mt-2 space-y-1">
-              {c.clauses.map((cl: any) => (
+              {c.clauses.map((cl) => (
                 <p key={cl.id} className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
               ))}
             </div>

@@ -45,6 +45,12 @@ export interface Contract {
   creator?: User;
   workspace?: Workspace;
   clauses: ContractClause[];
+  required_documents?: RequiredDocument[];
+}
+
+export interface RequiredDocument {
+  id?: number;
+  name: string;
 }
 
 export type ContractStatus =
