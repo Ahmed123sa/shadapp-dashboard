@@ -12,6 +12,29 @@
  * sending a real bool or int. Anything unrecognised is false, so the caller
  * keeps its own default when the setting is absent.
  */
+const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
+
+/**
+ * Turns a backend-relative storage path (e.g. `storage/avatars/x.jpg`) into
+ * an absolute, browser-loadable URL, or passes an already-absolute URL
+ * through unchanged.
+ *
+ * This exact logic was copy-pasted across 18 files (avatars, chat
+ * attachments, contract signatures, approval certificates, payment proofs),
+ * each with its own locally-scoped `FILE_BASE`/`resolveFileUrl` — one file
+ * had drifted to accept `string | string[]` for `Payment.proof_file_url`
+ * (multiple proof uploads) while the other 17 only accepted `string`. This
+ * single copy accepts both shapes so every caller can use it unchanged,
+ * taking the first entry when an array is passed.
+ */
+export function resolveFileUrl(url: string | string[] | null | undefined): string {
+  if (!url) return '';
+  const raw = Array.isArray(url) ? (url[0] || '') : url;
+  if (!raw) return '';
+  if (raw.startsWith('http')) return raw;
+  return `${FILE_BASE}/storage/${raw.replace(/^\/?storage\//, '')}`;
+}
+
 export function asSettingFlag(value: unknown): boolean {
   if (value === null || value === undefined) return false;
   if (typeof value === 'boolean') return value;

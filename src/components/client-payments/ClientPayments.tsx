@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
@@ -259,9 +260,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : 'bg-gray-500';
           const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : p.status;
 
-          const FILE_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-          const proofRaw = Array.isArray(p.proof_file_url) ? (p.proof_file_url[0] || null) : (p.proof_file_url || null);
-          const proofUrl = proofRaw ? `${FILE_BASE_URL}/storage/${proofRaw.replace(/^\/?storage\//, '')}` : null;
+          const proofUrl = p.proof_file_url ? resolveFileUrl(p.proof_file_url) || null : null;
 
           return (
           <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>

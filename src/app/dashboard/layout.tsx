@@ -12,13 +12,7 @@ import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
   Folder, ClipboardList, Settings, UserCog, BarChart3,
 } from 'lucide-react';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 interface NavItem {
   href: string;

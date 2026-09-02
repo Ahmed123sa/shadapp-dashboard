@@ -11,14 +11,7 @@ import {
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import Link from 'next/link';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function FinancePage() {
   const t = useTranslations('dashboard');

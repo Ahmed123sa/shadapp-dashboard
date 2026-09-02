@@ -6,13 +6,7 @@ import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-
-const APPROVALS_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${APPROVALS_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';

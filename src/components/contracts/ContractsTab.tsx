@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { asSettingFlag } from '@/lib/utils';
+import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -37,13 +37,6 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
   const [newReqDoc, setNewReqDoc] = useState('');
   const [showDates, setShowDates] = useState(true);
-
-  const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-  const resolveFileUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-  };
 
   useEffect(() => {
     Promise.all([

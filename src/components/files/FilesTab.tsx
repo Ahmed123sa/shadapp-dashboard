@@ -7,13 +7,7 @@ import { getUser } from '@/lib/auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-const resolveFileUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-};
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function FilesTab({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');

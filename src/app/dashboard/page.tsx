@@ -14,6 +14,7 @@ import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed'
 import ManagerTableRow from '@/components/dashboard/ManagerTableRow';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { resolveFileUrl } from '@/lib/utils';
 
 type Client = {
   id: number; company_name: string; contact_person: string; email: string;
@@ -67,14 +68,6 @@ type Approval = {
 };
 
 type PaginatedResponse<T> = { data: T[]; current_page: number; last_page: number; per_page: number; total: number };
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
 
 function timeAgo(dateStr: string, locale: string, t: any): string {
   if (!dateStr) return '';

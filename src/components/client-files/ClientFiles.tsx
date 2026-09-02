@@ -6,14 +6,8 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
+import { resolveFileUrl } from '@/lib/utils';
 
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-const resolveFileUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-};
- 
 export default function ClientFiles({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const [files, setFiles] = useState<any[]>([]);

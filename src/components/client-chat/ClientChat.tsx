@@ -4,18 +4,12 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { reportError } from '@/lib/error-reporting';
+import { resolveFileUrl } from '@/lib/utils';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
-
-const CLIENT_FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${CLIENT_FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
@@ -140,7 +134,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
               {!isClientTeam && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-primary)] overflow-hidden bg-[var(--color-input-fill)] flex items-center justify-center text-xs text-[var(--color-gold)] font-bold mt-1">
                   {senderAvatarUrl ? (
-                    <img src={senderAvatarUrl.startsWith('http') ? senderAvatarUrl : `${CLIENT_FILE_BASE}/storage/${senderAvatarUrl.replace(/^\/?storage\//, '')}`} alt="" className="w-full h-full object-cover" />
+                    <img src={resolveFileUrl(senderAvatarUrl)} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <span>{senderName?.[0]?.toUpperCase() || '?'}</span>
                   )}
@@ -149,7 +143,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
               {isClientTeam && !isConsecutive && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-gold)] overflow-hidden bg-[var(--color-primary)] flex items-center justify-center text-xs text-white font-bold mt-1">
                   {senderAvatarUrl ? (
-                    <img src={senderAvatarUrl.startsWith('http') ? senderAvatarUrl : `${CLIENT_FILE_BASE}/storage/${senderAvatarUrl.replace(/^\/?storage\//, '')}`} alt="" className="w-full h-full object-cover" />
+                    <img src={resolveFileUrl(senderAvatarUrl)} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <span>{senderName?.[0]?.toUpperCase() || '?'}</span>
                   )}

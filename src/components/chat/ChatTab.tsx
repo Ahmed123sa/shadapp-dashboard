@@ -12,13 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck } from 'lucide-react';
 import { reportError } from '@/lib/error-reporting';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
   const t = useTranslations('dashboard');

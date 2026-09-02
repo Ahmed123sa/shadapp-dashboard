@@ -23,14 +23,7 @@ import CalendarTab from '@/components/calendar/CalendarTab';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
 import { reportError } from '@/lib/error-reporting';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
 type Tab = (typeof TABS)[number];

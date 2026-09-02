@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveFileUrl } from '@/lib/utils';
+
 const avatarColors = [
   { bg: 'var(--color-crimson-soft)', border: 'var(--color-crimson-border)', text: 'var(--color-gold)' },
   { bg: 'var(--color-gold-soft)', border: 'var(--color-gold-border)', text: 'var(--color-gold)' },
@@ -17,13 +19,6 @@ interface Manager {
   avatar_url?: string | null;
   managed_clients_count: number;
   pending_count?: number;
-}
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
 }
 
 export default function ManagerTableRow({ manager, index, expanded, onToggle }: {

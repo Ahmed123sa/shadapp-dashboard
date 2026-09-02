@@ -4,15 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { reportError } from '@/lib/error-reporting';
+import { resolveFileUrl } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
 
 export default function ProfilePage() {
   const t = useTranslations('settings');

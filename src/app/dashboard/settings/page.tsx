@@ -3,17 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
-import { asSettingFlag } from '@/lib/utils';
+import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly

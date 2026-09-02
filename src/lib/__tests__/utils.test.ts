@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag } from '../utils';
+import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl } from '../utils';
 
 const NOW = new Date('2026-08-26T10:00:00.000Z');
 
@@ -100,5 +100,31 @@ describe('formatMeetingDate', () => {
     // returns a string", not a specific fallback value.
     expect(() => formatMeetingDate('not-a-date')).not.toThrow();
     expect(formatMeetingDate('not-a-date')).toEqual(expect.any(String));
+  });
+});
+
+describe('resolveFileUrl', () => {
+  it('prefixes a storage-relative path with the API file base', () => {
+    expect(resolveFileUrl('avatars/x.jpg')).toBe('http://localhost:8000/storage/avatars/x.jpg');
+  });
+
+  it('strips a leading storage/ segment instead of doubling it', () => {
+    expect(resolveFileUrl('storage/avatars/x.jpg')).toBe('http://localhost:8000/storage/avatars/x.jpg');
+    expect(resolveFileUrl('/storage/avatars/x.jpg')).toBe('http://localhost:8000/storage/avatars/x.jpg');
+  });
+
+  it('passes an already-absolute URL through unchanged', () => {
+    expect(resolveFileUrl('https://cdn.example.com/x.jpg')).toBe('https://cdn.example.com/x.jpg');
+  });
+
+  it('takes the first entry when given an array (Payment.proof_file_url)', () => {
+    expect(resolveFileUrl(['proofs/a.jpg', 'proofs/b.jpg'])).toBe('http://localhost:8000/storage/proofs/a.jpg');
+  });
+
+  it('returns an empty string for null, undefined, or an empty array', () => {
+    expect(resolveFileUrl(null)).toBe('');
+    expect(resolveFileUrl(undefined)).toBe('');
+    expect(resolveFileUrl('')).toBe('');
+    expect(resolveFileUrl([])).toBe('');
   });
 });

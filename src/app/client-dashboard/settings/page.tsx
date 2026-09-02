@@ -6,14 +6,7 @@ import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import { isClientAuthenticated, getClient, clientLogout } from '@/lib/client-auth';
 import { reportError } from '@/lib/error-reporting';
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-
-function resolveFileUrl(url: string): string {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${FILE_BASE}/storage/${url.replace(/^\/?storage\//, '')}`;
-}
+import { resolveFileUrl } from '@/lib/utils';
 
 export default function ClientSettingsPage() {
   const t = useTranslations('dashboard');

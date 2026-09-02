@@ -8,18 +8,10 @@ import type { Client } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
+import { resolveFileUrl } from '@/lib/utils';
 
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
 type RequestForm = { amount: string; currency: string; notes: string };
-
-const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-function resolveFileUrl(url: string | string[]): string {
-  if (!url) return '';
-  const raw = Array.isArray(url) ? (url[0] || '') : url;
-  if (!raw) return '';
-  if (raw.startsWith('http')) return raw;
-  return `${FILE_BASE}/storage/${raw.replace(/^\/?storage\//, '')}`;
-}
 
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: any) => void }) {
   const t = useTranslations('dashboard');
