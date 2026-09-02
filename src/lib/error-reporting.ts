@@ -13,6 +13,5 @@ export function reportError(context: string, error: unknown, extra?: Record<stri
   const payload: Record<string, unknown> = { context, message };
   if (error instanceof Error && error.stack) payload.stack = error.stack;
   if (extra) payload.extra = extra;
-  // eslint-disable-next-line no-console
   console.error(`[reportError] ${context}:`, payload);
 }

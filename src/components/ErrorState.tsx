@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface ErrorStateProps {
   onRetry?: () => void;
@@ -54,12 +55,12 @@ export default function ErrorState({ onRetry, fullScreen = false }: ErrorStatePr
             {text.retry}
           </button>
         )}
-        <a
+        <Link
           href="/"
           className="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--color-text-secondary)] text-[12.5px] hover:text-[var(--color-foreground)] transition-colors"
         >
           {text.home}
-        </a>
+        </Link>
       </div>
     </div>
   );
