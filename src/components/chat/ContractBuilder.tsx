@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
+import { asSettingFlag } from '@/lib/utils';
 
 type Template = { id: number; content: string; type: string };
 
@@ -19,7 +20,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
     api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])).catch(() => {});
     api.get('/settings').then(({ data }) => {
       const cd = data.settings?.show_contract_dates?.value;
-      if (cd !== undefined) setShowDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
+      if (cd !== undefined) setShowDates(asSettingFlag(cd));
     }).catch(() => {});
   }, []);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
+import { asSettingFlag } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 const FILE_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
@@ -79,7 +80,7 @@ export default function SettingsPage() {
         const v = data.settings?.corporate_tax_percentage?.value;
         if (v !== undefined) setTaxPercentage(String(v));
         const cd = data.settings?.show_contract_dates?.value;
-        if (cd !== undefined) setShowContractDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
+        if (cd !== undefined) setShowContractDates(asSettingFlag(cd));
       }).catch(() => {});
       api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
         .catch(() => {}).finally(() => setClausesLoading(false));

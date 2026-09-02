@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMeetingJoinStatus, formatMeetingDate } from '../utils';
+import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag } from '../utils';
 
 const NOW = new Date('2026-08-26T10:00:00.000Z');
 
@@ -48,6 +48,41 @@ describe('getMeetingJoinStatus', () => {
     vi.useFakeTimers().setSystemTime(NOW);
     const status = getMeetingJoinStatus(new Date(NOW.getTime() - 5 * 60000).toISOString(), 'ar');
     expect(status.label).toBe('انضم الآن');
+  });
+});
+
+describe('asSettingFlag', () => {
+  it('accepts the string form the backend actually stores', () => {
+    // SystemSetting stores '1'/'0' as strings — this is the live case.
+    expect(asSettingFlag('1')).toBe(true);
+    expect(asSettingFlag('0')).toBe(false);
+  });
+
+  it('accepts a real bool, in case a Laravel cast starts sending one', () => {
+    expect(asSettingFlag(true)).toBe(true);
+    expect(asSettingFlag(false)).toBe(false);
+  });
+
+  it('accepts an int, in case the column is cast to integer', () => {
+    expect(asSettingFlag(1)).toBe(true);
+    expect(asSettingFlag(0)).toBe(false);
+  });
+
+  it('accepts "true"/"false" regardless of case or padding', () => {
+    // The old inline expressions used `=== 'true'`, so 'TRUE' read as false
+    // here while the mobile app read it as true. Both agree now.
+    expect(asSettingFlag('true')).toBe(true);
+    expect(asSettingFlag('TRUE')).toBe(true);
+    expect(asSettingFlag(' True ')).toBe(true);
+    expect(asSettingFlag('false')).toBe(false);
+  });
+
+  it('treats null/undefined and unparseable values as false', () => {
+    expect(asSettingFlag(null)).toBe(false);
+    expect(asSettingFlag(undefined)).toBe(false);
+    expect(asSettingFlag('')).toBe(false);
+    expect(asSettingFlag('yes')).toBe(false);
+    expect(asSettingFlag({})).toBe(false);
   });
 });
 

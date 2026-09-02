@@ -1,3 +1,24 @@
+/**
+ * Reads a system-setting flag that the backend stores as a string ('1'/'0').
+ *
+ * This exact expression was inlined in three places (ContractBuilder,
+ * ContractsTab, dashboard/settings) plus a fourth, subtly different one in the
+ * mobile app — which accepted 'TRUE' while these did not, since `===` is
+ * case-sensitive. Not a live bug (SystemSetting stores '1'/'0'), but four
+ * copies of a parser that has to agree is one place to change and three to
+ * forget.
+ *
+ * Tolerant on purpose: a Laravel cast or API Resource change could start
+ * sending a real bool or int. Anything unrecognised is false, so the caller
+ * keeps its own default when the setting is absent.
+ */
+export function asSettingFlag(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  return String(value).trim().toLowerCase() === '1' || String(value).trim().toLowerCase() === 'true';
+}
+
 export interface MeetingJoinStatus {
   canJoin: boolean;
   label: string;

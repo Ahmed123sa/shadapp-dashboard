@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { asSettingFlag } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -49,7 +50,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])),
       api.get('/settings').then(({ data }) => {
         const cd = data.settings?.show_contract_dates?.value;
-        if (cd !== undefined) setShowDates(cd === '1' || cd === 1 || cd === true || cd === 'true');
+        if (cd !== undefined) setShowDates(asSettingFlag(cd));
       }).catch(() => {}),
     ]).catch((err) => { console.error('ContractsTab: GET /workspaces/${wsId}/contracts failed', err); setError(t('contracts_load_error')); }).finally(() => setLoading(false));
   }, [wsId]);
