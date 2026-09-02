@@ -12,6 +12,7 @@ import {
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import Link from 'next/link';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Payment, Client, User } from '@/types';
 
 export default function FinancePage() {
   const t = useTranslations('dashboard');
@@ -20,13 +21,13 @@ export default function FinancePage() {
   const isSA = user?.role === 'super_admin';
 
   const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [pagination, setPagination] = useState<any>({ current_page: 1, last_page: 1, total: 0 });
 
   // Filter options lists
-  const [clients, setClients] = useState<any[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [managers, setManagers] = useState<User[]>([]);
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -263,7 +264,7 @@ export default function FinancePage() {
             className="bg-[var(--color-input-fill)] border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)] transition"
           >
             <option value="">{locale === 'ar' ? 'كل العملاء' : 'All Clients'}</option>
-            {clients.map((c: any) => (
+            {clients.map((c) => (
               <option key={c.id} value={c.id}>{c.company_name || c.contact_person}</option>
             ))}
           </select>
@@ -276,7 +277,7 @@ export default function FinancePage() {
               className="bg-[var(--color-input-fill)] border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)] transition"
             >
               <option value="">{locale === 'ar' ? 'كل مديري الحسابات' : 'All Account Managers'}</option>
-              {managers.map((m: any) => (
+              {managers.map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
