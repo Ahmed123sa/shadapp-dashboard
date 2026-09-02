@@ -5,9 +5,10 @@ import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { useTranslations } from 'next-intl';
+import type { Contract } from '@/types';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
-  contract: any;
+  contract: Contract;
   wsId: number;
   onClose: () => void;
   onAction: (action: string) => void;
@@ -51,10 +52,10 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
 
         <ContractStatusStepper status={contract.status} />
 
-        {contract.value > 0 && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_value', { value: contract.value, currency: contract.currency || 'SAR' })}</p>
+        {Number(contract.value) > 0 && (
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_value', { value: contract.value ?? '', currency: contract.currency || 'SAR' })}</p>
         )}
-        {clientType === 'business' && contract.value > 0 && (
+        {clientType === 'business' && Number(contract.value) > 0 && (
           <p className="text-xs text-[var(--color-text-disabled)] mb-1">{t('contract_excl_vat')}</p>
         )}
         {contract.start_date && (
@@ -64,7 +65,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         {contract.clauses?.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('contract_clauses_heading')}</h4>
-            {contract.clauses.map((cl: any) => (
+            {contract.clauses.map((cl) => (
               <div key={cl.id} className="text-sm text-[var(--color-text-secondary)] pr-3 border-r-2 border-[var(--color-card-border)] py-1">
                 {cl.content}
                 <span className="text-xs text-[var(--color-text-disabled)] mr-2">
@@ -78,7 +79,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         {docs.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('documents_heading')}</h4>
-            {docs.map((doc: any) => {
+            {docs.map((doc) => {
               const file = doc.files?.[0];
               return (
                 <div key={doc.id} className="flex items-center justify-between text-sm border border-[var(--color-card-border)] rounded-lg p-3">

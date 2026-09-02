@@ -48,9 +48,14 @@ export interface Contract {
   required_documents?: RequiredDocument[];
 }
 
+// Represents a required document as returned by the API (always has an id,
+// since it's a persisted row). The outgoing create-contract payload that
+// builds these from plain strings before saving is a separate, untyped shape
+// — it isn't assigned to this interface.
 export interface RequiredDocument {
-  id?: number;
+  id: number;
   name: string;
+  files?: FileEntry[];
 }
 
 export type ContractStatus =

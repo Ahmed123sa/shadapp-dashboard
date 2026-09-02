@@ -9,13 +9,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
 import { useTranslations } from 'next-intl';
+import type { Contract } from '@/types';
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
   const t = useTranslations('dashboard');
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewContract, setViewContract] = useState<any>(null);
+  const [viewContract, setViewContract] = useState<Contract | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: number; action: string } | null>(null);
 
   const load = () => {
@@ -23,9 +24,9 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
     api.get(`/workspaces/${wsId}/contracts`)
       .then(({ data }) => {
         const list = data.contracts?.data ?? data.contracts ?? [];
-        const arr = Array.isArray(list) ? list : [];
+        const arr: Contract[] = Array.isArray(list) ? list : [];
         setContracts(arr);
-        setViewContract((prev: any) => prev ? arr.find((c: any) => c.id === prev.id) || prev : prev);
+        setViewContract((prev) => prev ? arr.find((c) => c.id === prev.id) || prev : prev);
       })
       .catch(() => setError(t('contract_load_failed')))
       .finally(() => setLoading(false));
@@ -53,8 +54,8 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           <div className="flex justify-between items-start">
             <div>
               <h4 className="font-medium">{c.title}</h4>
-              {c.value > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}</p>}
-              {c.required_documents?.length > 0 && <p className="text-xs text-amber-600 mt-0.5">{t('contract_docs_required', { count: c.required_documents.length })}</p>}
+              {Number(c.value) > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}</p>}
+              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">{t('contract_docs_required', { count: c.required_documents?.length ?? 0 })}</p>}
             </div>
             <StatusBadge status={c.status} />
           </div>
