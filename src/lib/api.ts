@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getActiveSocketId } from './echo';
+import { reportError } from './error-reporting';
 
 // All requests go to the same-origin /api/proxy/* route handler, never
 // directly to the Laravel origin. The proxy attaches the Sanctum token
@@ -29,6 +30,15 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const config = err.config;
+    // err.config is undefined when the error originates inside a *request*
+    // interceptor itself (e.g. getActiveSocketId() above throwing) rather
+    // than from the network call — without this guard the retry/401 handling
+    // below throws a TypeError that masks the real error and skips the 401
+    // redirect entirely.
+    if (!config) {
+      reportError('api.ts response interceptor (no config)', err);
+      return Promise.reject(err);
+    }
     config.__retryCount = config.__retryCount || 0;
 
     if (err.response?.status === 429 && config.__retryCount < 3) {

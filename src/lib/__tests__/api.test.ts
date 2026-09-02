@@ -82,6 +82,23 @@ describe('response interceptor — 401 handling', () => {
   });
 });
 
+describe('response interceptor — missing config', () => {
+  it('rejects with the original error instead of throwing when err.config is undefined', async () => {
+    // A request interceptor throwing (e.g. getActiveSocketId() blowing up)
+    // produces a rejection with no .config attached, since axios never
+    // finished building the request. Before the guard, `config.__retryCount`
+    // below would itself throw a TypeError that replaced this error.
+    vi.mocked(getActiveSocketId).mockImplementation(() => {
+      throw new Error('socket boom');
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(api.get('/whatever')).rejects.toThrow('socket boom');
+
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+});
+
 describe('response interceptor — 429 retry', () => {
   it('retries with backoff and resolves once the server stops rate-limiting', async () => {
     let calls = 0;
