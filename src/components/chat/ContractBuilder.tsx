@@ -5,10 +5,11 @@ import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { asSettingFlag } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
+import type { Contract } from '@/types';
 
 type Template = { id: number; content: string; type: string };
 
-export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: any) => void; onCancel: () => void }) {
+export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: Contract) => void; onCancel: () => void }) {
   const t = useTranslations('dashboard');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
@@ -39,7 +40,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
 
   const create = async () => {
     if (!form.title) return;
-    const clauses: any[] = [];
+    const clauses: { content: string; type: 'optional' | 'custom'; sort_order: number }[] = [];
     optionalTemplates.forEach((t) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional', sort_order: clauses.length }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom', sort_order: clauses.length }));
 
