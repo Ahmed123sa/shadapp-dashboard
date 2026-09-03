@@ -87,8 +87,9 @@ function ForgotPasswordForm() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
+                  <label htmlFor="forgot-password-email" className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
                   <input
+                    id="forgot-password-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

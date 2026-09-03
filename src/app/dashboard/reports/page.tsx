@@ -271,7 +271,7 @@ export default function ReportsPage() {
             {activeFilters.map((chip, i) => (
               <span key={i} className="bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold)] px-2 py-0.5 rounded-[20px] text-[10px] flex items-center gap-1">
                 {chip}
-                <span onClick={() => removeFilter(chip)} className="cursor-pointer"><X size={12} strokeWidth={2} /></span>
+                <button type="button" onClick={() => removeFilter(chip)} aria-label={t('remove_filter', { chip })} className="cursor-pointer"><X size={12} strokeWidth={2} /></button>
               </span>
             ))}
           </div>

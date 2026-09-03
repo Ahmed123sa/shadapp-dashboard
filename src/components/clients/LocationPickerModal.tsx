@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { X, Search, Check } from 'lucide-react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 // Leaflet touches `window` at import time, so it can never be part of the
 // server-rendered bundle — load it client-side only.
@@ -26,6 +27,8 @@ interface Props {
 
 export default function LocationPickerModal({ initialLat, initialLng, initialAddress, onConfirm, onClose }: Props) {
   const t = useTranslations('dashboard');
+  const titleId = useId();
+  const { dialogRef, dialogProps } = useModalA11y<HTMLDivElement>(true, onClose);
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(
     typeof initialLat === 'number' && typeof initialLng === 'number' ? { lat: initialLat, lng: initialLng } : null
   );
@@ -91,11 +94,14 @@ export default function LocationPickerModal({ initialLat, initialLng, initialAdd
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
       <div
+        ref={dialogRef}
+        {...dialogProps}
+        aria-labelledby={titleId}
         className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl w-full max-w-lg p-5 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm">{t('location_picker_title')}</h3>
+          <h3 id={titleId} className="font-semibold text-sm">{t('location_picker_title')}</h3>
           <button onClick={onClose} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">
             <X size={18} strokeWidth={1.5} />
           </button>
@@ -136,8 +142,9 @@ export default function LocationPickerModal({ initialLat, initialLng, initialAdd
         )}
 
         <div>
-          <label className="text-xs text-[var(--color-text-secondary)]">{t('location_picker_address_label')}</label>
+          <label htmlFor="location-picker-address" className="text-xs text-[var(--color-text-secondary)]">{t('location_picker_address_label')}</label>
           <textarea
+            id="location-picker-address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             rows={2}

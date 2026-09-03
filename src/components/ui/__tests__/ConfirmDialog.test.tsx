@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ConfirmDialog } from '../ConfirmDialog';
 
@@ -44,6 +45,45 @@ describe('ConfirmDialog', () => {
     // Clicking inside the dialog body must not also trigger the backdrop's
     // onCancel (it calls stopPropagation for exactly this reason).
     await user.click(screen.getByText('This cannot be undone.'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('exposes dialog semantics and labels the dialog by its title', () => {
+    render(<ConfirmDialog {...baseProps} open onConfirm={() => {}} onCancel={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAccessibleName('Delete client?');
+  });
+
+  it('moves focus into the dialog on open and returns it to the trigger on close', async () => {
+    const user = userEvent.setup();
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>Open dialog</button>
+          <ConfirmDialog {...baseProps} open={open} onConfirm={() => {}} onCancel={() => setOpen(false)} />
+        </>
+      );
+    }
+    render(<Harness />);
+
+    const trigger = screen.getByText('Open dialog');
+    trigger.focus();
+    await user.click(trigger);
+
+    await waitFor(() => expect(screen.getByText('Cancel')).toHaveFocus());
+
+    await user.click(screen.getByText('Cancel'));
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it('closes on Escape', async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    render(<ConfirmDialog {...baseProps} open onConfirm={() => {}} onCancel={onCancel} />);
+
+    await user.keyboard('{Escape}');
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });

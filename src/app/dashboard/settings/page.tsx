@@ -307,6 +307,18 @@ export default function SettingsPage() {
     setDragIdx(null);
   };
 
+  // Keyboard-operable alternative to the mouse-only drag-and-drop reorder above.
+  const moveClause = (idx: number, direction: -1 | 1) => {
+    const targetIdx = idx + direction;
+    setClauses((prev) => {
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(idx, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+  };
+
   const saveOrder = async () => {
     const { data } = await api.post('/contract-clause-templates/reorder', { ordered_ids: clauses.map((cl) => cl.id) }).catch(() => ({ data: null }));
     if (data) setClauses(data.templates);
@@ -430,7 +442,7 @@ export default function SettingsPage() {
               if (file) { setUploadedSignatureFile(file); setUploadedSignaturePreview(URL.createObjectURL(file)); }
             }} />
             {uploadedSignaturePreview && (
-              <img src={uploadedSignaturePreview} alt="" className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2" />
+              <img src={uploadedSignaturePreview} alt={t('signature_preview_alt')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2" />
             )}
           </div>
         )}
@@ -451,8 +463,8 @@ export default function SettingsPage() {
         )}
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">{t('tax_percentage')}</label>
-            <input type="number" min="0" max="100" step="0.5" value={taxPercentage}
+            <label htmlFor="settings-tax-percentage" className="text-sm text-[var(--color-text-secondary)] mb-1 block">{t('tax_percentage')}</label>
+            <input id="settings-tax-percentage" type="number" min="0" max="100" step="0.5" value={taxPercentage}
               onChange={(e) => setTaxPercentage(e.target.value)}
               className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
@@ -480,7 +492,7 @@ export default function SettingsPage() {
               disabled={savingDates}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)]"></div>
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-[var(--color-primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)]"></div>
           </label>
         </div>
         {datesSuccess && (
@@ -569,6 +581,10 @@ export default function SettingsPage() {
                       <p className="text-sm mt-1">{cl.content}</p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => moveClause(idx, -1)} disabled={idx === 0} aria-label={t('move_clause_up')}
+                        className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1 py-1 disabled:opacity-30 disabled:cursor-not-allowed">▲</button>
+                      <button onClick={() => moveClause(idx, 1)} disabled={idx === clauses.length - 1} aria-label={t('move_clause_down')}
+                        className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1 py-1 disabled:opacity-30 disabled:cursor-not-allowed">▼</button>
                       <button onClick={() => updateClause(cl.id, { is_active: !cl.is_active })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] px-1.5 py-1">
                         {cl.is_active ? t('deactivate') : t('activate')}
                       </button>

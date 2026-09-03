@@ -70,9 +70,12 @@ export function PaginatedView<T extends { id: number | string }>({
                   {items.map((item, i: number) => (
                     <tr
                       key={item.id}
-                      className="row-slide hover:bg-white/[0.025] cursor-pointer"
+                      className="row-slide hover:bg-white/[0.025] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:-outline-offset-2"
                       style={{ animationDelay: `${(i + 1) * 50}ms` }}
+                      tabIndex={0}
+                      role="button"
                       onClick={() => router.push(config.getLink(item))}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(config.getLink(item)); } }}
                     >
                       {config.renderRow(item, locale)}
                     </tr>

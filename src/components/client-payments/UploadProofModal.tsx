@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { Payment } from '@/types';
 
 export default function UploadProofModal({ wsId, availableMethods, allowedCurrencies, onClose, onCreated }: {
@@ -13,6 +14,8 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
   onCreated: (payment: Payment) => void;
 }) {
   const t = useTranslations('dashboard');
+  const titleId = useId();
+  const { dialogRef, dialogProps } = useModalA11y<HTMLDivElement>(true, onClose);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
   const [methodType, setMethodType] = useState('');
@@ -54,20 +57,26 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        {...dialogProps}
+        aria-labelledby={titleId}
+        className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">{t('pay_submit_proof')}</h3>
-          <button onClick={onClose} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
+          <h3 id={titleId} className="font-bold">{t('pay_submit_proof')}</h3>
+          <button onClick={onClose} aria-label={t('close')} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
         </div>
 
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')}
+        <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')} aria-label={t('pay_amount_ph')}
           className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
 
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)} aria-label={t('currency_label')} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
           {currencyOptions.map((c) => <option key={c} value={c}>{currencyLabels[c] || c}</option>)}
         </select>
 
-        <select value={methodType} onChange={(e) => setMethodType(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
+        <select value={methodType} onChange={(e) => setMethodType(e.target.value)} aria-label={t('pay_method_ph')} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
           <option value="">{t('pay_method_ph')}</option>
           {availableMethods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
         </select>

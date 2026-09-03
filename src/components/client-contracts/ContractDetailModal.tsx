@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { useTranslations } from 'next-intl';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { Contract } from '@/types';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
@@ -16,6 +17,8 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
   clientType?: string;
 }) {
   const t = useTranslations('dashboard');
+  const titleId = useId();
+  const { dialogRef, dialogProps } = useModalA11y<HTMLDivElement>(true, onClose);
   const canAct = contract.status === 'sent';
   const [uploading, setUploading] = useState<Record<number, boolean>>({});
   const [error, setError] = useState('');
@@ -41,13 +44,19 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto border border-[var(--color-card-border)]" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        {...dialogProps}
+        aria-labelledby={titleId}
+        className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto border border-[var(--color-card-border)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold">{contract.title}</h3>
+            <h3 id={titleId} className="text-lg font-bold">{contract.title}</h3>
             <StatusBadge status={contract.status} className="mt-1" />
           </div>
-          <button onClick={onClose} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
+          <button onClick={onClose} aria-label={t('close')} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
         </div>
 
         <ContractStatusStepper status={contract.status} />

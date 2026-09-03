@@ -51,8 +51,9 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
+              <label htmlFor="login-email" className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -63,9 +64,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
+              <label htmlFor="login-password" className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={visible ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +80,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setVisible(!visible)}
                   className="absolute top-1/2 -translate-y-1/2 end-0 flex items-center px-3 text-white/40 hover:text-white/60 h-10"
-                  tabIndex={-1}
+                  aria-label={visible ? t('pw_hide') : t('pw_show')}
                 >
                   {visible ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

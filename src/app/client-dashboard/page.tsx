@@ -179,7 +179,7 @@ export default function ClientDashboardPage() {
             ) : (
               <span className="text-sm text-[var(--color-text-secondary)]">{session.company_name}</span>
             )}
-            <Link href="/client-dashboard/settings" className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg transition-colors">⚙️</Link>
+            <Link href="/client-dashboard/settings" className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg transition-colors" aria-label={t('settings_title')}>⚙️</Link>
             <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg">
               {t('client_logout')}
             </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import type { Client, Payment, Contract, PaymentTaxSummary, Workspace } from '@/types';
@@ -9,6 +9,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
 type RequestForm = { amount: string; currency: string; notes: string };
@@ -25,6 +26,10 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', currency: 'SAR', notes: '' });
   const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ amount: '', currency: 'SAR', due_date: '', installment_label: '' });
   const [installments, setInstallments] = useState<ScheduleForm[]>([]);
+  const scheduleTitleId = useId();
+  const requestTitleId = useId();
+  const { dialogRef: scheduleDialogRef, dialogProps: scheduleDialogProps } = useModalA11y<HTMLDivElement>(showSchedule, () => setShowSchedule(false));
+  const { dialogRef: requestDialogRef, dialogProps: requestDialogProps } = useModalA11y<HTMLDivElement>(showRequest, () => setShowRequest(false));
   const user = getUser();
   const canReview = user?.role === 'super_admin';
   const isSA = user?.role === 'super_admin';
@@ -240,29 +245,35 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
       })}
       {showSchedule && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowSchedule(false)}>
-          <div className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={scheduleDialogRef}
+            {...scheduleDialogProps}
+            aria-labelledby={scheduleTitleId}
+            className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('schedule_title')}</h3>
-              <button onClick={() => setShowSchedule(false)} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+              <h3 id={scheduleTitleId} className="text-lg font-bold text-[var(--color-text-primary)]">{t('schedule_title')}</h3>
+              <button onClick={() => setShowSchedule(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
-                <input type="number" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
+                <label htmlFor="pay-schedule-amount" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
+                <input id="pay-schedule-amount" type="number" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('description_optional')}</label>
-                <input type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('installment_ph')} />
+                <label htmlFor="pay-schedule-label" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('description_optional')}</label>
+                <input id="pay-schedule-label" type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('installment_ph')} />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                <label htmlFor="pay-schedule-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
+                <select id="pay-schedule-currency" value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('due_date_required')}</label>
-                <input type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" />
+                <label htmlFor="pay-schedule-due-date" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('due_date_required')}</label>
+                <input id="pay-schedule-due-date" type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" />
               </div>
               <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">{t('add_installment')}</button>
               {installments.length > 0 && (
@@ -287,26 +298,32 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
       )}
       {showRequest && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowRequest(false)}>
-          <div className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={requestDialogRef}
+            {...requestDialogProps}
+            aria-labelledby={requestTitleId}
+            className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('request_title')}</h3>
-              <button onClick={() => setShowRequest(false)} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+              <h3 id={requestTitleId} className="text-lg font-bold text-[var(--color-text-primary)]">{t('request_title')}</h3>
+              <button onClick={() => setShowRequest(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
             <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('request_desc')}</p>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
-                <input type="number" value={requestForm.amount} onChange={(e) => setRequestForm({ ...requestForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
+                <label htmlFor="pay-request-amount" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
+                <input id="pay-request-amount" type="number" value={requestForm.amount} onChange={(e) => setRequestForm({ ...requestForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                <label htmlFor="pay-request-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
+                <select id="pay-request-currency" value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('notes_optional')}</label>
-                <input type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('payment_request_ph')} />
+                <label htmlFor="pay-request-notes" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('notes_optional')}</label>
+                <input id="pay-request-notes" type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('payment_request_ph')} />
               </div>
               <button onClick={submitRequest} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90">
                 {t('send_request')}

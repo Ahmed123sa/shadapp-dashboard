@@ -87,14 +87,14 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-[var(--color-text-secondary)]">{t('name')}</label>
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+          <label htmlFor="profile-name" className="text-xs text-[var(--color-text-secondary)]">{t('name')}</label>
+          <input id="profile-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
             className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-[var(--color-text-secondary)]">{t('email_info')}</label>
-          <input value={email} disabled
+          <label htmlFor="profile-email" className="text-xs text-[var(--color-text-secondary)]">{t('email_info')}</label>
+          <input id="profile-email" value={email} disabled
             className="border border-[var(--color-input-border)] bg-[var(--color-card-border)] text-[var(--color-text-disabled)] rounded-lg px-4 py-2 text-sm w-full" dir="ltr" />
         </div>
 

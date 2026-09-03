@@ -8,7 +8,7 @@ import { resolveFileUrl } from '@/lib/utils';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, Reply } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import type { ChatMessage, User } from '@/types';
 
@@ -183,15 +183,21 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                     <span className="text-[9px] opacity-70">
                       {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
-                    {isClientTeam && (
-                      <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
-                        {m.read_at ? (
-                          <CheckCheck size={13} className="text-sky-300" strokeWidth={2.2} />
-                        ) : (
-                          <Check size={13} className="text-white/60" strokeWidth={2} />
-                        )}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <button type="button" onClick={() => setReplyTo(m)} aria-label={t('chat_context_reply')} title={t('chat_context_reply')}
+                        className="opacity-60 hover:opacity-100 focus-visible:opacity-100">
+                        <Reply size={12} strokeWidth={2} />
+                      </button>
+                      {isClientTeam && (
+                        <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
+                          {m.read_at ? (
+                            <CheckCheck size={13} className="text-sky-300" strokeWidth={2.2} />
+                          ) : (
+                            <Check size={13} className="text-white/60" strokeWidth={2} />
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
                 {isPending && (
@@ -215,19 +221,19 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             <p className="text-[10px] font-medium text-[var(--color-primary)]">{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
-          <button onClick={() => setReplyTo(null)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
+          <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
         </div>
       )}
 
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
       <div className="flex gap-2 items-center">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')}>📎</button>
+        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>📎</button>
         {uploadFile && <span className="text-xs text-[var(--color-gold)] self-center truncate max-w-24 flex-shrink-0">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           className="flex-1 border border-[var(--color-input-border)] rounded-full px-4 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" placeholder={t('chat_input_placeholder')} />
-        <button onClick={send} className="bg-[var(--color-primary)] text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-primary-dark)] flex-shrink-0" title={t('chat_send_title')}>↑</button>
+        <button onClick={send} className="bg-[var(--color-primary)] text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-primary-dark)] flex-shrink-0" title={t('chat_send_title')} aria-label={t('chat_send_title')}>↑</button>
       </div>
 
       {contextMenu && (

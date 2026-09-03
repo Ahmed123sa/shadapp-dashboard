@@ -73,8 +73,10 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
               </thead>
               <tbody>
                 {clients.slice(0, 5).map((c, i) => (
-                  <tr key={c.id} className="row-slide hover:bg-white/[0.025] cursor-pointer" style={{ animationDelay: `${(i + 1) * 50}ms` }}
-                    onClick={() => router.push(`/dashboard/clients/${c.id}`)}>
+                  <tr key={c.id} className="row-slide hover:bg-white/[0.025] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:-outline-offset-2" style={{ animationDelay: `${(i + 1) * 50}ms` }}
+                    tabIndex={0} role="button" aria-label={c.company_name}
+                    onClick={() => router.push(`/dashboard/clients/${c.id}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/dashboard/clients/${c.id}`); } }}>
                     <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
                       <div className="flex items-center gap-2">
                         {c.avatar_url ? (

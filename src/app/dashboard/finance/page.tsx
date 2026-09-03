@@ -186,6 +186,7 @@ export default function FinancePage() {
             onClick={() => loadPayments(page)}
             className="p-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition"
             title={locale === 'ar' ? 'تحديث' : 'Refresh'}
+            aria-label={locale === 'ar' ? 'تحديث' : 'Refresh'}
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -463,6 +464,7 @@ export default function FinancePage() {
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={pagination.current_page <= 1}
+                aria-label={locale === 'ar' ? 'الصفحة السابقة' : 'Previous page'}
                 className="p-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] disabled:opacity-40 transition"
               >
                 <ChevronRight size={14} className="rtl:rotate-180" />
@@ -470,6 +472,7 @@ export default function FinancePage() {
               <button
                 onClick={() => setPage((prev) => Math.min(prev + 1, pagination.last_page))}
                 disabled={pagination.current_page >= pagination.last_page}
+                aria-label={locale === 'ar' ? 'الصفحة التالية' : 'Next page'}
                 className="p-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] disabled:opacity-40 transition"
               >
                 <ChevronLeft size={14} className="rtl:rotate-180" />

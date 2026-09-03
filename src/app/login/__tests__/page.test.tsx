@@ -12,14 +12,11 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
 }));
 
-// Neither label is programmatically associated with its input (no
-// htmlFor/id) — getByLabelText can't find them, so these grab the inputs by
-// type directly instead.
-function emailInput(container: HTMLElement) {
-  return container.querySelector('input[type="email"]') as HTMLInputElement;
+function emailInput() {
+  return screen.getByLabelText('Email') as HTMLInputElement;
 }
-function passwordInput(container: HTMLElement) {
-  return container.querySelector('input[type="password"], input[type="text"][dir="ltr"]') as HTMLInputElement;
+function passwordInput() {
+  return screen.getByLabelText('Password') as HTMLInputElement;
 }
 
 beforeEach(() => {
@@ -31,10 +28,10 @@ describe('LoginPage', () => {
   it('logs in and redirects to /dashboard on success', async () => {
     vi.mocked(login).mockResolvedValue({ user: { id: 1, name: 'A', email: 'a@a.com', role: 'super_admin' } });
     const user = userEvent.setup();
-    const { container } = renderWithIntl(<LoginPage />);
+    renderWithIntl(<LoginPage />);
 
-    await user.type(emailInput(container), 'a@a.com');
-    await user.type(passwordInput(container), 'secret123');
+    await user.type(emailInput(), 'a@a.com');
+    await user.type(passwordInput(), 'secret123');
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
@@ -44,10 +41,10 @@ describe('LoginPage', () => {
   it('shows the server-provided error message and does not redirect', async () => {
     vi.mocked(login).mockRejectedValue({ response: { data: { message: 'Invalid credentials' } } });
     const user = userEvent.setup();
-    const { container } = renderWithIntl(<LoginPage />);
+    renderWithIntl(<LoginPage />);
 
-    await user.type(emailInput(container), 'a@a.com');
-    await user.type(passwordInput(container), 'wrong');
+    await user.type(emailInput(), 'a@a.com');
+    await user.type(passwordInput(), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
@@ -57,10 +54,10 @@ describe('LoginPage', () => {
   it('falls back to a generic error message when the server sends none', async () => {
     vi.mocked(login).mockRejectedValue(new Error('network down'));
     const user = userEvent.setup();
-    const { container } = renderWithIntl(<LoginPage />);
+    renderWithIntl(<LoginPage />);
 
-    await user.type(emailInput(container), 'a@a.com');
-    await user.type(passwordInput(container), 'wrong');
+    await user.type(emailInput(), 'a@a.com');
+    await user.type(passwordInput(), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument();

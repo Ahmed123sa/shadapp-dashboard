@@ -106,20 +106,20 @@ export default function ClientSettingsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('display_name')}</label>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+            <label htmlFor="client-settings-display-name" className="text-xs text-[var(--color-text-secondary)]">{t('display_name')}</label>
+            <input id="client-settings-display-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
-            <input value={session?.email || ''} disabled
+            <label htmlFor="client-settings-email" className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
+            <input id="client-settings-email" value={session?.email || ''} disabled
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-card-border)] text-[var(--color-text-disabled)]" dir="ltr" />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('dob')}</label>
-            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
+            <label htmlFor="client-settings-dob" className="text-xs text-[var(--color-text-secondary)]">{t('dob')}</label>
+            <input id="client-settings-dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           </div>
 

@@ -58,7 +58,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
                 {files.map((f, i) => (
                   <span key={i} className="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded flex items-center gap-1">
                     {f.name}
-                    <button onClick={() => removeFile(i)} className="text-red-500 hover:text-red-700">&times;</button>
+                    <button onClick={() => removeFile(i)} aria-label={t('remove_file', { file: f.name })} className="text-red-500 hover:text-red-700">&times;</button>
                   </span>
                 ))}
               </div>
@@ -89,7 +89,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
           <div key={a.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
             <div className="flex justify-between items-start">
               <div>
-                <h4 className="font-medium">{a.title}</h4>
+                <h3 className="font-medium">{a.title}</h3>
                 {a.description && <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{a.description}</p>}
                 {a.reference_no && <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{t('reference_prefix')}{a.reference_no}</p>}
               </div>

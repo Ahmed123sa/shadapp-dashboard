@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 export interface ToastItem {
   id: string;
@@ -45,6 +46,7 @@ export function showToast(item: ToastItem) {
 
 export default function ToastNotification() {
   const router = useRouter();
+  const t = useTranslations('dashboard');
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const removeToast = useCallback((id: string) => {
@@ -69,20 +71,25 @@ export default function ToastNotification() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
-      {toasts.map((t) => (
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none" role="status" aria-live="polite">
+      {toasts.map((toast) => (
         <div
-          key={t.id}
-          onClick={() => { if (t.href && t.href !== '#') { router.push(t.href); } removeToast(t.id); }}
-          className="pointer-events-auto bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl shadow-2xl p-4 cursor-pointer hover:bg-[var(--color-card-border)] transition-all animate-slide-in"
+          key={toast.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => { if (toast.href && toast.href !== '#') { router.push(toast.href); } removeToast(toast.id); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (toast.href && toast.href !== '#') { router.push(toast.href); } removeToast(toast.id); } }}
+          className="pointer-events-auto bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl shadow-2xl p-4 cursor-pointer hover:bg-[var(--color-card-border)] transition-all animate-slide-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-gold)]"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{t.title}</p>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-2">{t.message}</p>
+              <p className="text-sm font-semibold truncate">{toast.title}</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-2">{toast.message}</p>
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); removeToast(t.id); }}
+              type="button"
+              aria-label={t('close')}
+              onClick={(e) => { e.stopPropagation(); removeToast(toast.id); }}
               className="text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)] text-lg leading-none shrink-0"
             >
               ×

@@ -166,6 +166,8 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                       <span className="text-xs text-[var(--color-foreground)]">{t('perm_' + def.key)}</span>
                       <button
                         onClick={() => togglePermission(u.id, def.key, !!perms[def.key])}
+                        aria-pressed={!!perms[def.key]}
+                        aria-label={t('perm_' + def.key)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                           perms[def.key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300'
                         }`}

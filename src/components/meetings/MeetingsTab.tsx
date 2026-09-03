@@ -87,7 +87,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
       {upcoming.length > 0 && (
         <>
-          <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('upcoming_meetings')}</h4>
+          <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('upcoming_meetings')}</h3>
           {upcoming.map((m) => (
             <MeetingCard key={m.id} meeting={m} isSA={isSA} onComplete={completeMeeting} onCancel={cancelMeeting} />
           ))}
@@ -96,7 +96,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
       {past.length > 0 && (
         <>
-          <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('past_meetings')}</h4>
+          <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('past_meetings')}</h3>
           {past.map((m) => (
             <MeetingCard key={m.id} meeting={m} isSA={isSA} onComplete={completeMeeting} onCancel={cancelMeeting} />
           ))}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
@@ -10,6 +10,7 @@ import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { Contract, ContractClauseTemplate } from '@/types';
 
 // The backend has no `signature_type` field on users — signatures are
@@ -38,6 +39,9 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
   const [newReqDoc, setNewReqDoc] = useState('');
   const [showDates, setShowDates] = useState(true);
+  const approveSigTitleId = useId();
+  const closeApproveSig = () => { setApproveSig(null); setSavedUserSig(null); setUseSavedSig(false); };
+  const { dialogRef: approveSigDialogRef, dialogProps: approveSigDialogProps } = useModalA11y<HTMLDivElement>(!!approveSig, closeApproveSig);
 
   useEffect(() => {
     Promise.all([
@@ -136,7 +140,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           </div>
           {fixedTemplates.length > 0 && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
-              <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h4>
+              <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h3>
               {fixedTemplates.map((tpl) => (
                 <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                   <input type="checkbox" checked disabled className="mt-0.5" />
@@ -147,7 +151,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           )}
           {optionalTemplates.length > 0 && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
-              <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('optional_clauses_heading')}</h4>
+              <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('optional_clauses_heading')}</h3>
               {optionalTemplates.map((tpl) => (
                 <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold)]">
                   <input type="checkbox" checked={!!selectedOptional[tpl.id]} onChange={() => toggleOptional(tpl.id)} className="mt-0.5" />
@@ -157,7 +161,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           )}
           <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
-            <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('custom_clauses_heading')}</h4>
+            <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('custom_clauses_heading')}</h3>
             <div className="flex gap-2 mb-2">
               <input value={newCustom} onChange={(e) => setNewCustom(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustom()} placeholder={t('clause_input_ph')} className="border border-[var(--color-input-border)] rounded px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
               <button onClick={addCustom} className="bg-[var(--color-primary)] text-white px-3 py-2 rounded-lg text-xs hover:bg-[var(--color-primary-dark)]">{t('add_button')}</button>
@@ -166,12 +170,12 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                 <span className="text-blue-500 mt-0.5">•</span>
                 <span className="flex-1">{c}</span>
-                <button onClick={() => removeCustom(i)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                <button onClick={() => removeCustom(i)} aria-label={t('remove_clause', { clause: c })} className="text-red-400 hover:text-red-600 text-xs">✕</button>
               </div>
             ))}
           </div>
           <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
-            <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('required_docs_heading')}</h4>
+            <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('required_docs_heading')}</h3>
             <div className="flex gap-2 mb-2">
               <input value={newReqDoc} onChange={(e) => setNewReqDoc(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { const t = newReqDoc.trim(); if (t) { setRequiredDocs((prev) => [...prev, t]); setNewReqDoc(''); } } }} placeholder={t('doc_input_ph')} className="border border-[var(--color-input-border)] rounded px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
               <button onClick={() => { const t = newReqDoc.trim(); if (t) { setRequiredDocs((prev) => [...prev, t]); setNewReqDoc(''); } }} className="bg-amber-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-amber-700">{t('add_button')}</button>
@@ -180,7 +184,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                 <span className="text-amber-500 mt-0.5">📎</span>
                 <span className="flex-1">{d}</span>
-                <button onClick={() => setRequiredDocs((prev) => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                <button onClick={() => setRequiredDocs((prev) => prev.filter((_, j) => j !== i))} aria-label={t('remove_document', { doc: d })} className="text-red-400 hover:text-red-600 text-xs">✕</button>
               </div>
             ))}
           </div>
@@ -191,7 +195,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       {contracts.map((c) => (
         <div key={c.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
           <div className="flex justify-between items-start">
-            <div><h4 className="font-medium">{c.title}</h4>
+            <div><h3 className="font-medium">{c.title}</h3>
               {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
               {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents?.length}{t('doc_required_suffix')}</p>}
@@ -240,9 +244,15 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       ))}
 
       {approveSig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => { setApproveSig(null); setSavedUserSig(null); setUseSavedSig(false); }}>
-          <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold">{t('company_approve_modal_title')}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={closeApproveSig}>
+          <div
+            ref={approveSigDialogRef}
+            {...approveSigDialogProps}
+            aria-labelledby={approveSigTitleId}
+            className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id={approveSigTitleId} className="font-bold">{t('company_approve_modal_title')}</h3>
 
             {savedUserSig && !useSavedSig ? (
               <div className="space-y-3">
@@ -284,7 +294,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             <div className="flex gap-2">
               <button onClick={doCompanyApprove} disabled={!useSavedSig && !savedUserSig && !approveSig.signature.trim()}
                 className="flex-1 bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50">{t('approve_and_sign')}</button>
-              <button onClick={() => { setApproveSig(null); setSavedUserSig(null); setUseSavedSig(false); }}
+              <button onClick={closeApproveSig}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium border border-[var(--color-card-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-card-border)]">{t('cancel_button')}</button>
             </div>
           </div>

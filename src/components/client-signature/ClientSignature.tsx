@@ -137,8 +137,8 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
               <>
                 <p className="text-sm text-[var(--color-text-secondary)]">{t('sig_image_instructions', { w: SIG_W, h: SIG_H })}</p>
                 <input ref={fileRef} type="file" accept=".png" onChange={handleFile} className="hidden" />
-                <div onClick={() => fileRef.current?.click()}
-                  className="border-2 border-dashed border-[var(--color-card-border)] rounded-xl p-8 text-center cursor-pointer bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] transition">
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="w-full border-2 border-dashed border-[var(--color-card-border)] rounded-xl p-8 text-center cursor-pointer bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] transition">
                   {preview ? (
                     <img src={preview} alt={t('sig_title')} className="mx-auto max-h-32 object-contain" />
                   ) : existingImage ? (
@@ -146,7 +146,7 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
                   ) : (
                     <p className="text-[var(--color-text-disabled)] text-sm">{t('sig_click_to_choose')}</p>
                   )}
-                </div>
+                </button>
                 <p className="text-xs text-[var(--color-text-disabled)]">{t('sig_auto_resize', { w: SIG_W, h: SIG_H })}</p>
               </>
             )}

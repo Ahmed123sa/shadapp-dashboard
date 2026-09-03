@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { DocumentDefinition, FileEntry } from '@/types';
 
 export default function UploadFileModal({ wsId, definitions, onClose, onCreated }: {
@@ -12,6 +13,8 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
   onCreated: (file: FileEntry) => void;
 }) {
   const t = useTranslations('dashboard');
+  const titleId = useId();
+  const { dialogRef, dialogProps } = useModalA11y<HTMLDivElement>(true, onClose);
   const [file, setFile] = useState<File | null>(null);
   const [definitionId, setDefinitionId] = useState('');
   const [saving, setSaving] = useState(false);
@@ -37,10 +40,16 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        {...dialogProps}
+        aria-labelledby={titleId}
+        className="bg-[var(--color-card)] rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4 border border-[var(--color-card-border)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">{t('file_upload_title')}</h3>
-          <button onClick={onClose} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
+          <h3 id={titleId} className="font-bold">{t('file_upload_title')}</h3>
+          <button onClick={onClose} aria-label={t('close')} className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] text-xl">&times;</button>
         </div>
 
         <select value={definitionId} onChange={(e) => setDefinitionId(e.target.value)} className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">

@@ -2,7 +2,7 @@
 
 import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useId } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -17,11 +17,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] tracking-wider font-medium text-[var(--color-text-muted)] uppercase mb-2">{children}</p>;
 }
 
-function InputField({ label, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+function InputField({ label, required, id, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  const generatedId = useId();
+  const inputId = id || generatedId;
   return (
     <div>
-      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 ms-0.5">*</span>}</label>
-      <input className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
+      <label htmlFor={inputId} className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 ms-0.5">*</span>}</label>
+      <input id={inputId} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
     </div>
   );
 }
@@ -238,7 +240,7 @@ export default function ClientsPage() {
           {/* ملاحظات */}
           <div>
             <SectionLabel>{t('notes')}</SectionLabel>
-            <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('notes_ph')} value={form.notes} onChange={e => update('notes', e.target.value)} />
+            <textarea aria-label={t('notes')} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('notes_ph')} value={form.notes} onChange={e => update('notes', e.target.value)} />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-[var(--color-foreground)] cursor-pointer">

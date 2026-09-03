@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 interface PasswordFieldProps {
@@ -33,6 +33,7 @@ export default function PasswordField({
   const t = useTranslations('dashboard');
   const ph = placeholder || t('pw_default_placeholder');
   const [visible, setVisible] = useState(false);
+  const inputId = useId();
 
   const hasMinChars = value.length >= 8;
   const hasLetter = /[A-Za-z]/.test(value);
@@ -48,9 +49,10 @@ export default function PasswordField({
 
   return (
     <div className="space-y-1">
-      {label && <label className="block text-xs text-[var(--color-text-secondary)]">{label}</label>}
+      {label && <label htmlFor={inputId} className="block text-xs text-[var(--color-text-secondary)]">{label}</label>}
       <div className="relative">
         <input
+          id={inputId}
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -66,7 +68,7 @@ export default function PasswordField({
           type="button"
           onClick={() => setVisible(!visible)}
           className="absolute top-1/2 -translate-y-1/2 end-0 flex items-center px-3 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] h-10"
-          tabIndex={-1}
+          aria-label={visible ? t('pw_hide') : t('pw_show')}
         >
           {visible ? (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

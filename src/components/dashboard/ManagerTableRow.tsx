@@ -31,9 +31,13 @@ export default function ManagerTableRow({ manager, index, expanded, onToggle }: 
 
   return (
     <tr
-      className="row-slide cursor-pointer hover:bg-white/[0.025] transition-colors"
+      className="row-slide cursor-pointer hover:bg-white/[0.025] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:-outline-offset-2"
       style={{ animationDelay: `${(index + 1) * 50}ms` }}
+      tabIndex={0}
+      role="button"
+      aria-expanded={!!expanded}
       onClick={onToggle}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle?.(); } }}
     >
       <td className="px-3.5 py-2.5">
         <div className="flex items-center gap-2">

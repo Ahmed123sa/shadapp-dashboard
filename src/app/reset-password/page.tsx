@@ -74,13 +74,15 @@ function ResetPasswordForm() {
   };
 
   const field = (
+    id: string,
     label: string,
     value: string,
     onChange: (v: string) => void,
   ) => (
     <div>
-      <label className="block text-sm font-medium text-white/80 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-white/80 mb-1">{label}</label>
       <input
+        id={id}
         type={visible ? 'text' : 'password'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -138,8 +140,8 @@ function ResetPasswordForm() {
                   <div className="bg-[#941414]/20 text-[#D4AF37] text-sm p-3 rounded-lg border border-[#941414]/30">{error}</div>
                 )}
 
-                {field(t('reset_new_password'), password, setPassword)}
-                {field(t('reset_confirm_password'), confirmation, setConfirmation)}
+                {field('reset-password-new', t('reset_new_password'), password, setPassword)}
+                {field('reset-password-confirm', t('reset_confirm_password'), confirmation, setConfirmation)}
 
                 <label className="flex items-center gap-2 text-xs text-white/50 select-none cursor-pointer">
                   <input

@@ -10,7 +10,7 @@ import ContractBuilder from '@/components/chat/ContractBuilder';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, Reply } from 'lucide-react';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
 import type { ChatMessage, Contract, User } from '@/types';
@@ -249,15 +249,21 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                     <span className="text-[9px] text-[var(--color-text-disabled)]">
                       {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
-                    {!isClientTeam && (
-                      <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
-                        {m.read_at ? (
-                          <CheckCheck size={13} className="text-sky-400" strokeWidth={2.2} />
-                        ) : (
-                          <Check size={13} className="text-[var(--color-text-disabled)]" strokeWidth={2} />
-                        )}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <button type="button" onClick={() => setReplyTo(m)} aria-label={t('reply')} title={t('reply')}
+                        className="opacity-60 hover:opacity-100 focus-visible:opacity-100">
+                        <Reply size={12} strokeWidth={2} />
+                      </button>
+                      {!isClientTeam && (
+                        <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
+                          {m.read_at ? (
+                            <CheckCheck size={13} className="text-sky-400" strokeWidth={2.2} />
+                          ) : (
+                            <Check size={13} className="text-[var(--color-text-disabled)]" strokeWidth={2} />
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
                 {isClientTeam && (
@@ -288,13 +294,13 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             <p className="text-[10px] font-medium text-[var(--color-primary)]">{t('reply_to_prefix')}{replyTo.sender?.name || '...'}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
-          <button onClick={() => setReplyTo(null)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
+          <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
         </div>
       )}
 
       <div className="flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1" title={t('attach_file')}>📎</button>
+        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}>📎</button>
         {uploadFile && <span className="text-xs text-[var(--color-gold)] self-center truncate max-w-24">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
           className="flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />

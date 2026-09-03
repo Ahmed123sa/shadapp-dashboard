@@ -111,8 +111,8 @@ export default function ClientWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isSA && <Link href={`/dashboard/clients/${id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
-            {!isSA && <button onClick={() => { setDeleteError(''); setDeleteConfirm(true); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
+            {!isSA && <Link href={`/dashboard/clients/${id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+            {!isSA && <button onClick={() => { setDeleteError(''); setDeleteConfirm(true); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')} aria-label={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             <span className={`px-2.5 py-1 rounded-full text-xs ${client.signed_at ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {client.signed_at ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('signed')}</> : t('not_signed')}

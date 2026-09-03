@@ -160,55 +160,55 @@ export default function ClientSettingsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('company_name')}</label>
-            <input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+            <label htmlFor="client-settings-company-name" className="text-xs text-[var(--color-text-secondary)]">{t('company_name')}</label>
+            <input id="client-settings-company-name" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('contact_person')}</label>
-            <input value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })}
+            <label htmlFor="client-settings-contact-person" className="text-xs text-[var(--color-text-secondary)]">{t('contact_person')}</label>
+            <input id="client-settings-contact-person" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
-            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr"
+            <label htmlFor="client-settings-email" className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
+            <input id="client-settings-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr"
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('phone')}</label>
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            <label htmlFor="client-settings-phone" className="text-xs text-[var(--color-text-secondary)]">{t('phone')}</label>
+            <input id="client-settings-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" dir="ltr" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('country')}</label>
-            <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}
+            <label htmlFor="client-settings-country" className="text-xs text-[var(--color-text-secondary)]">{t('country')}</label>
+            <input id="client-settings-country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('industry')}</label>
-            <input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
+            <label htmlFor="client-settings-industry" className="text-xs text-[var(--color-text-secondary)]">{t('industry')}</label>
+            <input id="client-settings-industry" value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('dob')}</label>
-            <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
+            <label htmlFor="client-settings-dob" className="text-xs text-[var(--color-text-secondary)]">{t('dob')}</label>
+            <input id="client-settings-dob" type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('notes')}</label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            <label htmlFor="client-settings-notes" className="text-xs text-[var(--color-text-secondary)]">{t('notes')}</label>
+            <textarea id="client-settings-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full resize-none" rows={3} />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('address_location')}</label>
-            <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
+            <label htmlFor="client-settings-address" className="text-xs text-[var(--color-text-secondary)]">{t('address_location')}</label>
+            <textarea id="client-settings-address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder={t('address_ph')}
               className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full resize-none" rows={2} />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <label className="text-xs text-[var(--color-text-secondary)]">{t('maps_link')}</label>
+            <label htmlFor="client-settings-maps-url" className="text-xs text-[var(--color-text-secondary)]">{t('maps_link')}</label>
             <div className="flex gap-2">
-              <input value={form.maps_url} onChange={(e) => setForm({ ...form, maps_url: e.target.value })}
+              <input id="client-settings-maps-url" value={form.maps_url} onChange={(e) => setForm({ ...form, maps_url: e.target.value })}
                 placeholder={t('maps_link_ph')} dir="ltr"
                 className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
               <button type="button"

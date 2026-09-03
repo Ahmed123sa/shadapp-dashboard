@@ -132,20 +132,20 @@ export default function AccountManagersPage() {
           {error && <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg">{error}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">{t('manager_name')}</label>
-              <input className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" placeholder={t('manager_name_ph')} value={name} onChange={(e) => setName(e.target.value)} required />
+              <label htmlFor="am-name" className="text-xs text-[var(--color-text-secondary)]">{t('manager_name')}</label>
+              <input id="am-name" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" placeholder={t('manager_name_ph')} value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">{t('manager_email')}</label>
-              <input className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" type="email" placeholder={t('manager_email_ph')} value={email} onChange={(e) => setEmail(e.target.value)} required dir="ltr" />
+              <label htmlFor="am-email" className="text-xs text-[var(--color-text-secondary)]">{t('manager_email')}</label>
+              <input id="am-email" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" type="email" placeholder={t('manager_email_ph')} value={email} onChange={(e) => setEmail(e.target.value)} required dir="ltr" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">{t('manager_phone')}</label>
-              <input className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" placeholder={t('manager_phone_ph')} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+              <label htmlFor="am-phone" className="text-xs text-[var(--color-text-secondary)]">{t('manager_phone')}</label>
+              <input id="am-phone" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" placeholder={t('manager_phone_ph')} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">{t('manager_dob')}</label>
-              <input type="date" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+              <label htmlFor="am-dob" className="text-xs text-[var(--color-text-secondary)]">{t('manager_dob')}</label>
+              <input id="am-dob" type="date" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
             </div>
           </div>
           {!editId && (

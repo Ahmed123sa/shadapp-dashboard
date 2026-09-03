@@ -18,11 +18,10 @@ async function findFakeMap() {
   return screen.findByText('simulate map move');
 }
 
-// The <label> isn't programmatically associated with the <textarea> (no
-// htmlFor/id, no aria-labelledby) — getByLabelText can't find it, so this
-// grabs the one-and-only textarea directly instead.
-function addressField(container: HTMLElement) {
-  return container.querySelector('textarea') as HTMLTextAreaElement;
+// The address <label> is programmatically associated with the <textarea>
+// via htmlFor/id, so it's reachable by its accessible name.
+function addressField() {
+  return screen.getByLabelText('Address') as HTMLTextAreaElement;
 }
 
 beforeEach(() => {
@@ -35,24 +34,24 @@ afterEach(() => {
 
 describe('LocationPickerModal', () => {
   it('pre-fills the address textarea from initialAddress', async () => {
-    const { container } = renderWithIntl(
+    renderWithIntl(
       <LocationPickerModal initialAddress="12 Tahrir St, Cairo" onConfirm={() => {}} onClose={() => {}} />
     );
     await findFakeMap();
-    expect(addressField(container)).toHaveValue('12 Tahrir St, Cairo');
+    expect(addressField()).toHaveValue('12 Tahrir St, Cairo');
   });
 
   it('reverse-geocodes and fills the address when the map position changes', async () => {
     (global.fetch as any).mockResolvedValue({
       json: () => Promise.resolve({ display_name: '10 Nile Corniche, Cairo' }),
     });
-    const { container } = renderWithIntl(<LocationPickerModal onConfirm={() => {}} onClose={() => {}} />);
+    renderWithIntl(<LocationPickerModal onConfirm={() => {}} onClose={() => {}} />);
     const map = await findFakeMap();
 
     await userEvent.click(map);
 
     await waitFor(() => {
-      expect(addressField(container)).toHaveValue('10 Nile Corniche, Cairo');
+      expect(addressField()).toHaveValue('10 Nile Corniche, Cairo');
     });
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('nominatim.openstreetmap.org/reverse'));
   });
@@ -63,14 +62,14 @@ describe('LocationPickerModal', () => {
         Promise.resolve([{ lat: '30.5', lon: '31.5', display_name: 'Found Place, Egypt' }]),
     });
     const user = userEvent.setup();
-    const { container } = renderWithIntl(<LocationPickerModal onConfirm={() => {}} onClose={() => {}} />);
+    renderWithIntl(<LocationPickerModal onConfirm={() => {}} onClose={() => {}} />);
     await findFakeMap();
 
     await user.type(screen.getByPlaceholderText('Search for an address or place...'), 'found place');
     await user.click(screen.getByText('Search'));
 
     await waitFor(() => {
-      expect(addressField(container)).toHaveValue('Found Place, Egypt');
+      expect(addressField()).toHaveValue('Found Place, Egypt');
     });
     // Search resolves the address itself — a real map would fire onChange
     // for the same point right after, and that follow-up reverse-geocode
@@ -106,13 +105,13 @@ describe('LocationPickerModal', () => {
   it('disables Save location until a point is selected, then confirms with trimmed address', async () => {
     const onConfirm = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    const { container } = renderWithIntl(<LocationPickerModal onConfirm={onConfirm} onClose={() => {}} />);
+    renderWithIntl(<LocationPickerModal onConfirm={onConfirm} onClose={() => {}} />);
     const map = await findFakeMap();
 
     expect(screen.getByText('Save location').closest('button')).toBeDisabled();
 
     await user.click(map);
-    const textarea = addressField(container);
+    const textarea = addressField();
     await user.clear(textarea);
     await user.type(textarea, '  Nice address  ');
     await user.click(screen.getByText('Save location'));
