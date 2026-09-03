@@ -6,7 +6,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl } from '@/lib/utils';
-import type { Payment, Contract } from '@/types';
+import type { Payment, Contract, PaymentTaxSummary } from '@/types';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
@@ -14,7 +14,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const [methods, setMethods] = useState<string[]>([]);
   const [payableContract, setPayableContract] = useState<Contract | null>(null);
   const [payableContracts, setPayableContracts] = useState<Contract[]>([]);
-  const [taxSummary, setTaxSummary] = useState<any>(null);
+  const [taxSummary, setTaxSummary] = useState<PaymentTaxSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [amount, setAmount] = useState('');

@@ -17,6 +17,7 @@ import ClientSubUsers from '@/components/client-subusers/ClientSubUsers';
 import StagesStepper from '@/components/client-dashboard/StagesStepper';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import type { Client, Workspace } from '@/types';
 
 const ALL_TABS = [
   { key: 'العقود', perm: 'can_view_contracts' },
@@ -46,8 +47,8 @@ export default function ClientDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [client, setClient] = useState<any>(null);
-  const [workspace, setWorkspace] = useState<any>(null);
+  const [client, setClient] = useState<Client | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('العقود');
 
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function ClientDashboardPage() {
       <main className="max-w-5xl mx-auto p-6 space-y-6">
         <StagesStepper client={client} workspace={workspace} onStageClick={(tab) => setActiveTab(tab as Tab)} />
 
-        {workspace?.payments?.some((p: any) => p.status === 'approved') && !wsActive && (
+        {workspace?.payments?.some((p) => p.status === 'approved') && !wsActive && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
             <p className="text-emerald-700 font-medium">✅ {t('client_payment_accepted')}</p>
           </div>
@@ -233,7 +234,7 @@ export default function ClientDashboardPage() {
   );
 }
 
-function TabContent({ tab, wsId, clientId, clientData, wsActive, onGoToPayments }: { tab: Tab; wsId: number; clientId: number; clientData: any; wsActive?: boolean; onGoToPayments?: () => void }) {
+function TabContent({ tab, wsId, clientId, clientData, wsActive, onGoToPayments }: { tab: Tab; wsId: number; clientId: number; clientData: Client; wsActive?: boolean; onGoToPayments?: () => void }) {
   switch (tab) {
     case 'العقود': return <ClientContracts wsId={wsId} clientType={clientData?.client_type} onGoToPayments={onGoToPayments} />;
     case 'المدفوعات': return <ClientPayments wsId={wsId} />;

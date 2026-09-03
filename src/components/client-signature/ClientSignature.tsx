@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
+import type { Client } from '@/types';
 
 const SIG_W = 500;
 const SIG_H = 200;
@@ -11,12 +12,12 @@ function isImageUrl(val: string | null | undefined) {
   return !!val && (val.startsWith('/storage/') || val.startsWith('http'));
 }
 
-export default function ClientSignature({ clientId, clientData, onSigned }: { clientId: number; clientData: any; onSigned?: () => void }) {
+export default function ClientSignature({ clientId, clientData, onSigned }: { clientId: number; clientData: Client; onSigned?: () => void }) {
   const t = useTranslations('dashboard');
   const sigData = clientData?.signature_data;
   const [mode, setMode] = useState<'text' | 'image'>(sigData && !isImageUrl(sigData) ? 'text' : 'image');
   const [signature, setSignature] = useState(!sigData || isImageUrl(sigData) ? '' : sigData);
-  const [preview, setPreview] = useState<string | null>(isImageUrl(sigData) ? sigData : null);
+  const [preview, setPreview] = useState<string | null>(sigData && isImageUrl(sigData) ? sigData : null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [done, setDone] = useState(!!clientData?.signed_at);

@@ -6,11 +6,12 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
+import type { Meeting, Contract, Approval } from '@/types';
 
 export default function CalendarTab({ wsId }: { wsId: number }) {
-  const [meetings, setMeetings] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [approvals, setApprovals] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const t = useTranslations('dashboard');
   const tCal = useTranslations('calendar');

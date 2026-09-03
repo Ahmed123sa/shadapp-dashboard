@@ -12,6 +12,20 @@ import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import LocationPickerModal from './LocationPickerModal';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Client } from '@/types';
+
+// The /clients/{id}/profile aggregate response — a bespoke bundle distinct
+// from the plain Client record (adds computed stats + the location check-in).
+type ClientProfileStats = {
+  total_contracts: number; draft_contracts: number; sent_contracts: number;
+  completed_contracts: number; meetings_count: number; approvals_count: number;
+  total_contract_value?: number | string; total_paid?: number | string; pending_payments?: number | string;
+};
+type ClientProfileLocation = {
+  latitude?: number | string | null; longitude?: number | string | null;
+  updated_at?: string | null; address?: string | null; maps_url?: string | null;
+};
+type ClientProfileResponse = { client: Client; stats: ClientProfileStats; location?: ClientProfileLocation | null };
 
 type ActivityEvent = {
   id: string;
@@ -40,7 +54,7 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 
 export default function ClientProfileTab({ clientId, onNavigate }: { clientId: number; onNavigate?: (tab: string) => void }) {
   const t = useTranslations('dashboard');
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ClientProfileResponse | null>(null);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -202,8 +216,8 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
 
       {showLocationPicker && (
         <LocationPickerModal
-          initialLat={loc?.latitude}
-          initialLng={loc?.longitude}
+          initialLat={loc?.latitude != null ? Number(loc.latitude) : null}
+          initialLng={loc?.longitude != null ? Number(loc.longitude) : null}
           initialAddress={loc?.address || c.address}
           onConfirm={confirmLocation}
           onClose={() => setShowLocationPicker(false)}

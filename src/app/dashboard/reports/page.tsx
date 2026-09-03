@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, A
 import { Users, DollarSign, FileText, Clock, Building2, BarChart3, Settings, X } from 'lucide-react';
 import { ReportsSkeleton } from '@/components/ui/LoadingSkeleton';
 import { reportError } from '@/lib/error-reporting';
+import type { ReportsData, Client, User } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: '#606060', sent: '#60A5FA', client_approved: '#22C55E', client_rejected: '#EF4444',
@@ -34,7 +35,7 @@ export default function ReportsPage() {
 
   const PERIOD_OPTIONS = [t('period_today'), t('period_30_days'), t('period_3_months'), t('period_6_months'), t('period_this_year'), t('period_custom')];
 
-  const [reports, setReports] = useState<any>(null);
+  const [reports, setReports] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [reportsLoading, setReportsLoading] = useState(false);
 
@@ -53,8 +54,8 @@ export default function ReportsPage() {
   const [country, setCountry] = useState('');
   const [sector, setSector] = useState('');
 
-  const [clientList, setClientList] = useState<any[]>([]);
-  const [managerList, setManagerList] = useState<any[]>([]);
+  const [clientList, setClientList] = useState<Client[]>([]);
+  const [managerList, setManagerList] = useState<User[]>([]);
   const [loadError, setLoadError] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
@@ -98,7 +99,7 @@ export default function ReportsPage() {
     const chips: string[] = [];
     if (period) chips.push(period);
     if (managerId && managerList.length > 0) {
-      const m = managerList.find((m: any) => m.id == managerId);
+      const m = managerList.find((m) => String(m.id) === managerId);
       if (m) chips.push(m.name);
     }
     if (eventType) chips.push(eventType);
@@ -139,7 +140,7 @@ export default function ReportsPage() {
     .filter(s => reports?.contracts_by_status?.[s] !== undefined)
     .map(status => ({
       status: STATUS_LABELS[status] || status,
-      count: Number(reports.contracts_by_status[status]),
+      count: Number(reports?.contracts_by_status?.[status]),
       fill: STATUS_COLORS[status] || '#606060',
     }));
 
@@ -159,8 +160,8 @@ export default function ReportsPage() {
     { name: tApprovalPending, value: Number(approvalStats.pending), fill: '#D4AF37' },
   ];
 
-  const totalRevenue = paymentsData.reduce((s: number, e: any) => s + e.amount, 0);
-  const totalContracts = contractsData.reduce((s: number, e: any) => s + e.count, 0);
+  const totalRevenue = paymentsData.reduce((s, e) => s + e.amount, 0);
+  const totalContracts = contractsData.reduce((s, e) => s + e.count, 0);
 
   // KPI data
   const kpiValues: Record<string, { value: string; valueColor?: string }> = {
@@ -173,7 +174,7 @@ export default function ReportsPage() {
   };
 
   // Manager stats from API or derived
-  const managerStats = (reports?.manager_stats as any[]) || [];
+  const managerStats = reports?.manager_stats || [];
 
   return (
     <div className="space-y-4">
@@ -217,7 +218,7 @@ export default function ReportsPage() {
           <FilterGroup label={t('filter_manager')}>
             <select value={managerId} onChange={e => setManagerId(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option>
-              {managerList.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {managerList.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </FilterGroup>
           <FilterGroup label={t('filter_contract_status')}>
@@ -430,7 +431,7 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="flex flex-col gap-0 mt-1">
-            {(managerStats.length > 0 ? managerStats : []).slice(0, 3).map((m: any, i: number) => {
+            {(managerStats.length > 0 ? managerStats : []).slice(0, 3).map((m, i: number) => {
               const rankClass = i === 0 ? 'r1' : i === 1 ? 'r2' : 'r3';
               const revenue = m.revenue ?? (totalRevenue / (i + 2));
               const clients = m.clients ?? '—';

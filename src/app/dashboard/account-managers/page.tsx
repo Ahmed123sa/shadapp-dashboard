@@ -6,10 +6,11 @@ import { getUser } from '@/lib/auth';
 import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 import PasswordField from '@/components/ui/PasswordField';
+import type { User } from '@/types';
 
 export default function AccountManagersPage() {
   const t = useTranslations('dashboard');
-  const [managers, setManagers] = useState<any[]>([]);
+  const [managers, setManagers] = useState<User[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [name, setName] = useState('');
@@ -18,7 +19,7 @@ export default function AccountManagersPage() {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [password, setPassword] = useState('');
   const [autoPassword, setAutoPassword] = useState(true);
-  const [newCreds, setNewCreds] = useState<any>(null);
+  const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const user = getUser();
@@ -49,7 +50,8 @@ export default function AccountManagersPage() {
     setError('');
     setSaving(true);
     try {
-      const payload: any = { name, email, phone, date_of_birth: dateOfBirth || null };
+      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string | null } =
+        { name, email, phone, date_of_birth: dateOfBirth || null };
       if (autoPassword) {
         payload.password = null;
       } else {
@@ -73,7 +75,8 @@ export default function AccountManagersPage() {
     setError('');
     setSaving(true);
     try {
-      const payload: any = { name, email, phone, date_of_birth: dateOfBirth || null };
+      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string } =
+        { name, email, phone, date_of_birth: dateOfBirth || null };
       if (password) payload.password = password;
       await api.put(`/account-managers/${editId}`, payload);
       load();
@@ -92,7 +95,7 @@ export default function AccountManagersPage() {
     load();
   };
 
-  const startEdit = (m: any) => {
+  const startEdit = (m: User) => {
     setEditId(m.id);
     setName(m.name);
     setEmail(m.email);
@@ -185,7 +188,7 @@ export default function AccountManagersPage() {
             </tr>
           </thead>
           <tbody>
-            {managers.map((m: any) => (
+            {managers.map((m) => (
               <tr key={m.id} className="border-b border-[var(--color-card-border)]">
                 <td className="p-4">{m.name}</td>
                 <td className="p-4">{m.email}</td>

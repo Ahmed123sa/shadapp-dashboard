@@ -8,14 +8,15 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 export default function FilesTab({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const isSA = getUser()?.role === 'super_admin';
-  const [files, setFiles] = useState<any[]>([]);
-  const [paymentFiles, setPaymentFiles] = useState<any[]>([]);
-  const [definitions, setDefinitions] = useState<any[]>([]);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [paymentFiles, setPaymentFiles] = useState<PaymentProofFile[]>([]);
+  const [definitions, setDefinitions] = useState<DocumentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
@@ -39,7 +40,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   };
 
   const reviewFile = async (fid: number, action: string, rejection_reason?: string) => {
-    const body: any = { action };
+    const body: { action: string; rejection_reason?: string } = { action };
     if (rejection_reason) body.rejection_reason = rejection_reason;
     const { data } = await api.post(`/files/${fid}/review`, body).catch(() => ({ data: null }));
     if (data) setFiles((prev) => prev.map((f) => f.id === fid ? data.file : f));

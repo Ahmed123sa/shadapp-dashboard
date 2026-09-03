@@ -10,19 +10,20 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
+import type { ChatMessage, User } from '@/types';
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sendError, setSendError] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [responding, setResponding] = useState<Record<number, boolean>>({});
-  const [replyTo, setReplyTo] = useState<any>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: ChatMessage } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -55,7 +56,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
     return () => window.removeEventListener('click', handler);
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, message: any) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, message: ChatMessage) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, message });
   }, []);
@@ -115,8 +116,8 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
           const isResponded = m.action_taken;
           const approval = m.approval;
           const sender = m.sender;
-          const senderAvatarUrl = sender?.avatar_url as string | undefined;
-          const senderName = sender?.name as string | undefined;
+          const senderAvatarUrl = sender?.avatar_url;
+          const senderName = sender?.name;
           const prev = idx > 0 ? messages[idx - 1] : null;
           const isConsecutive = prev && prev.sender_type === m.sender_type && prev.sender_id === m.sender_id;
           if (m.type === 'meeting' && m.metadata) {
@@ -152,7 +153,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
               <div className="max-w-xs">
                 <div className={`px-3 py-2 text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white rounded-br-lg rounded-tl-lg rounded-tr-lg' : 'bg-[var(--color-card)] text-[var(--color-foreground)] rounded-bl-lg rounded-tl-lg rounded-tr-lg'}`}>
                   <p className={`text-xs mb-0.5 ${isClientTeam ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>
-                    {sentByClient ? (senderName || t('sender_you')) : isSubUser ? (m.sender?.name || t('sender_team_member')) : ((m.sender?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager')) + ': ' + (m.sender?.name || ''))}
+                    {sentByClient ? (senderName || t('sender_you')) : isSubUser ? (m.sender?.name || t('sender_team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager')) + ': ' + (m.sender?.name || ''))}
                   </p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">

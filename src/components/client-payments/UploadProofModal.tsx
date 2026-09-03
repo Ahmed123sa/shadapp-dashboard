@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
+import type { Payment } from '@/types';
 
 export default function UploadProofModal({ wsId, availableMethods, allowedCurrencies, onClose, onCreated }: {
   wsId: number;
   availableMethods: string[];
   allowedCurrencies?: string[];
   onClose: () => void;
-  onCreated: (payment: any) => void;
+  onCreated: (payment: Payment) => void;
 }) {
   const t = useTranslations('dashboard');
   const [amount, setAmount] = useState('');

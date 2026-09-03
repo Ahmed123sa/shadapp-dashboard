@@ -14,6 +14,19 @@ import Link from 'next/link';
 import { resolveFileUrl } from '@/lib/utils';
 import type { Payment, Client, User } from '@/types';
 
+// Aggregate counters from /all-payments (PaymentController::index's 'stats'
+// block) — counts are plain ints; the two sums come from a query-builder
+// sum() on a decimal column, which some DB drivers return as numeric strings.
+type FinanceStats = {
+  total_count?: number;
+  approved_count?: number;
+  pending_count?: number;
+  approved_total_sar?: number | string;
+  approved_total_usd?: number | string;
+};
+
+type FinancePagination = { current_page: number; last_page: number; total: number };
+
 export default function FinancePage() {
   const t = useTranslations('dashboard');
   const locale = useLocale();
@@ -22,8 +35,8 @@ export default function FinancePage() {
 
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [pagination, setPagination] = useState<any>({ current_page: 1, last_page: 1, total: 0 });
+  const [stats, setStats] = useState<FinanceStats | null>(null);
+  const [pagination, setPagination] = useState<FinancePagination>({ current_page: 1, last_page: 1, total: 0 });
 
   // Filter options lists
   const [clients, setClients] = useState<Client[]>([]);
@@ -118,7 +131,7 @@ export default function FinancePage() {
       new Date(p.created_at).toLocaleDateString(),
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

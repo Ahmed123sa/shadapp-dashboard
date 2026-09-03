@@ -7,12 +7,13 @@ import api from '@/lib/api';
 import { subscribeToNotifications, disconnectEcho } from '@/lib/echo';
 import { showToast } from './ToastNotification';
 import { reportError } from '@/lib/error-reporting';
+import type { AppNotification } from '@/types';
 
 export default function NotificationBell() {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const lastIdRef = useRef<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -50,10 +51,10 @@ export default function NotificationBell() {
     birthday_greeting: t('tab_client_profile') || 'الملف التعريفي',
   };
 
-  const getHref = (n: any) => {
+  const getHref = (n: AppNotification) => {
     const d = n.data;
     const isClientPortal = typeof window !== 'undefined' && (window.location.pathname.startsWith('/client-dashboard') || window.location.pathname.startsWith('/client-login'));
-    const tab = notificationTab[d?.type] || '';
+    const tab = notificationTab[d?.type ?? ''] || '';
 
     if (isClientPortal) {
       return tab ? `/client-dashboard?tab=${encodeURIComponent(tab)}` : '/client-dashboard';
@@ -66,16 +67,16 @@ export default function NotificationBell() {
 
   const load = () => {
     api.get('/notifications').then(({ data }) => {
-      const items = data.notifications || [];
+      const items: AppNotification[] = data.notifications || [];
       if (!initialLoadDoneRef.current) {
-        items.forEach((item: any) => knownIdsRef.current.add(item.id));
+        items.forEach((item) => knownIdsRef.current.add(item.id));
         initialLoadDoneRef.current = true;
         if (items.length > 0) {
           lastIdRef.current = items[0]?.id || null;
         }
       } else {
-        const newlyArrived = items.filter((item: any) => !knownIdsRef.current.has(item.id) && !item.read_at);
-        newlyArrived.forEach((newest: any) => {
+        const newlyArrived = items.filter((item) => !knownIdsRef.current.has(item.id) && !item.read_at);
+        newlyArrived.forEach((newest) => {
           knownIdsRef.current.add(newest.id);
           const href = getHref(newest);
           showToast({

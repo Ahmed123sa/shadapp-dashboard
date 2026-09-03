@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import type { Client, Payment, Contract } from '@/types';
+import type { Client, Payment, Contract, PaymentTaxSummary, Workspace } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
@@ -13,12 +13,12 @@ import { resolveFileUrl } from '@/lib/utils';
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
 type RequestForm = { amount: string; currency: string; notes: string };
 
-export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: any) => void }) {
+export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: Workspace) => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [taxSummary, setTaxSummary] = useState<any>(null);
+  const [taxSummary, setTaxSummary] = useState<PaymentTaxSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);

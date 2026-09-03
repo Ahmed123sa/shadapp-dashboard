@@ -10,13 +10,14 @@ import PasswordField from '@/components/ui/PasswordField';
 import { Building2, User, MapPin } from 'lucide-react';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Client } from '@/types';
 
 export default function ClientSettingsPage() {
   const { id } = useParams();
   const router = useRouter();
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [client, setClient] = useState<any>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -72,7 +73,12 @@ export default function ClientSettingsPage() {
         await api.post(`/clients/${id}/profile`, fd);
       }
 
-      const payload: any = {
+      const payload: {
+        company_name: string; contact_person: string; email: string; phone: string;
+        country: string | null; industry: string | null; notes: string | null;
+        date_of_birth: string | null; client_type: 'business' | 'individual';
+        address: string | null; maps_url: string | null; password?: string;
+      } = {
         company_name: form.company_name,
         contact_person: form.contact_person,
         email: form.email,

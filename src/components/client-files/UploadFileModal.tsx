@@ -3,12 +3,13 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
+import type { DocumentDefinition, FileEntry } from '@/types';
 
 export default function UploadFileModal({ wsId, definitions, onClose, onCreated }: {
   wsId: number;
-  definitions: any[];
+  definitions: DocumentDefinition[];
   onClose: () => void;
-  onCreated: (file: any) => void;
+  onCreated: (file: FileEntry) => void;
 }) {
   const t = useTranslations('dashboard');
   const [file, setFile] = useState<File | null>(null);

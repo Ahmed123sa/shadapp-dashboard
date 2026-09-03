@@ -13,20 +13,21 @@ import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck } from 'lucide-react';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import type { ChatMessage, Contract, User } from '@/types';
 
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
-  const [messages, setMessages] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [sendError, setSendError] = useState('');
-  const [replyTo, setReplyTo] = useState<any>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: ChatMessage } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -59,7 +60,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     return () => window.removeEventListener('click', handler);
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, message: any) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, message: ChatMessage) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, message });
   }, []);
@@ -93,7 +94,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     if (data) setContracts((prev) => prev.map((c) => c.id === id ? data.contract : c));
   };
 
-  const onContractCreated = (contract: any) => {
+  const onContractCreated = (contract: Contract) => {
     setContracts((prev) => [contract, ...prev]);
     setShowBuilder(false);
   };
@@ -141,7 +142,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 )}
                 <div>
                   <div className={`px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : ((m.sender?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
                     {m.reply_to && (
                       <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                         <p className="text-[10px] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -204,7 +205,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const isPending = m.requires_action && !m.action_taken;
           const isResponded = m.action_taken;
           const initial = ((m.sender?.name?.[0]) || '?').toUpperCase();
-          const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : ((m.sender?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
+          const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
           <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
             <div className="max-w-xs flex gap-2 items-start">

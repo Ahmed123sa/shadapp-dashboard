@@ -8,10 +8,11 @@ import { getMeetingJoinStatus } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import type { Meeting, Contract } from '@/types';
 
 export default function MeetingsTab({ wsId }: { wsId: number }) {
-  const [meetings, setMeetings] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [form, setForm] = useState({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' });
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -27,7 +28,8 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
   const create = async () => {
     if (!form.title || !form.date) return;
     const localDate = new Date(`${form.date}T${form.time || '00:00'}`);
-    const payload: any = { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
+    const payload: { title: string; scheduled_at: string; duration_minutes: number; notes: string; contract_id?: string; approval_id?: string } =
+      { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
     if (form.contract_id) payload.contract_id = form.contract_id;
     if (form.approval_id) payload.approval_id = form.approval_id;
     const { data } = await api.post(`/workspaces/${wsId}/meetings`, payload).catch(() => ({ data: null }));
@@ -104,7 +106,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
   );
 }
 
-function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: any; isSA: boolean; onComplete: (id: number) => void; onCancel: (id: number) => void }) {
+function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: Meeting; isSA: boolean; onComplete: (id: number) => void; onCancel: (id: number) => void }) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const isScheduled = m.status === 'scheduled';

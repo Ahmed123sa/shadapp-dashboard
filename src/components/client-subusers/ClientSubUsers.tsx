@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import PasswordField from '@/components/ui/PasswordField';
+import type { SubUser } from '@/types';
 
 const PERMISSION_DEFS = [
   { key: 'can_chat' },
@@ -23,7 +24,7 @@ const PERMISSION_DEFS = [
 
 export default function ClientSubUsers({ clientId }: { clientId: number }) {
   const t = useTranslations('dashboard');
-  const [subUsers, setSubUsers] = useState<any[]>([]);
+  const [subUsers, setSubUsers] = useState<SubUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -44,7 +45,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
     if (!form.name || !form.email || !form.password) return;
     setError('');
     try {
-      const payload: any = { name: form.name, email: form.email, password: form.password };
+      const payload: { name: string; email: string; password: string; date_of_birth?: string } = { name: form.name, email: form.email, password: form.password };
       if (form.date_of_birth) payload.date_of_birth = form.date_of_birth;
       const { data } = await api.post(`/clients/${clientId}/sub-users`, payload);
       setSubUsers((prev) => [...prev, data.sub_user]);
@@ -58,7 +59,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
   const saveEdit = async (userId: number) => {
     setError('');
     try {
-      const payload: any = { name: editForm.name, email: editForm.email, phone: editForm.phone };
+      const payload: { name: string; email: string; phone: string; date_of_birth?: string } = { name: editForm.name, email: editForm.email, phone: editForm.phone };
       if (editForm.date_of_birth) payload.date_of_birth = editForm.date_of_birth;
       const { data } = await api.put(`/sub-users/${userId}/profile`, payload);
       setSubUsers((prev) => prev.map((u) => u.id === userId ? { ...u, ...data.sub_user } : u));

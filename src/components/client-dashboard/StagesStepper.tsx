@@ -1,21 +1,22 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { Client, Workspace } from '@/types';
 
-function getCurrentStage(client: any, workspace: any): number {
+function getCurrentStage(client: Client | null, workspace: Workspace | null): number {
   if (!client || !workspace) return 0;
   if (workspace.status === 'active') return 6;
   const payments = workspace.payments || [];
-  if (payments.some((p: any) => p.status === 'approved')) return 5;
+  if (payments.some((p) => p.status === 'approved')) return 5;
   const contracts = workspace.contracts || [];
-  if (contracts.some((c: any) => c.status === 'company_approved' || c.status === 'completed')) return 4;
-  if (contracts.some((c: any) => c.status === 'client_approved')) return 3;
-  if (contracts.some((c: any) => c.status === 'sent')) return 2;
+  if (contracts.some((c) => c.status === 'company_approved' || c.status === 'completed')) return 4;
+  if (contracts.some((c) => c.status === 'client_approved')) return 3;
+  if (contracts.some((c) => c.status === 'sent')) return 2;
   if (client.signed_at) return 1;
   return 0;
 }
 
-export default function StagesStepper({ client, workspace, onStageClick }: { client: any; workspace: any; onStageClick?: (tab: string) => void }) {
+export default function StagesStepper({ client, workspace, onStageClick }: { client: Client | null; workspace: Workspace | null; onStageClick?: (tab: string) => void }) {
   const t = useTranslations('dashboard');
   const current = getCurrentStage(client, workspace);
 

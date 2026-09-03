@@ -1,12 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-
-type Clause = { id: number; content: string; type: string; sort_order: number };
-type Contract = {
-  id: number; title: string; value: string | null; start_date: string | null; end_date: string | null;
-  status: string; clauses: Clause[];
-};
+import type { Contract } from '@/types';
 
 export default function ChatContractCard({ contract, clientType, onAction }: { contract: Contract; clientType?: string; onAction?: (id: number, action: string) => void }) {
   const t = useTranslations('dashboard');

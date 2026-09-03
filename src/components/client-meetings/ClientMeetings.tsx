@@ -7,11 +7,12 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
+import type { Meeting } from '@/types';
 
 export default function ClientMeetings({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
-  const [meetings, setMeetings] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

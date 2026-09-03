@@ -6,6 +6,11 @@ import { getUser, logout } from '@/lib/auth';
 import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
+import type { ContractClauseTemplate } from '@/types';
+
+// Shape used while editing a clause inline — a subset of ContractClauseTemplate
+// (is_active/sort_order aren't edited here, so they're left off).
+type EditingClause = { id: number; content: string; type: 'fixed' | 'optional'; category?: string };
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -45,12 +50,12 @@ export default function SettingsPage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sigUploadInputRef = useRef<HTMLInputElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [clauses, setClauses] = useState<any[]>([]);
+  const [clauses, setClauses] = useState<ContractClauseTemplate[]>([]);
   const [clausesLoading, setClausesLoading] = useState(true);
   const [clauseType, setClauseType] = useState<'fixed' | 'optional'>('optional');
   const [clauseContent, setClauseContent] = useState('');
   const [clauseCategory, setClauseCategory] = useState('');
-  const [editingClause, setEditingClause] = useState<any | null>(null);
+  const [editingClause, setEditingClause] = useState<EditingClause | null>(null);
   const [clausesMsg, setClausesMsg] = useState('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
@@ -257,7 +262,7 @@ export default function SettingsPage() {
     }
   };
 
-  const updateClause = async (id: number, payload: any) => {
+  const updateClause = async (id: number, payload: Partial<Pick<ContractClauseTemplate, 'content' | 'type' | 'is_active'>> & { category?: string | null }) => {
     const { data } = await api.put(`/contract-clause-templates/${id}`, payload).catch(() => ({ data: null }));
     if (data) {
       setClauses((prev) => prev.map((cl) => cl.id === id ? data.template : cl));
@@ -522,7 +527,7 @@ export default function SettingsPage() {
                 {editingClause?.id === cl.id ? (
                   <div className="space-y-2">
                     <div className="flex gap-2 flex-wrap">
-                      <select value={editingClause.type} onChange={(e) => setEditingClause({ ...editingClause, type: e.target.value })}
+                      <select value={editingClause.type} onChange={(e) => setEditingClause({ ...editingClause, type: e.target.value as 'fixed' | 'optional' })}
                         className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-1.5 text-xs">
                         <option value="fixed">{t('clause_fixed')}</option>
                         <option value="optional">{t('clause_optional')}</option>

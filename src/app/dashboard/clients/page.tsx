@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
+import type { Client } from '@/types';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] tracking-wider font-medium text-[var(--color-text-muted)] uppercase mb-2">{children}</p>;
@@ -27,12 +28,12 @@ function InputField({ label, required, ...props }: React.InputHTMLAttributes<HTM
 
 export default function ClientsPage() {
   const t = useTranslations('dashboard');
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', country: '', industry: '', address: '', maps_url: '' });
   const [autoPassword, setAutoPassword] = useState(true);
-  const [newCreds, setNewCreds] = useState<any>(null);
+  const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null);
   const [createError, setCreateError] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -75,8 +76,8 @@ export default function ClientsPage() {
     if (!validate()) return;
     setCreateError('');
     try {
-      const payload = { ...form };
-      if (autoPassword) delete (payload as any).password;
+      const { password, ...rest } = form;
+      const payload = autoPassword ? rest : { ...rest, password };
       const { data } = await api.post('/clients', payload);
       if (data.client?.id && avatarFile) {
         try {
@@ -109,7 +110,7 @@ export default function ClientsPage() {
 
   const isSA = getUser()?.role === 'super_admin';
 
-  const update = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) => setForm(f => ({ ...f, [k]: v }));
 
   return (
     <div>

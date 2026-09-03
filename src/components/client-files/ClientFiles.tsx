@@ -7,12 +7,13 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
 import { resolveFileUrl } from '@/lib/utils';
+import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 export default function ClientFiles({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
-  const [files, setFiles] = useState<any[]>([]);
-  const [paymentFiles, setPaymentFiles] = useState<any[]>([]);
-  const [definitions, setDefinitions] = useState<any[]>([]);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [paymentFiles, setPaymentFiles] = useState<PaymentProofFile[]>([]);
+  const [definitions, setDefinitions] = useState<DocumentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showUpload, setShowUpload] = useState(false);

@@ -8,6 +8,7 @@ import { Search } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import { reportError } from '@/lib/error-reporting';
+import type { AuditLog, User } from '@/types';
 
 const ACTION_LABELS_FN = (t: (key: string) => string): Record<string, string> => ({
   'contract.created': t('audit_contract_created'),
@@ -55,7 +56,7 @@ function getActionBadgeClass(action: string): string {
   return 'ab-default';
 }
 
-function resolveActor(log: any): { name: string; isClient: boolean } {
+function resolveActor(log: AuditLog): { name: string; isClient: boolean } {
   if (log.user?.name) return { name: log.user.name, isClient: false };
   if (log.client?.company_name) return { name: log.client.company_name, isClient: true };
   if (log.client?.contact_person) return { name: log.client.contact_person, isClient: true };
@@ -71,7 +72,7 @@ function resolveActor(log: any): { name: string; isClient: boolean } {
   return { name: '—', isClient: false };
 }
 
-function resolveClientName(log: any): string {
+function resolveClientName(log: AuditLog): string {
   if (log.client?.company_name) return log.client.company_name;
   if (log.client?.name) return log.client.name;
   const auditable = log.auditable;
@@ -85,7 +86,7 @@ function resolveClientName(log: any): string {
   return '—';
 }
 
-function resolveEntityName(log: any, t: (key: string) => string): string {
+function resolveEntityName(log: AuditLog, t: (key: string) => string): string {
   const auditable = log.auditable;
   if (!auditable) return '—';
   const type = log.auditable_type || '';
@@ -99,7 +100,7 @@ function resolveEntityName(log: any, t: (key: string) => string): string {
   return `#${auditable.id || '?'}`;
 }
 
-function resolveClientType(log: any): string | null {
+function resolveClientType(log: AuditLog): string | null {
   if (log.client?.client_type) return log.client.client_type;
   const auditable = log.auditable;
   if (!auditable) return null;
@@ -147,13 +148,13 @@ export default function AuditLogPage() {
   const locale = useLocale();
   const ACTION_LABELS = ACTION_LABELS_FN(t);
 
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState({ search: '', action: '', user_id: '', date_from: '', date_to: '' });
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const isSA = getUser()?.role === 'super_admin';
 
   const fetchLogs = (p: number) => {
@@ -227,7 +228,7 @@ export default function AuditLogPage() {
         <select value={filters.user_id} onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
           className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
           <option value="">{t('audit_all_users')}</option>
-          {users.map((u: any) => (
+          {users.map((u) => (
             <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>

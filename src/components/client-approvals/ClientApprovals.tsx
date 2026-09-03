@@ -7,10 +7,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Approval } from '@/types';
 
 export default function ClientApprovals({ wsId, clientId }: { wsId: number; clientId: number }) {
   const t = useTranslations('dashboard');
-  const [approvals, setApprovals] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [respondTarget, setRespondTarget] = useState<{ id: number; action: string } | null>(null);
@@ -65,7 +66,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
 
           {a.files && a.files.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
-              {a.files.map((f: any) => (
+              {a.files.map((f) => (
                 <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
                   📎 {f.name || t('approval_file_label')}

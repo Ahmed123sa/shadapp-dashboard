@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-type ViewConfig = {
+type ViewConfig<T> = {
   title: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   headers: string[];
-  getLink: (item: any) => string;
-  renderRow: (item: any, locale: string) => React.ReactNode;
+  getLink: (item: T) => string;
+  renderRow: (item: T, locale: string) => React.ReactNode;
 };
 
-export function PaginatedView({
+export function PaginatedView<T extends { id: number | string }>({
   config,
   items,
   total,
@@ -23,8 +23,8 @@ export function PaginatedView({
   locale,
   apiLoading,
 }: {
-  config: ViewConfig | null;
-  items: any[];
+  config: ViewConfig<T> | null;
+  items: T[];
   total: number;
   lastPage: number;
   page: number;
@@ -67,7 +67,7 @@ export function PaginatedView({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item: any, i: number) => (
+                  {items.map((item, i: number) => (
                     <tr
                       key={item.id}
                       className="row-slide hover:bg-white/[0.025] cursor-pointer"

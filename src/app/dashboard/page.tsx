@@ -69,7 +69,11 @@ type Approval = {
 
 type PaginatedResponse<T> = { data: T[]; current_page: number; last_page: number; per_page: number; total: number };
 
-function timeAgo(dateStr: string, locale: string, t: any): string {
+// The next-intl translate function, passed down as a prop between these
+// subcomponents rather than each calling useTranslations() itself.
+type TFunc = ReturnType<typeof useTranslations>;
+
+function timeAgo(dateStr: string, locale: string, t: TFunc): string {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -95,7 +99,7 @@ function formatTime(dateStr: string, locale: string): string {
   });
 }
 
-function formatFileSize(bytes: number, locale: string, t: any): string {
+function formatFileSize(bytes: number, locale: string, t: TFunc): string {
   if (!bytes) return `0 ${t('bytes_unit')}`;
   const units = [t('bytes_unit'), t('kb_unit'), t('mb_unit'), t('gb_unit')];
   let idx = 0;
@@ -181,7 +185,7 @@ export default function DashboardHome() {
 }
 
 function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, unreadCount, unreadClientsCount }: {
-  t: any; locale: string; clients: Client[]; allContracts: Contract[];
+  t: TFunc; locale: string; clients: Client[]; allContracts: Contract[];
   allPayments: Payment[]; allMeetings: Meeting[]; unreadCount: number; unreadClientsCount: number;
 }) {
   const router = useRouter();
@@ -285,7 +289,7 @@ function AMView({ t, locale, clients, allContracts, allPayments, allMeetings, un
 }
 
 function SAManagersView({ t, locale, managers, allContracts, allPayments, allMeetings, pendingApprovals, unreadCount }: {
-  t: any; locale: string; managers: Manager[]; allContracts: Contract[];
+  t: TFunc; locale: string; managers: Manager[]; allContracts: Contract[];
   allPayments: Payment[]; allMeetings: Meeting[]; pendingApprovals: Approval[]; unreadCount: number;
 }) {
   const totalClients = managers.reduce((sum, m) => sum + (m.managed_clients_count || 0), 0);
@@ -452,11 +456,15 @@ function SAManagersView({ t, locale, managers, allContracts, allPayments, allMee
 }
 
 function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
-  t: any; locale: string; view: string; clients: Client[];
+  t: TFunc; locale: string; view: string; clients: Client[];
   allContracts: Contract[]; allPayments: Payment[];
 }) {
   const router = useRouter();
   const [page, setPage] = useState(1);
+  // apiItems/config below are deliberately loose: this view renders four
+  // unrelated row shapes (Contract/Meeting/Payment/FileFile) through one
+  // generic table, and each config branch below is already precisely typed
+  // at its getLink/renderRow definition site.
   const [apiItems, setApiItems] = useState<any[]>([]);
   const [apiMeta, setApiMeta] = useState<{ lastPage: number; total: number } | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
@@ -649,7 +657,7 @@ function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
 }
 
 function SAListView({ t, locale, view, clients, allContracts, allPayments, managers }: {
-  t: any; locale: string; view: string; clients: Client[];
+  t: TFunc; locale: string; view: string; clients: Client[];
   allContracts: Contract[]; allPayments: Payment[]; managers: Manager[];
 }) {
   return <AMListView t={t} locale={locale} view={view} clients={clients} allContracts={allContracts} allPayments={allPayments} />;

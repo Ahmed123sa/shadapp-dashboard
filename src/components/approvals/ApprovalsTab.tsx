@@ -7,10 +7,11 @@ import { getUser } from '@/lib/auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl } from '@/lib/utils';
+import type { Approval } from '@/types';
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';
-  const [approvals, setApprovals] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -100,7 +101,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
             {/* Files */}
             {a.files && a.files.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {a.files.map((f: any) => (
+                {a.files.map((f) => (
                   <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
                     📎 {f.name || t('file_label')}
