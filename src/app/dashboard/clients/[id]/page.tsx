@@ -57,6 +57,7 @@ export default function ClientWorkspace() {
   }, [searchParams, t]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
 
   useEffect(() => {
@@ -67,8 +68,16 @@ export default function ClientWorkspace() {
   useEffect(() => { load(); }, [id]);
 
   const deleteClient = async () => {
-    await api.delete(`/clients/${id}`).catch((err) => reportError('ClientWorkspace.deleteClient', err));
-    window.location.href = '/dashboard/clients';
+    const { data } = await api.delete(`/clients/${id}`).catch((err) => {
+      reportError('ClientWorkspace.deleteClient', err);
+      return { data: null };
+    });
+    if (data) {
+      window.location.href = '/dashboard/clients';
+    } else {
+      setDeleteConfirm(false);
+      setDeleteError(t('delete_client_failed'));
+    }
   };
 
   if (loading) return <div className="py-20"><LoadingSkeleton message={t('loading_workspace')} /></div>;
@@ -79,6 +88,8 @@ export default function ClientWorkspace() {
 
   return (
     <div className="space-y-6">
+      {deleteError && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{deleteError}</div>}
+
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -101,7 +112,7 @@ export default function ClientWorkspace() {
           </div>
           <div className="flex items-center gap-2">
             {!isSA && <Link href={`/dashboard/clients/${id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
-            {!isSA && <button onClick={() => setDeleteConfirm(true)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
+            {!isSA && <button onClick={() => { setDeleteError(''); setDeleteConfirm(true); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             <span className={`px-2.5 py-1 rounded-full text-xs ${client.signed_at ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {client.signed_at ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('signed')}</> : t('not_signed')}

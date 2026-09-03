@@ -57,6 +57,7 @@ export default function SettingsPage() {
   const [clauseCategory, setClauseCategory] = useState('');
   const [editingClause, setEditingClause] = useState<EditingClause | null>(null);
   const [clausesMsg, setClausesMsg] = useState('');
+  const [clausesMsgIsError, setClausesMsgIsError] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -242,7 +243,8 @@ export default function SettingsPage() {
     }
   };
 
-  const flashClausesMsg = (key: string) => {
+  const flashClausesMsg = (key: string, isError = false) => {
+    setClausesMsgIsError(isError);
     setClausesMsg(t(key));
     setTimeout(() => setClausesMsg(''), 3000);
   };
@@ -273,9 +275,14 @@ export default function SettingsPage() {
 
   const deleteClause = async (id: number) => {
     if (!confirm(t('delete_clause_confirm'))) return;
-    await api.delete(`/contract-clause-templates/${id}`).catch((err) => reportError('SettingsPage.deleteClause', err));
-    setClauses((prev) => prev.filter((cl) => cl.id !== id));
-    flashClausesMsg('clause_deleted');
+    try {
+      await api.delete(`/contract-clause-templates/${id}`);
+      setClauses((prev) => prev.filter((cl) => cl.id !== id));
+      flashClausesMsg('clause_deleted');
+    } catch (err) {
+      reportError('SettingsPage.deleteClause', err);
+      flashClausesMsg('clause_delete_failed', true);
+    }
   };
 
   const saveEditClause = () => {
@@ -488,7 +495,13 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold">{t('contract_clauses')}</h2>
           <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('clauses_description')}</p>
         </div>
-        {clausesMsg && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">{clausesMsg}</div>}
+        {clausesMsg && (
+          <div className={clausesMsgIsError
+            ? 'bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm'
+            : 'bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm'}>
+            {clausesMsg}
+          </div>
+        )}
 
         <div className="border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] space-y-3">
           <div className="flex gap-2 flex-wrap">
