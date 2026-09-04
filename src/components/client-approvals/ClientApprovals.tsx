@@ -1,35 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
+import { useState } from 'react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
-import type { Approval } from '@/types';
+import { useWorkspaceApprovals, useRespondApproval } from '@/hooks/queries/useApprovals';
 
-export default function ClientApprovals({ wsId, clientId }: { wsId: number; clientId: number }) {
+export default function ClientApprovals({ wsId }: { wsId: number; clientId: number }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [approvals, setApprovals] = useState<Approval[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [respondTarget, setRespondTarget] = useState<{ id: number; action: string } | null>(null);
 
-  useEffect(() => {
-    api.get(`/workspaces/${wsId}/approvals`)
-      .then(({ data }) => setApprovals(data.approvals?.data || data.approvals || []))
-      .catch((e) => { console.error(e); setError(t('approval_load_failed')); })
-      .finally(() => setLoading(false));
-  }, [wsId]);
+  const approvalsQuery = useWorkspaceApprovals(wsId);
+  const respondMutation = useRespondApproval(wsId);
 
-  const respond = async () => {
+  const approvals = approvalsQuery.data ?? [];
+  const loading = approvalsQuery.isLoading;
+  const error = approvalsQuery.isError && approvalsQuery.data === undefined ? t('approval_load_failed') : '';
+
+  const respond = () => {
     if (!respondTarget) return;
-    const { data } = await api.post(`/approvals/${respondTarget.id}/respond`, { action: respondTarget.action }).catch((err) => { notifyWriteError(tc, 'ClientApprovals.respond', err); return { data: null }; });
-    if (data) {
-      setApprovals((prev) => prev.map((a) => a.id === respondTarget.id ? data.approval : a));
-    }
+    respondMutation.mutate(respondTarget, {
+      onError: (err) => notifyWriteError(tc, 'ClientApprovals.respond', err),
+    });
     setRespondTarget(null);
   };
 

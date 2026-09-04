@@ -1,43 +1,41 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
-import type { Approval } from '@/types';
+import { useWorkspaceApprovals, useSendApproval } from '@/hooks/queries/useApprovals';
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';
-  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
 
-  useEffect(() => {
-    api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])).catch((err) => { console.error('ApprovalsTab: GET /workspaces/${wsId}/approvals failed', err); setError(t('approvals_load_error')); }).finally(() => setLoading(false));
-  }, [wsId]);
+  const approvalsQuery = useWorkspaceApprovals(wsId);
+  const sendMutation = useSendApproval(wsId);
+
+  const approvals = approvalsQuery.data ?? [];
+  const loading = approvalsQuery.isLoading;
+  const error = approvalsQuery.isError && approvalsQuery.data === undefined ? t('approvals_load_error') : '';
 
   const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
 
-  const sendApproval = async () => {
-    if (!title || sending) return;
-    setSending(true);
+  const sendApproval = () => {
+    if (!title || sendMutation.isPending) return;
     const form = new FormData();
     form.append('title', title);
     if (description) form.append('description', description);
     files.forEach((f) => form.append('files[]', f));
-    const { data } = await api.post(`/workspaces/${wsId}/approvals`, form).catch((err) => { notifyWriteError(tc, 'ApprovalsTab.sendApproval', err); return { data: null }; });
-    if (data) { setApprovals((prev) => [data.approval, ...prev]); setTitle(''); setDescription(''); setFiles([]); }
-    setSending(false);
+    sendMutation.mutate(form, {
+      onSuccess: () => { setTitle(''); setDescription(''); setFiles([]); },
+      onError: (err) => notifyWriteError(tc, 'ApprovalsTab.sendApproval', err),
+    });
   };
 
   if (loading) return <TableSkeleton />;
@@ -66,8 +64,8 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
             )}
           </div>
 
-          <button onClick={sendApproval} disabled={sending || !title} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-            {sending ? t('sending_label') : t('send_approval_request')}
+          <button onClick={sendApproval} disabled={sendMutation.isPending || !title} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
+            {sendMutation.isPending ? t('sending_label') : t('send_approval_request')}
           </button>
         </div>
       )}
