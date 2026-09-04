@@ -13,7 +13,7 @@ import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck, Reply } from 'lucide-react';
 import { reportError } from '@/lib/error-reporting';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { ChatMessage, Contract, User } from '@/types';
 
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
@@ -99,12 +99,12 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   };
 
   const toggleAction = async (id: number) => {
-    const { data } = await api.patch(`/chat/${id}/require-action`).catch(() => ({ data: null }));
+    const { data } = await api.patch(`/chat/${id}/require-action`).catch((err) => { notifyWriteError(tc, 'ChatTab.toggleAction', err); return { data: null }; });
     if (data) setMessages((prev) => prev.map((m) => m.id === id ? data.message : m));
   };
 
   const doContractAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/${action}`).catch(() => ({ data: null }));
+    const { data } = await api.post(`/contracts/${id}/${action}`).catch((err) => { notifyWriteError(tc, 'ChatTab.doContractAction', err); return { data: null }; });
     if (data) setContracts((prev) => prev.map((c) => c.id === id ? data.contract : c));
   };
 

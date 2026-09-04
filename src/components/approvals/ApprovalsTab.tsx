@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { Approval } from '@/types';
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
@@ -20,6 +20,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
 
   useEffect(() => {
     api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])).catch((err) => { console.error('ApprovalsTab: GET /workspaces/${wsId}/approvals failed', err); setError(t('approvals_load_error')); }).finally(() => setLoading(false));
@@ -34,7 +35,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
     form.append('title', title);
     if (description) form.append('description', description);
     files.forEach((f) => form.append('files[]', f));
-    const { data } = await api.post(`/workspaces/${wsId}/approvals`, form).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/approvals`, form).catch((err) => { notifyWriteError(tc, 'ApprovalsTab.sendApproval', err); return { data: null }; });
     if (data) { setApprovals((prev) => [data.approval, ...prev]); setTitle(''); setDescription(''); setFiles([]); }
     setSending(false);
   };

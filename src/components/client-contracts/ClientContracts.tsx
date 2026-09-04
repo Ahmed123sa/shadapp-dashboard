@@ -9,10 +9,12 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
 import { useTranslations } from 'next-intl';
+import { notifyWriteError } from '@/lib/utils';
 import type { Contract } from '@/types';
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,7 +37,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   useEffect(() => { load(); }, [wsId]);
 
   const doAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/client-action`, { action }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/contracts/${id}/client-action`, { action }).catch((err) => { notifyWriteError(tc, 'ClientContracts.doAction', err); return { data: null }; });
     if (data) {
       setContracts((prev) => Array.isArray(prev) ? prev.map((c) => c.id === id ? data.contract : c) : prev);
       setViewContract(null);

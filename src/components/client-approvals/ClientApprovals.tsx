@@ -6,11 +6,12 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { Approval } from '@/types';
 
 export default function ClientApprovals({ wsId, clientId }: { wsId: number; clientId: number }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,7 +26,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
 
   const respond = async () => {
     if (!respondTarget) return;
-    const { data } = await api.post(`/approvals/${respondTarget.id}/respond`, { action: respondTarget.action }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/approvals/${respondTarget.id}/respond`, { action: respondTarget.action }).catch((err) => { notifyWriteError(tc, 'ClientApprovals.respond', err); return { data: null }; });
     if (data) {
       setApprovals((prev) => prev.map((a) => a.id === respondTarget.id ? data.approval : a));
     }

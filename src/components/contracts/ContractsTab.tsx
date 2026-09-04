@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
+import { asSettingFlag, resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -69,7 +69,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     const required_documents = requiredDocs.map((name) => ({ name }));
     const contract_type = wsActive ? 'additional' : 'main';
 
-    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, contract_type, clauses, required_documents }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, contract_type, clauses, required_documents }).catch((err) => { notifyWriteError(tc, 'ContractsTab.create', err); return { data: null }; });
     if (data) { setContracts((prev) => [...prev, data.contract]); setShowForm(false); setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' }); setSelectedOptional({}); setCustomClauses([]); setNewCustom(''); setRequiredDocs([]); setNewReqDoc(''); }
   };
 
@@ -83,7 +83,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const removeCustom = (idx: number) => setCustomClauses((prev) => prev.filter((_, i) => i !== idx));
 
   const doAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/${action}`).catch(() => ({ data: null }));
+    const { data } = await api.post(`/contracts/${id}/${action}`).catch((err) => { notifyWriteError(tc, 'ContractsTab.doAction', err); return { data: null }; });
     if (data) setContracts((prev) => prev.map((c) => c.id === id ? data.contract : c));
   };
 
@@ -104,7 +104,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const doCompanyApprove = async () => {
     if (!approveSig) return;
     const payload = useSavedSig ? { use_saved_signature: true } : { signature: approveSig.signature };
-    const { data } = await api.post(`/contracts/${approveSig.id}/company-approve`, payload).catch(() => ({ data: null }));
+    const { data } = await api.post(`/contracts/${approveSig.id}/company-approve`, payload).catch((err) => { notifyWriteError(tc, 'ContractsTab.doCompanyApprove', err); return { data: null }; });
     if (data) setContracts((prev) => prev.map((c) => c.id === approveSig.id ? data.contract : c));
     setApproveSig(null);
     setSavedUserSig(null);

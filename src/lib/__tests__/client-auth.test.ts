@@ -125,11 +125,20 @@ describe('hasSubUserPermission', () => {
     expect(hasSubUserPermission('view_files')).toBe(false);
   });
 
+  // Before safeJsonParse existed, corrupt JSON in localStorage made
+  // JSON.parse throw uncaught, so "fails closed" meant "crashes the caller"
+  // — a crude but effective way to stop a bad permission check from
+  // resolving to true. Now getSubUser() catches that and returns null
+  // instead (see lib/utils.ts), so this must fail closed by *denying* the
+  // permission rather than by throwing. isSubUser() reading client.is_sub_user
+  // (not sub_user's own presence) is what keeps that denial correct instead
+  // of the corrupt record being mistaken for "not a sub-user at all".
   it('fails closed for a sub-user with a corrupt session (unparseable JSON)', () => {
     localStorage.setItem('client', JSON.stringify({ id: 1, is_sub_user: true }));
     localStorage.setItem('sub_user', 'not-json');
 
-    expect(() => hasSubUserPermission('view_files')).toThrow();
+    expect(() => hasSubUserPermission('view_files')).not.toThrow();
+    expect(hasSubUserPermission('view_files')).toBe(false);
   });
 });
 

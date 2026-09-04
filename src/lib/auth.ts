@@ -1,3 +1,5 @@
+import { safeJsonParse } from './utils';
+
 export interface User {
   id: number;
   name: string;
@@ -40,8 +42,7 @@ export async function logout(): Promise<void> {
 
 export function getUser(): User | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem('user');
-  return raw ? JSON.parse(raw) : null;
+  return safeJsonParse<User>(localStorage.getItem('user'), 'user');
 }
 
 // This is a UI convenience only (avoids a flash of protected content while

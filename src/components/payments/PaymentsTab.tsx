@@ -9,7 +9,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
 
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
@@ -72,7 +72,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   };
 
   const reviewPayment = async (pid: number, action: string) => {
-    const { data } = await api.post(`/payments/${pid}/review`, { action }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/payments/${pid}/review`, { action }).catch((err) => { notifyWriteError(tc, 'PaymentsTab.reviewPayment', err); return { data: null }; });
     if (data?.payment) {
       setPayments((prev) => prev.map((p) => p.id === pid ? data.payment : p));
       if (data?.workspace && onWorkspaceUpdate) onWorkspaceUpdate(data.workspace);

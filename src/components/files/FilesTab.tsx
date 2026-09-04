@@ -8,7 +8,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 export default function FilesTab({ wsId }: { wsId: number }) {
@@ -38,20 +38,20 @@ export default function FilesTab({ wsId }: { wsId: number }) {
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
     if (uploadDef) form.append('document_definition_id', uploadDef);
-    const { data } = await api.post(`/workspaces/${wsId}/files`, form).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/files`, form).catch((err) => { notifyWriteError(tc, 'FilesTab.upload', err); return { data: null }; });
     if (data) { setFiles((prev) => [...prev, data.file]); setUploadDef(''); }
   };
 
   const addDef = async () => {
     if (!defName) return;
-    const { data } = await api.post(`/workspaces/${wsId}/document-definitions`, { name: defName }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/document-definitions`, { name: defName }).catch((err) => { notifyWriteError(tc, 'FilesTab.addDef', err); return { data: null }; });
     if (data) { setDefinitions((prev) => [...prev, data.definition]); setDefName(''); setShowDefForm(false); }
   };
 
   const reviewFile = async (fid: number, action: string, rejection_reason?: string) => {
     const body: { action: string; rejection_reason?: string } = { action };
     if (rejection_reason) body.rejection_reason = rejection_reason;
-    const { data } = await api.post(`/files/${fid}/review`, body).catch(() => ({ data: null }));
+    const { data } = await api.post(`/files/${fid}/review`, body).catch((err) => { notifyWriteError(tc, 'FilesTab.reviewFile', err); return { data: null }; });
     if (data) setFiles((prev) => prev.map((f) => f.id === fid ? data.file : f));
   };
 

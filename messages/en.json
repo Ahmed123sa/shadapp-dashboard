@@ -9,7 +9,9 @@
     "back": "Back",
     "search": "Search",
     "no_data": "No data",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "write_error_title": "Action failed",
+    "write_error_message": "Something went wrong and your change wasn't saved. Please try again."
   },
   "login": {
     "title": "Login",

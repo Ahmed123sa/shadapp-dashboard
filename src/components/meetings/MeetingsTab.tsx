@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { getMeetingJoinStatus } from '@/lib/utils';
+import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -32,19 +32,19 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
       { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
     if (form.contract_id) payload.contract_id = form.contract_id;
     if (form.approval_id) payload.approval_id = form.approval_id;
-    const { data } = await api.post(`/workspaces/${wsId}/meetings`, payload).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/meetings`, payload).catch((err) => { notifyWriteError(tc, 'MeetingsTab.create', err); return { data: null }; });
     if (data) { setMeetings((prev) => [...prev, data.meeting]); setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); }
   };
 
   const completeMeeting = async (id: number) => {
     if (!confirm(t('confirm_complete_meeting'))) return;
-    const { data } = await api.patch(`/meetings/${id}/complete`).catch(() => ({ data: null }));
+    const { data } = await api.patch(`/meetings/${id}/complete`).catch((err) => { notifyWriteError(tc, 'MeetingsTab.completeMeeting', err); return { data: null }; });
     if (data) setMeetings((prev) => prev.map((m) => m.id === id ? data.meeting : m));
   };
 
   const cancelMeeting = async (id: number) => {
     if (!confirm(t('confirm_cancel_meeting'))) return;
-    const { data } = await api.patch(`/meetings/${id}/cancel`).catch(() => ({ data: null }));
+    const { data } = await api.patch(`/meetings/${id}/cancel`).catch((err) => { notifyWriteError(tc, 'MeetingsTab.cancelMeeting', err); return { data: null }; });
     if (data) setMeetings((prev) => prev.map((m) => m.id === id ? data.meeting : m));
   };
 

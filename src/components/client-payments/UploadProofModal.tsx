@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import { notifyWriteError } from '@/lib/utils';
 import type { Payment } from '@/types';
 
 export default function UploadProofModal({ wsId, availableMethods, allowedCurrencies, onClose, onCreated }: {
@@ -14,6 +15,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
   onCreated: (payment: Payment) => void;
 }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const titleId = useId();
   const { dialogRef, dialogProps } = useModalA11y<HTMLDivElement>(true, onClose);
   const [amount, setAmount] = useState('');
@@ -50,7 +52,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
     form.append('currency', currency);
     form.append('method_type', methodType);
     if (proofFile) form.append('proof_file', proofFile);
-    const { data } = await api.post(`/workspaces/${wsId}/payments`, form).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/payments`, form).catch((err) => { notifyWriteError(tc, 'UploadProofModal.submit', err); return { data: null }; });
     if (data) onCreated(data.payment);
     setSaving(false);
   };

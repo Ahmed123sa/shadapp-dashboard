@@ -9,7 +9,9 @@
     "back": "رجوع",
     "search": "بحث",
     "no_data": "لا توجد بيانات",
-    "refresh": "تحديث"
+    "refresh": "تحديث",
+    "write_error_title": "فشلت العملية",
+    "write_error_message": "حصل خطأ ولم يتم حفظ التعديل. جرّب تاني."
   },
   "login": {
     "title": "تسجيل الدخول",

@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
+import { notifyWriteError } from '@/lib/utils';
 import ErrorState from '@/components/ErrorState';
 import type { Client } from '@/types';
 
@@ -31,6 +32,7 @@ function InputField({ label, required, id, ...props }: React.InputHTMLAttributes
 
 export default function ClientsPage() {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -108,7 +110,7 @@ export default function ClientsPage() {
 
   const deleteClient = async (id: number) => {
     if (!confirm(t('delete_confirm'))) return;
-    const { data } = await api.delete(`/clients/${id}`).catch(() => ({ data: null }));
+    const { data } = await api.delete(`/clients/${id}`).catch((err) => { notifyWriteError(tc, 'ClientsPage.deleteClient', err); return { data: null }; });
     if (data) setClients((prev) => prev.filter((c) => c.id !== id));
   };
 

@@ -1,3 +1,6 @@
+import { reportError } from './error-reporting';
+import { showToast } from '@/components/ToastNotification';
+
 /**
  * Reads a system-setting flag that the backend stores as a string ('1'/'0').
  *
@@ -70,4 +73,57 @@ export function formatMeetingDate(d: string, locale = 'en'): string {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch { return d; }
+}
+
+/**
+ * `JSON.parse(localStorage.getItem(key))` without a try/catch throws
+ * synchronously during render the moment the stored value is ever
+ * malformed (a half-written value from a previous crashed tab, a manual
+ * edit in DevTools, a quota error that truncated the write, or just an old
+ * shape from a previous app version). getUser()/getClient()/getSubUser()
+ * all had this exact unguarded pattern — the user got stuck on the generic
+ * error boundary with no way out short of manually clearing storage.
+ * Corrupt session data isn't a real error case to surface; it's
+ * equivalent to no session at all, so this treats it that way (and clears
+ * the bad value so it doesn't keep tripping this on every render).
+ */
+export function safeJsonParse<T>(raw: string | null, key?: string): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch (err) {
+    reportError('safeJsonParse', err, key ? { key } : undefined);
+    if (key && typeof window !== 'undefined') {
+      try { localStorage.removeItem(key); } catch { /* storage itself unavailable — nothing more we can do */ }
+    }
+    return null;
+  }
+}
+
+/**
+ * The fix for the "25 silent-catch sites" pattern found in the tech-lead
+ * review: `await api.patch(...).catch(() => ({ data: null }))` followed by
+ * `if (data) { ...update UI... }` — on failure this did nothing at all, no
+ * toast, no log, the user just saw their action quietly not happen.
+ *
+ * This centralizes what should happen instead: funnel the error into
+ * reportError (same as every other caught error in the app) and surface a
+ * generic toast via the existing showToast()/<ToastNotification /> system so
+ * the user knows the write didn't go through.
+ *
+ * `t` is the translator for the `common` namespace (`useTranslations('common')`)
+ * — passed in rather than called here because this is a plain function, not a
+ * component, and next-intl's hook can only be called from one. `context`
+ * should be a short `Component.action` label (e.g. `'ContractsTab.updateStatus'`)
+ * — it's both what reportError logs under and the toast's dedup id, so two
+ * failures of the *same* action within 15s collapse into one toast instead of
+ * stacking up.
+ */
+export function notifyWriteError(t: (key: string) => string, context: string, error: unknown): void {
+  reportError(context, error);
+  showToast({
+    id: context,
+    title: t('write_error_title'),
+    message: t('write_error_message'),
+  });
 }

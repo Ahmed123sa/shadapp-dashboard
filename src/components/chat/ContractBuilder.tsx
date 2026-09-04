@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
-import { asSettingFlag } from '@/lib/utils';
+import { asSettingFlag, notifyWriteError } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import type { Contract } from '@/types';
 
@@ -11,6 +11,7 @@ type Template = { id: number; content: string; type: string };
 
 export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: Contract) => void; onCancel: () => void }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
   const [showDates, setShowDates] = useState(true);
@@ -44,7 +45,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
     optionalTemplates.forEach((t) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional', sort_order: clauses.length }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom', sort_order: clauses.length }));
 
-    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, clauses }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, clauses }).catch((err) => { notifyWriteError(tc, 'ContractBuilder.create', err); return { data: null }; });
     if (data) onCreated(data.contract);
   };
 

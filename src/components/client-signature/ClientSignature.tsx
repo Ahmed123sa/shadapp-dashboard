@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
+import { notifyWriteError } from '@/lib/utils';
 import type { Client } from '@/types';
 
 const SIG_W = 500;
@@ -14,6 +15,7 @@ function isImageUrl(val: string | null | undefined) {
 
 export default function ClientSignature({ clientId, clientData, onSigned }: { clientId: number; clientData: Client; onSigned?: () => void }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const sigData = clientData?.signature_data;
   const [mode, setMode] = useState<'text' | 'image'>(sigData && !isImageUrl(sigData) ? 'text' : 'image');
   const [signature, setSignature] = useState(!sigData || isImageUrl(sigData) ? '' : sigData);
@@ -55,7 +57,7 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
     if (mode === 'text') {
       if (!signature.trim()) return;
       setSaving(true);
-      const { data } = await api.post(`/clients/${clientId}/sign`, { signature: signature.trim() }).catch(() => ({ data: null }));
+      const { data } = await api.post(`/clients/${clientId}/sign`, { signature: signature.trim() }).catch((err) => { notifyWriteError(tc, 'ClientSignature.save.text', err); return { data: null }; });
       if (data) { setDone(true); onSigned?.(); }
       setSaving(false);
     } else {
@@ -64,7 +66,7 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
       const blob = await (await fetch(preview)).blob();
       const fd = new FormData();
       fd.append('signature_image', blob, 'signature.png');
-      const { data } = await api.post(`/clients/${clientId}/sign`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).catch(() => ({ data: null }));
+      const { data } = await api.post(`/clients/${clientId}/sign`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).catch((err) => { notifyWriteError(tc, 'ClientSignature.save.image', err); return { data: null }; });
       if (data) { setDone(true); onSigned?.(); }
       setSaving(false);
     }

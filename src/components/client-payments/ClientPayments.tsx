@@ -5,11 +5,12 @@ import api from '@/lib/api';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { Payment, Contract, PaymentTaxSummary } from '@/types';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [methods, setMethods] = useState<string[]>([]);
   const [payableContract, setPayableContract] = useState<Contract | null>(null);
@@ -100,7 +101,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
     const url = editingPayment
       ? `/workspaces/${wsId}/payments/${editingPayment.id}`
       : `/workspaces/${wsId}/payments`;
-    const { data } = await api.post(url, form).catch(() => ({ data: null }));
+    const { data } = await api.post(url, form).catch((err) => { notifyWriteError(tc, 'ClientPayments.submit', err); return { data: null }; });
     if (data) {
       if (editingPayment) {
         setPayments((prev) => prev.map((p) => p.id === editingPayment.id ? data.payment : p));

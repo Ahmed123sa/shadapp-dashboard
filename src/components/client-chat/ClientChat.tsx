@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { reportError } from '@/lib/error-reporting';
-import { resolveFileUrl } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
@@ -14,6 +14,7 @@ import type { ChatMessage, User } from '@/types';
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const locale = useLocale();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
@@ -82,7 +83,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
 
   const respond = async (id: number, action: string) => {
     setResponding((prev) => ({ ...prev, [id]: true }));
-    const { data } = await api.post(`/chat/${id}/respond`, { action }).catch(() => ({ data: null }));
+    const { data } = await api.post(`/chat/${id}/respond`, { action }).catch((err) => { notifyWriteError(tc, 'ClientChat.respond', err); return { data: null }; });
     if (data) setMessages((prev) => prev.map((m) => m.id === id ? data.message : m));
     setResponding((prev) => ({ ...prev, [id]: false }));
   };

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
-import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
+import { asSettingFlag, resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import ErrorState from '@/components/ErrorState';
 import { useTranslations } from 'next-intl';
@@ -23,6 +23,7 @@ function isImageSignature(val: string | null | undefined) {
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const tc = useTranslations('common');
   const [user, setUser] = useState(getUser());
   const isAM = user?.role === 'account_manager';
   const [officialEmail, setOfficialEmail] = useState('');
@@ -265,7 +266,7 @@ export default function SettingsPage() {
       type: clauseType,
       content: clauseContent.trim(),
       category: clauseCategory.trim() || undefined,
-    }).catch(() => ({ data: null }));
+    }).catch((err) => { notifyWriteError(tc, 'SettingsPage.addClause', err); return { data: null }; });
     if (data) {
       setClauses((prev) => [...prev, data.template]);
       setClauseContent('');
@@ -275,7 +276,7 @@ export default function SettingsPage() {
   };
 
   const updateClause = async (id: number, payload: Partial<Pick<ContractClauseTemplate, 'content' | 'type' | 'is_active'>> & { category?: string | null }) => {
-    const { data } = await api.put(`/contract-clause-templates/${id}`, payload).catch(() => ({ data: null }));
+    const { data } = await api.put(`/contract-clause-templates/${id}`, payload).catch((err) => { notifyWriteError(tc, 'SettingsPage.updateClause', err); return { data: null }; });
     if (data) {
       setClauses((prev) => prev.map((cl) => cl.id === id ? data.template : cl));
       setEditingClause(null);
@@ -330,7 +331,7 @@ export default function SettingsPage() {
   };
 
   const saveOrder = async () => {
-    const { data } = await api.post('/contract-clause-templates/reorder', { ordered_ids: clauses.map((cl) => cl.id) }).catch(() => ({ data: null }));
+    const { data } = await api.post('/contract-clause-templates/reorder', { ordered_ids: clauses.map((cl) => cl.id) }).catch((err) => { notifyWriteError(tc, 'SettingsPage.saveOrder', err); return { data: null }; });
     if (data) setClauses(data.templates);
   };
 

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl } from '../utils';
+import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl, safeJsonParse, notifyWriteError } from '../utils';
+import { reportError } from '../error-reporting';
+import { showToast } from '@/components/ToastNotification';
+
+vi.mock('../error-reporting', () => ({ reportError: vi.fn() }));
+vi.mock('@/components/ToastNotification', () => ({ showToast: vi.fn() }));
 
 const NOW = new Date('2026-08-26T10:00:00.000Z');
 
@@ -126,5 +131,54 @@ describe('resolveFileUrl', () => {
     expect(resolveFileUrl(undefined)).toBe('');
     expect(resolveFileUrl('')).toBe('');
     expect(resolveFileUrl([])).toBe('');
+  });
+});
+
+describe('safeJsonParse', () => {
+  it('returns null for a missing value without throwing', () => {
+    expect(safeJsonParse(null)).toBeNull();
+  });
+
+  it('parses valid JSON normally', () => {
+    expect(safeJsonParse<{ id: number }>('{"id":1}')).toEqual({ id: 1 });
+  });
+
+  it('returns null instead of throwing for malformed JSON (the actual bug this guards against)', () => {
+    expect(() => safeJsonParse('{not valid json')).not.toThrow();
+    expect(safeJsonParse('{not valid json')).toBeNull();
+  });
+
+  it('clears the offending localStorage key so it does not keep failing on every render', () => {
+    localStorage.setItem('user', '{corrupt');
+    safeJsonParse(localStorage.getItem('user'), 'user');
+    expect(localStorage.getItem('user')).toBeNull();
+  });
+});
+
+describe('notifyWriteError', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const t = (key: string) => (key === 'write_error_title' ? 'Action failed' : 'Something went wrong');
+
+  it('reports the error under the given context', () => {
+    const err = new Error('network down');
+    notifyWriteError(t, 'ContractsTab.updateStatus', err);
+    expect(reportError).toHaveBeenCalledWith('ContractsTab.updateStatus', err);
+  });
+
+  it('shows a toast built from the translated title/message, using the context as the dedup id', () => {
+    notifyWriteError(t, 'ContractsTab.updateStatus', new Error('network down'));
+    expect(showToast).toHaveBeenCalledWith({
+      id: 'ContractsTab.updateStatus',
+      title: 'Action failed',
+      message: 'Something went wrong',
+    });
+  });
+
+  it('does not throw when called with a non-Error rejection value', () => {
+    expect(() => notifyWriteError(t, 'ChatTab.send', 'some string rejection')).not.toThrow();
+    expect(reportError).toHaveBeenCalledWith('ChatTab.send', 'some string rejection');
   });
 });

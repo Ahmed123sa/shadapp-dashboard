@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE, SESSION_TYPE_COOKIE } from '@/lib/session';
+import { assertProductionEnv } from '@/lib/env-guard';
+
+// Runs once, when this module is first loaded — which Next.js does before
+// serving any request. Throwing here means a misconfigured production
+// deploy fails to start (with a clear message in the process logs) instead
+// of quietly serving traffic pointed at localhost. See lib/env-guard.ts.
+assertProductionEnv();
 
 const locales = ['ar', 'en'];
 const defaultLocale = 'en';

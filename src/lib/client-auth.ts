@@ -1,3 +1,5 @@
+import { safeJsonParse } from './utils';
+
 export interface ClientSession {
   login_type: 'client' | 'sub_user';
   client: {
@@ -8,6 +10,11 @@ export interface ClientSession {
     status: string;
     has_signed: boolean;
     avatar_url?: string;
+    // Only present once clientLogin() stores it for a sub-user session (see
+    // below) — isSubUser() reads this rather than "is sub_user present and
+    // parseable", so a corrupt/missing sub_user permissions record can't be
+    // mistaken for "not a sub-user at all" (see isSubUser()'s comment).
+    is_sub_user?: boolean;
   };
   sub_user?: {
     id: number;
@@ -62,18 +69,24 @@ export async function clientLogout(): Promise<void> {
 
 export function getClient(): ClientSession['client'] | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem('client');
-  return raw ? JSON.parse(raw) : null;
+  return safeJsonParse<ClientSession['client']>(localStorage.getItem('client'), 'client');
 }
 
 export function getSubUser(): NonNullable<ClientSession['sub_user']> | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem('sub_user');
-  return raw ? JSON.parse(raw) : null;
+  return safeJsonParse<NonNullable<ClientSession['sub_user']>>(localStorage.getItem('sub_user'), 'sub_user');
 }
 
+// Deliberately keyed off `client.is_sub_user` rather than "does getSubUser()
+// return something truthy". The latter used to double as the sub-user
+// signal, which meant a corrupt or missing `sub_user` permissions record
+// (safeJsonParse now returns null for both, rather than throwing) would read
+// as "this is a primary client" and skip the permission check entirely —
+// exactly the fail-open bug hasSubUserPermission's own comment warns about.
+// The `client` record's `is_sub_user` flag is set once at login time and
+// doesn't depend on the separate `sub_user` record parsing cleanly later.
 export function isSubUser(): boolean {
-  return !!getSubUser();
+  return !!getClient()?.is_sub_user;
 }
 
 // UI convenience only, same caveat as isAuthenticated() in lib/auth.ts —
