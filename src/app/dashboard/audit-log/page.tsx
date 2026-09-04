@@ -133,12 +133,12 @@ function formatDateTime(dateStr: string, locale: string, t: (key: string) => str
 function getAvatarColors(name: string): { bg: string; border: string; text: string } {
   const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const palettes = [
-    { bg: 'rgba(148,20,20,0.16)', border: 'rgba(148,20,20,0.32)', text: '#D4AF37' },
-    { bg: 'rgba(167,139,250,0.16)', border: 'rgba(167,139,250,0.32)', text: '#A78BFA' },
-    { bg: 'rgba(96,165,250,0.16)', border: 'rgba(96,165,250,0.32)', text: '#60A5FA' },
-    { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', text: '#22C55E' },
-    { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: '#FB923C' },
-    { bg: 'rgba(212,175,55,0.13)', border: 'rgba(212,175,55,0.28)', text: '#D4AF37' },
+    { bg: 'rgba(148,20,20,0.16)', border: 'rgba(148,20,20,0.32)', text: 'var(--color-gold-text)' },
+    { bg: 'rgba(167,139,250,0.16)', border: 'rgba(167,139,250,0.32)', text: 'var(--color-status-purple)' },
+    { bg: 'rgba(96,165,250,0.16)', border: 'rgba(96,165,250,0.32)', text: 'var(--color-status-blue)' },
+    { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', text: 'var(--color-success-text)' },
+    { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: 'var(--color-status-orange)' },
+    { bg: 'rgba(212,175,55,0.13)', border: 'rgba(212,175,55,0.28)', text: 'var(--color-gold-text)' },
   ];
   return palettes[hash % palettes.length];
 }
@@ -200,8 +200,8 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{t('audit_title')}</h2>
-          <span className="text-[10px] text-[var(--color-text-secondary)]">{t('audit_total_events', { count: total })}</span>
+          <h2 className="text-lg font-bold font-display">{t('audit_title')}</h2>
+          <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('audit_total_events', { count: total })}</span>
         </div>
       </div>
 
@@ -215,29 +215,29 @@ export default function AuditLogPage() {
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(); }}
-            className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-full px-8 py-1.5 text-[11px] text-[var(--color-foreground)] w-[160px] outline-none focus:border-[var(--color-gold)]"
+            className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-full px-8 py-1.5 text-[length:var(--fs-1)] text-[var(--color-foreground)] w-[160px] outline-none focus:border-[var(--color-gold)]"
           />
         </div>
         <select value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[length:var(--fs-1)] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
           <option value="">{t('audit_all_events')}</option>
           {Object.entries(ACTION_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
         <select value={filters.user_id} onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
-          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[length:var(--fs-1)] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]">
           <option value="">{t('audit_all_users')}</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>
         <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[length:var(--fs-1)] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
         <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[11px] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
+          className="bg-white/[0.04] border border-[var(--color-card-border)] rounded-lg px-3 py-1.5 text-[length:var(--fs-1)] text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]" />
         <button onClick={applyFilters}
-          className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer hover:opacity-90 transition-opacity">
+          className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[length:var(--fs-1)] font-bold cursor-pointer hover:opacity-90 transition-opacity">
           {t('audit_apply')}
         </button>
       </div>
@@ -271,7 +271,7 @@ export default function AuditLogPage() {
                     const entityName = resolveEntityName(log, t);
                     return (
                       <tr key={log.id}>
-                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10 }}>{log.id}</td>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>{log.id}</td>
                         <td>
                           <span className={`action-badge ${getActionBadgeClass(log.action)}`}>
                             {ACTION_LABELS[log.action] || log.action}
@@ -293,14 +293,14 @@ export default function AuditLogPage() {
                           </div>
                         </td>
                         <td style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>{entityName}</td>
-                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10, direction: 'ltr', textAlign: 'right' }}>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 11, direction: 'ltr', textAlign: 'right' }}>
                           {log.ip_address || '—'}
                         </td>
-                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 10, whiteSpace: 'nowrap' }}>
+                        <td style={{ color: 'var(--color-text-secondary)', fontSize: 11, whiteSpace: 'nowrap' }}>
                           {date}, {time}
                         </td>
                         <td>
-                          <span style={{ color: '#60A5FA', fontSize: 10, cursor: 'pointer' }}>{t('audit_view')} ←</span>
+                          <span style={{ color: 'var(--color-status-blue)', fontSize: 11, cursor: 'pointer' }}>{t('audit_view')} ←</span>
                         </td>
                       </tr>
                     );
@@ -385,14 +385,14 @@ export default function AuditLogPage() {
           font-weight: 600;
           white-space: nowrap;
         }
-        .ab-contract { background: rgba(96,165,250,0.12); color: #60A5FA; }
-        .ab-payment { background: rgba(212,175,55,0.13); color: var(--color-gold); }
-        .ab-client { background: rgba(34,197,94,0.1); color: var(--color-success); }
-        .ab-approval { background: rgba(167,139,250,0.12); color: #A78BFA; }
-        .ab-login { background: rgba(251,146,60,0.1); color: #FB923C; }
+        .ab-contract { background: rgba(96,165,250,0.12); color: var(--color-status-blue); }
+        .ab-payment { background: rgba(212,175,55,0.13); color: var(--color-gold-text); }
+        .ab-client { background: rgba(34,197,94,0.1); color: var(--color-success-text); }
+        .ab-approval { background: rgba(167,139,250,0.12); color: var(--color-status-purple); }
+        .ab-login { background: rgba(251,146,60,0.1); color: var(--color-status-orange); }
         .ab-meeting { background: rgba(148,20,20,0.16); color: var(--color-primary); }
-        .ab-file { background: rgba(96,165,250,0.1); color: #60A5FA; }
-        .ab-workspace { background: rgba(167,139,250,0.1); color: #A78BFA; }
+        .ab-file { background: rgba(96,165,250,0.1); color: var(--color-status-blue); }
+        .ab-workspace { background: rgba(167,139,250,0.1); color: var(--color-status-purple); }
         .ab-default { background: rgba(255,255,255,0.05); color: var(--color-text-secondary); }
         .td-user {
           display: flex;

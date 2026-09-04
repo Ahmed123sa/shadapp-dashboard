@@ -59,7 +59,7 @@ export default function UploadFileModal({ wsId, definitions, onClose, onCreated 
 
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => { setFile(e.target.files?.[0] || null); setError(''); }} />
         <button type="button" onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)] border border-blue-200 rounded-lg px-4 py-2 w-full">
+          className="flex items-center gap-2 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)] border border-blue-200 rounded-lg px-4 py-2 w-full">
           {file ? file.name : t('file_choose_file')}
         </button>
 

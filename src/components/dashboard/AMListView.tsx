@@ -75,26 +75,26 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
         <>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold)] flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                 {c.workspace?.client?.company_name?.slice(0, 2) || '?'}
               </div>
-              <span className="text-[11.5px] font-bold truncate max-w-[120px]">{c.workspace?.client?.company_name || '—'}</span>
+              <span className="text-[length:var(--fs-2)] font-bold truncate max-w-[120px]">{c.workspace?.client?.company_name || '—'}</span>
             </div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)] truncate max-w-[140px]">{c.title}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate max-w-[140px]">{c.title}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${
               c.contract_type === 'main' || c.contract_type === null
-                ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold)] border border-[var(--color-gold-border)]'
+                ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] border border-[var(--color-gold-border)]'
                 : 'bg-blue-900/30 text-blue-400'
             }`}>
               {c.contract_type === 'main' || c.contract_type === null ? t('main_contract') : t('additional_contract')}
             </span>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-gold-text)] font-display">
             {Number(c.value).toLocaleString()} {c.currency}
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[10px] text-[var(--color-text-secondary)]">{c.created_at ? formatDate(c.created_at, loc) : '—'}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{c.created_at ? formatDate(c.created_at, loc) : '—'}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]"><StatusBadge status={c.status} /></td>
         </>
       ),
@@ -110,20 +110,20 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
         <>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold)] flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                 {m.workspace?.client?.company_name?.slice(0, 2) || '?'}
               </div>
-              <span className="text-[11.5px] font-bold truncate max-w-[120px]">{m.workspace?.client?.company_name || '—'}</span>
+              <span className="text-[length:var(--fs-2)] font-bold truncate max-w-[120px]">{m.workspace?.client?.company_name || '—'}</span>
             </div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)] truncate max-w-[140px]">{m.title}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate max-w-[140px]">{m.title}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
-            <div className="text-[11px]">{formatDate(m.scheduled_at, loc)}</div>
-            <div className="text-[10px] text-[var(--color-text-secondary)]">{formatTime(m.scheduled_at, loc)}</div>
+            <div className="text-[length:var(--fs-1)]">{formatDate(m.scheduled_at, loc)}</div>
+            <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{formatTime(m.scheduled_at, loc)}</div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{m.duration_minutes} {t('minutes_suffix')}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{m.duration_minutes} {t('minutes_suffix')}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
-            <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold ${
+            <span className={`px-2 py-0.5 rounded-full text-[length:var(--fs-1)] font-semibold ${
               m.status === 'completed' ? 'bg-green-900/30 text-green-400' :
               m.status === 'cancelled' ? 'bg-red-900/30 text-red-400' :
               'bg-blue-900/30 text-blue-400'
@@ -144,20 +144,20 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
         <>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold)] flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                 {p.workspace?.client?.company_name?.slice(0, 2) || '?'}
               </div>
-              <span className="text-[11.5px] font-bold truncate max-w-[120px]">{p.workspace?.client?.company_name || '—'}</span>
+              <span className="text-[length:var(--fs-2)] font-bold truncate max-w-[120px]">{p.workspace?.client?.company_name || '—'}</span>
             </div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)] truncate max-w-[140px]">{p.contract?.title || '—'}</td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate max-w-[140px]">{p.contract?.title || '—'}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-gold-text)] font-display">
             {Number(p.amount).toLocaleString()} {p.currency || 'SAR'}
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{p.method_type}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{p.method_type}</td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
-            <div className="text-[11px]">{formatDate(p.created_at, loc)}</div>
-            <div className="text-[10px] text-[var(--color-text-secondary)]">{formatTime(p.created_at, loc)}</div>
+            <div className="text-[length:var(--fs-1)]">{formatDate(p.created_at, loc)}</div>
+            <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{formatTime(p.created_at, loc)}</div>
           </td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]"><StatusBadge status={p.status} /></td>
         </>
@@ -171,19 +171,19 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
         <>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold)] flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                 {f.workspace?.client?.company_name?.slice(0, 2) || '?'}
               </div>
-              <span className="text-[11.5px] font-bold truncate max-w-[120px]">{f.workspace?.client?.company_name || '—'}</span>
+              <span className="text-[length:var(--fs-2)] font-bold truncate max-w-[120px]">{f.workspace?.client?.company_name || '—'}</span>
             </div>
           </td>
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
-            <div className="text-[11px] font-bold truncate max-w-[160px]">{f.name}</div>
-            <div className="text-[10px] text-[var(--color-text-secondary)]">{f.uploaded_by?.name || ''}</div>
+            <div className="text-[length:var(--fs-1)] font-bold truncate max-w-[160px]">{f.name}</div>
+            <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{f.uploaded_by?.name || ''}</div>
           </td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{f.type || '—'}</td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[11px] text-[var(--color-text-secondary)]">{formatFileSize(f.size, loc, t)}</td>
-          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[10px] text-[var(--color-text-secondary)]">{formatDate(f.created_at, loc)}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{f.type || '—'}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{formatFileSize(f.size, loc, t)}</td>
+          <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{formatDate(f.created_at, loc)}</td>
         </>
       ),
     };

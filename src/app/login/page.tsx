@@ -33,21 +33,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[#D4AF37]/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#941414]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#D4AF37]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[var(--color-gold)]/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--color-gold)]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
         <div className="relative">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="ShadApp" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
           </div>
-          <h1 className="text-2xl font-bold text-center mb-1 text-white" style={{ fontFamily: "'Playfair Display', serif" }}>ShadApp</h1>
-          <p className="text-[#D4AF37] text-center text-sm mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>Shorter Road.</p>
+          <h1 className="text-2xl font-bold text-center mb-1 text-white font-display">ShadApp</h1>
+          <p className="text-[var(--color-gold)] text-center text-sm mb-6 font-display">Shorter Road.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-[#941414]/20 text-[#D4AF37] text-sm p-3 rounded-lg border border-[#941414]/30">{error}</div>
+              <div className="bg-[var(--color-primary)]/20 text-[var(--color-gold)] text-sm p-3 rounded-lg border border-[var(--color-primary)]/30">{error}</div>
             )}
 
             <div>
@@ -57,7 +57,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30"
+                className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30"
                 required
                 dir="ltr"
               />
@@ -71,7 +71,7 @@ export default function LoginPage() {
                   type={visible ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30 pe-10"
+                  className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30 pe-10"
                   required
                   dir="ltr"
                   autoComplete="new-password"
@@ -99,18 +99,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#941414] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors"
+              className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors"
             >
               {loading ? t('login_loading') : t('login_submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-white/50 mt-4">
-            <Link href="/forgot-password" className="text-[#D4AF37] hover:underline">{t('forgot_link')}</Link>
+            <Link href="/forgot-password" className="text-[var(--color-gold)] hover:underline">{t('forgot_link')}</Link>
           </p>
 
           <p className="text-center text-sm text-white/50 mt-3">
-            <Link href="/client-login" className="text-[#D4AF37] hover:underline">{t('login_client_link')}</Link>
+            <Link href="/client-login" className="text-[var(--color-gold)] hover:underline">{t('login_client_link')}</Link>
           </p>
         </div>
       </div>

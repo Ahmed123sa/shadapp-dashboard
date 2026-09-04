@@ -10,7 +10,7 @@ import ToastNotification from '@/components/ToastNotification';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
-  Folder, ClipboardList, Settings, UserCog, BarChart3,
+  Folder, ClipboardList, Settings, UserCog, BarChart3, Sun, Moon,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
 
@@ -32,6 +32,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // بند 4.5 (دفعة 1) — الافتراضي غامق دايمًا؛ الاختيار بيتحفظ في localStorage
+  // فقط بعد أول تبديل يدوي من المستخدم (مفيش متابعة لـ prefers-color-scheme
+  // بقرار صريح من المستخدم).
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const user = getUser();
   const isSA = user?.role === 'super_admin';
 
@@ -100,7 +104,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (typeof window !== 'undefined' && !isAuthenticated()) {
       router.push('/login');
     }
+    const storedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('shadapp-theme') : null;
+    if (storedTheme === 'light' || storedTheme === 'dark') setTheme(storedTheme);
   }, [router]);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    window.localStorage.setItem('shadapp-theme', next);
+  };
 
   const switchLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
@@ -152,20 +164,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ToastNotification />
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 end-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-s border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 end-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-s border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full lg:translate-x-0'}`}>
 
         {/* Logo */}
         <div className="px-3.5 py-5 mb-4">
           <div className="flex items-center gap-1">
-            <span className="text-[22px] italic font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>d</span>
+            <span className="text-[length:var(--fs-6)] italic font-bold font-display">d</span>
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] mb-[-2px]" />
-            <span className="text-[15px] tracking-[3px] text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>SHAD</span>
+            <span className="text-[length:var(--fs-4)] tracking-[3px] text-[var(--color-gold)] font-display">SHAD</span>
           </div>
         </div>
 
         {/* User Card */}
         <div className="mx-3.5 mb-5 p-2.5 rounded-xl border border-[var(--border)] bg-white/[0.03] flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-[var(--color-gold)] flex items-center justify-center text-xs font-bold border-[1.5px] border-[var(--color-gold)] overflow-hidden shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold border-[1.5px] border-[var(--color-gold)] overflow-hidden shrink-0">
             {user?.avatar_url ? (
               <img src={resolveFileUrl(user.avatar_url)} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -174,10 +186,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div>
             <div className="text-xs font-bold">{user?.name}</div>
-            <div className="text-[10px] text-[var(--color-text-secondary)]">
+            <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
               {isSA ? t('role_admin') : t('role_am')}
             </div>
-            <span className="inline-block mt-0.5 px-1.5 py-px text-[8.5px] rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary)] border border-[var(--color-crimson-border)]">
+            <span className="inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
               {isSA ? 'SUPER ADMIN' : 'ACCOUNT MANAGER'}
             </span>
           </div>
@@ -187,14 +199,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="flex-1 px-2 overflow-y-auto">
           {navGroups.map((group) => (
             <div key={group.label} className="mb-4">
-              <div className="text-[9.5px] text-[var(--color-text-muted)] uppercase tracking-[1.2px] mb-1.5 px-2">{group.label}</div>
+              <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[1.2px] mb-1.5 px-2">{group.label}</div>
               {group.items.map((item) => {
                 const active = isActive(item);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative flex items-center gap-2 px-2.5 py-2.5 rounded-lg text-[12.5px] transition-all mb-0.5 ${
+                    className={`relative flex items-center gap-2 px-2.5 py-2.5 rounded-lg text-[length:var(--fs-2)] transition-all mb-0.5 ${
                       active
                         ? 'text-[var(--color-foreground)] bg-[var(--color-crimson-soft)] nav-item-active'
                         : 'text-[var(--color-text-secondary)] hover:bg-white/[0.04] hover:text-[var(--color-foreground)]'
@@ -212,7 +224,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Logout */}
         <div className="px-3.5 py-2.5">
-          <button onClick={logout} className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-foreground)] transition-colors cursor-pointer w-full text-end">
+          <button onClick={logout} className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition-colors cursor-pointer w-full text-end py-2 -my-2">
             {t('logout')} →
           </button>
         </div>
@@ -228,24 +240,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h2 className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
-              {getPageTitle()}
-              <span className="text-[11px] text-[var(--color-text-secondary)] font-normal me-3" style={{ fontFamily: 'Tajawal' }}>
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-lg font-bold font-display">
+                {getPageTitle()}
+              </h2>
+              <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] font-normal">
                 {currentDate}
               </span>
-            </h2>
+            </div>
           </div>
           <div className="flex items-center gap-3.5">
             <input
               placeholder={t('search_placeholder')}
-              className="bg-white/[0.04] border border-[var(--border)] rounded-full px-3.5 py-1.5 text-[11.5px] text-[var(--color-text-secondary)] w-[150px]"
-              style={{ fontFamily: 'Tajawal' }}
+              className="bg-white/[0.04] border border-[var(--border)] rounded-full px-3.5 py-1.5 text-[length:var(--fs-2)] text-[var(--color-text-secondary)] w-[150px]"
             />
             <NotificationBell />
-            <button onClick={switchLocale} className="text-[10.5px] text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] transition-colors">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? t('switch_to_light') : t('switch_to_dark')}
+              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition"
+            >
+              {theme === 'dark' ? <Sun size={17} strokeWidth={1.5} /> : <Moon size={17} strokeWidth={1.5} />}
+            </button>
+            <button onClick={switchLocale} className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] transition-colors py-2.5 -my-2.5">
               {locale === 'ar' ? 'English' : 'العربية'}
             </button>
-            <div className="w-[30px] h-[30px] rounded-full bg-[var(--color-primary)] text-[var(--color-gold)] flex items-center justify-center text-[10px] font-bold border-[1.5px] border-[var(--color-gold)] overflow-hidden shrink-0">
+            <div className="w-[30px] h-[30px] rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-[length:var(--fs-1)] font-bold border-[1.5px] border-[var(--color-gold)] overflow-hidden shrink-0">
               {user?.avatar_url ? (
                 <img src={resolveFileUrl(user.avatar_url)} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -255,7 +275,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-5 overflow-auto">{children}</main>
+        <main data-theme={theme === 'light' ? 'light' : undefined} className="flex-1 p-5 overflow-auto">{children}</main>
       </div>
     </div>
   );

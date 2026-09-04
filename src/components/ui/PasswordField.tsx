@@ -87,7 +87,7 @@ export default function PasswordField({
           <div className="h-1.5 bg-[var(--color-card-border)] rounded-full overflow-hidden">
             <div className={`h-full ${strengthBar} transition-all duration-300`} style={{ width: `${(strength / 3) * 100}%` }} />
           </div>
-          <p className={`text-[11px] ${strengthColor}`}>{strengthLabel}</p>
+          <p className={`text-[length:var(--fs-1)] ${strengthColor}`}>{strengthLabel}</p>
         </div>
       )}
       <div className="space-y-0.5">
@@ -101,7 +101,7 @@ export default function PasswordField({
 
 function Req({ label, met }: { label: string; met: boolean }) {
   return (
-    <div className="flex items-center gap-1.5 text-[11px]">
+    <div className="flex items-center gap-1.5 text-[length:var(--fs-1)]">
       <span className={met ? 'text-green-600' : 'text-red-400'}>{met ? '✓' : '○'}</span>
       <span className={met ? 'text-green-600' : 'text-red-500'}>{label}</span>
     </div>

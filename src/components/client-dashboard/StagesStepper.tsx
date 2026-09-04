@@ -52,9 +52,9 @@ export default function StagesStepper({ client, workspace, onStageClick }: { cli
                   'bg-[var(--color-card-border)]'
                 }`} />
               <button onClick={() => onStageClick?.(STAGE_TO_TAB[i] || t('stage_tab_contracts'))}
-                className={`text-[10px] whitespace-nowrap text-center transition-colors cursor-pointer ${
-                  done ? 'text-[var(--color-primary)] font-medium' :
-                  active ? 'text-[var(--color-gold)] font-medium' :
+                className={`text-[length:var(--fs-1)] whitespace-nowrap text-center transition-colors cursor-pointer ${
+                  done ? 'text-[var(--color-foreground)] font-medium' :
+                  active ? 'text-[var(--color-gold-text)] font-medium' :
                   'text-[var(--color-text-disabled)]'
                 }`}>
                 {stage.label}

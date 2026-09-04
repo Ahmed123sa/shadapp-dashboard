@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
 import { resolveFileUrl } from '@/lib/utils';
@@ -24,7 +24,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
     .finally(() => setLoading(false));
   useEffect(() => { load(); }, [wsId]);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   return (
@@ -37,7 +37,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
         ))}
       </div>
 
-      <button onClick={() => setShowUpload(true)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
+      <button onClick={() => setShowUpload(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
         {t('file_upload_button')}
       </button>
 
@@ -49,7 +49,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
               <div className="flex items-center gap-2">
                 <p className="font-medium">{f.name}</p>
                 {f.tag && (
-                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[10px] font-bold">{f.tag}</span>
+                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[length:var(--fs-1)] font-bold">{f.tag}</span>
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-disabled)]">
@@ -76,14 +76,14 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
 
       {paymentFiles.length > 0 && (
         <>
-          <h4 className="text-sm font-bold text-[var(--color-gold)] mt-4">{t('file_payment_proofs')}</h4>
+          <h4 className="text-sm font-bold text-[var(--color-gold-text)] mt-4">{t('file_payment_proofs')}</h4>
           <div className="space-y-2">
             {paymentFiles.map((pf) => (
               <div key={pf.id} className="border border-[var(--color-card-border)] rounded-lg p-3 text-sm flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{pf.name}</p>
-                    <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[10px] font-bold">{t('file_payment_proof_badge')}</span>
+                    <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[length:var(--fs-1)] font-bold">{t('file_payment_proof_badge')}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-disabled)]">{pf.amount} {pf.currency}</p>
                 </div>

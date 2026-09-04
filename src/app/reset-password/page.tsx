@@ -86,7 +86,7 @@ function ResetPasswordForm() {
         type={visible ? 'text' : 'password'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30"
+        className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30"
         required
         dir="ltr"
         autoComplete="new-password"
@@ -95,28 +95,28 @@ function ResetPasswordForm() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[#D4AF37]/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#941414]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#D4AF37]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[var(--color-gold)]/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--color-gold)]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
         <div className="relative">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="ShadApp" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
           </div>
-          <h1 className="text-xl font-bold text-center mb-4 text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <h1 className="text-xl font-bold text-center mb-4 text-white font-display">
             {t('reset_title')}
           </h1>
 
           {!linkIsUsable ? (
             <>
-              <div className="bg-[#941414]/20 text-[#D4AF37] text-sm p-3 rounded-lg border border-[#941414]/30">
+              <div className="bg-[var(--color-primary)]/20 text-[var(--color-gold)] text-sm p-3 rounded-lg border border-[var(--color-primary)]/30">
                 {t('reset_invalid_link')}
               </div>
               <p className="text-center text-sm text-white/50 mt-6">
                 <Link
                   href={isClient ? '/forgot-password?type=client' : '/forgot-password'}
-                  className="text-[#D4AF37] hover:underline"
+                  className="text-[var(--color-gold)] hover:underline"
                 >
                   {t('forgot_submit')}
                 </Link>
@@ -128,7 +128,7 @@ function ResetPasswordForm() {
                 {t('reset_success')}
               </div>
               <p className="text-center text-sm text-white/50 mt-6">
-                <Link href={loginHref} className="text-[#D4AF37] hover:underline">{t('reset_go_to_login')}</Link>
+                <Link href={loginHref} className="text-[var(--color-gold)] hover:underline">{t('reset_go_to_login')}</Link>
               </p>
             </>
           ) : (
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <div className="bg-[#941414]/20 text-[#D4AF37] text-sm p-3 rounded-lg border border-[#941414]/30">{error}</div>
+                  <div className="bg-[var(--color-primary)]/20 text-[var(--color-gold)] text-sm p-3 rounded-lg border border-[var(--color-primary)]/30">{error}</div>
                 )}
 
                 {field('reset-password-new', t('reset_new_password'), password, setPassword)}
@@ -148,7 +148,7 @@ function ResetPasswordForm() {
                     type="checkbox"
                     checked={visible}
                     onChange={(e) => setVisible(e.target.checked)}
-                    className="accent-[#D4AF37]"
+                    className="accent-[var(--color-gold)]"
                   />
                   {t('login_password_label')}
                 </label>
@@ -156,14 +156,14 @@ function ResetPasswordForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#941414] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors"
+                  className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors"
                 >
                   {loading ? t('reset_saving') : t('reset_submit')}
                 </button>
               </form>
 
               <p className="text-center text-sm text-white/50 mt-6">
-                <Link href={loginHref} className="text-[#D4AF37] hover:underline">{t('forgot_back_to_login')}</Link>
+                <Link href={loginHref} className="text-[var(--color-gold)] hover:underline">{t('forgot_back_to_login')}</Link>
               </p>
             </>
           )}
@@ -176,7 +176,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   // useSearchParams needs a Suspense boundary in the App Router.
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#1A1A1A]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--color-sidebar-hover)]" />}>
       <ResetPasswordForm />
     </Suspense>
   );

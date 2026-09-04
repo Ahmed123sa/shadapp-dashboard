@@ -114,7 +114,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
                   </div>
                   <div>
                     {(!file || file.status === 'rejected') ? (
-                      <label className={`inline-flex items-center gap-1 text-xs text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)] ${uploading[doc.id] ? 'opacity-50' : ''}`}>
+                      <label className={`inline-flex items-center gap-1 text-xs text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)] ${uploading[doc.id] ? 'opacity-50' : ''}`}>
                         <input type="file" className="hidden" disabled={uploading[doc.id]} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(doc.id, f); }} />
                         {uploading[doc.id] ? t('doc_uploading') : file ? t('doc_upload_new') : t('doc_upload')}
                       </label>

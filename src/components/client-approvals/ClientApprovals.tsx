@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
@@ -32,7 +32,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
     setRespondTarget(null);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   const statusColors: Record<string, string> = {
@@ -68,7 +68,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
             <div className="mt-2 flex flex-wrap gap-1">
               {a.files.map((f) => (
                 <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
+                  className="text-xs text-[var(--color-gold-text)] underline bg-blue-900/30 px-2 py-0.5 rounded">
                   📎 {f.name || t('approval_file_label')}
                 </a>
               ))}
@@ -76,7 +76,7 @@ export default function ClientApprovals({ wsId, clientId }: { wsId: number; clie
           )}
 
           {a.certificate?.pdf_url && (
-              <div className="mt-1 text-xs text-[var(--color-gold)]">
+              <div className="mt-1 text-xs text-[var(--color-gold-text)]">
                 📄 <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer" className="hover:underline">{t('approval_certificate')}</a>
             </div>
           )}

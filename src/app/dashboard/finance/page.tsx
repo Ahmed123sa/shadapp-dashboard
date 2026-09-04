@@ -173,7 +173,7 @@ export default function FinancePage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-foreground)] flex items-center gap-2">
-            <CreditCard className="text-[var(--color-gold)]" size={24} />
+            <CreditCard className="text-[var(--color-gold-text)]" size={24} />
             {locale === 'ar' ? 'المالية والمدفوعات' : 'Finance & Payments'}
           </h1>
           <p className="text-xs text-[var(--color-text-secondary)] mt-1">
@@ -195,7 +195,7 @@ export default function FinancePage() {
             disabled={payments.length === 0}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--color-card)] border border-[var(--color-card-border)] hover:border-[var(--color-gold)] text-[var(--color-foreground)] transition disabled:opacity-50 cursor-pointer"
           >
-            <Download size={14} className="text-[var(--color-gold)]" />
+            <Download size={14} className="text-[var(--color-gold-text)]" />
             {locale === 'ar' ? 'تصدير CSV' : 'Export CSV'}
           </button>
         </div>
@@ -212,7 +212,7 @@ export default function FinancePage() {
               </div>
             </div>
             <p className="text-2xl font-bold mt-2 text-[var(--color-foreground)]">{stats.total_count || 0}</p>
-            <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{stats.approved_count || 0} {locale === 'ar' ? 'عملية معتمدة' : 'approved'}</p>
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{stats.approved_count || 0} {locale === 'ar' ? 'عملية معتمدة' : 'approved'}</p>
           </div>
 
           <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
@@ -222,11 +222,11 @@ export default function FinancePage() {
                 <DollarSign size={16} />
               </div>
             </div>
-            <p className="text-2xl font-bold mt-2 text-emerald-400" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-2xl font-bold mt-2 text-emerald-400 font-display">
               {Number(stats.approved_total_sar || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               <span className="text-xs font-normal text-emerald-400/70 ms-1">SAR</span>
             </p>
-            <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالريال' : 'Total SAR revenue'}</p>
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالريال' : 'Total SAR revenue'}</p>
           </div>
 
           <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
@@ -236,11 +236,11 @@ export default function FinancePage() {
                 <DollarSign size={16} />
               </div>
             </div>
-            <p className="text-2xl font-bold mt-2 text-amber-400" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-2xl font-bold mt-2 text-amber-400 font-display">
               {Number(stats.approved_total_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               <span className="text-xs font-normal text-amber-400/70 ms-1">USD</span>
             </p>
-            <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالدولار' : 'Total USD revenue'}</p>
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالدولار' : 'Total USD revenue'}</p>
           </div>
 
           <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
@@ -251,7 +251,7 @@ export default function FinancePage() {
               </div>
             </div>
             <p className="text-2xl font-bold mt-2 text-amber-400">{stats.pending_count || 0}</p>
-            <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'بحاجة للمراجعة والاعتماد' : 'Needs attention'}</p>
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'بحاجة للمراجعة والاعتماد' : 'Needs attention'}</p>
           </div>
         </div>
       )}
@@ -402,10 +402,10 @@ export default function FinancePage() {
 
                   return (
                     <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-4 text-[var(--color-text-disabled)] font-mono text-[11px]">#{p.id}</td>
+                      <td className="py-3 px-4 text-[var(--color-text-disabled)] font-mono text-[length:var(--fs-1)]">#{p.id}</td>
                       <td className="py-3 px-4">
                         {clientObj ? (
-                          <Link href={`/dashboard/clients/${clientObj.id}?tab=payments`} className="hover:text-[var(--color-gold)] font-medium">
+                          <Link href={`/dashboard/clients/${clientObj.id}?tab=payments`} className="hover:text-[var(--color-gold-text)] font-medium">
                             {clientObj.company_name || clientObj.contact_person}
                           </Link>
                         ) : '—'}
@@ -418,7 +418,7 @@ export default function FinancePage() {
                       </td>
                       <td className="py-3 px-4 font-semibold text-[var(--color-foreground)]">
                         {Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        <span className="ms-1 text-[10px] text-[var(--color-gold)] font-normal">{p.currency || 'SAR'}</span>
+                        <span className="ms-1 text-[length:var(--fs-1)] text-[var(--color-gold-text)] font-normal">{p.currency || 'SAR'}</span>
                       </td>
                       <td className="py-3 px-4 text-[var(--color-text-secondary)]">
                         {methodLabels[p.method_type] || p.method_type || '—'}
@@ -426,7 +426,7 @@ export default function FinancePage() {
                       <td className="py-3 px-4">
                         {getStatusBadge(p.status)}
                       </td>
-                      <td className="py-3 px-4 text-[var(--color-text-disabled)] text-[11px] whitespace-nowrap">
+                      <td className="py-3 px-4 text-[var(--color-text-disabled)] text-[length:var(--fs-1)] whitespace-nowrap">
                         {new Date(p.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
                       </td>
                       <td className="py-3 px-4">
@@ -435,7 +435,7 @@ export default function FinancePage() {
                             href={proofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-[var(--color-gold)] hover:underline"
+                            className="inline-flex items-center gap-1 text-[length:var(--fs-1)] text-[var(--color-gold-text)] hover:underline"
                           >
                             <ExternalLink size={12} />
                             {locale === 'ar' ? 'عرض الإيصال' : 'View Proof'}

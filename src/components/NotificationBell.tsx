@@ -113,15 +113,15 @@ export default function NotificationBell() {
       <button onClick={() => setOpen(!open)} className="relative p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition">
         <span className="text-lg">🔔</span>
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-[var(--color-primary)] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold">{unread}</span>
+          <span className="absolute -top-0.5 -right-0.5 bg-[var(--color-primary)] text-white text-[length:var(--fs-1)] w-4 h-4 flex items-center justify-center rounded-full font-bold">{unread}</span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
+        <div className="absolute end-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
           <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center">
             <h3 className="text-sm font-bold">{t('notif_title')}</h3>
-            <button onClick={() => { notifications.forEach((n) => { if (!n.read_at) markRead(n.id); }); }} className="text-xs text-[var(--color-gold)] hover:underline">{t('notif_mark_all_read')}</button>
+            <button onClick={() => { notifications.forEach((n) => { if (!n.read_at) markRead(n.id); }); }} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('notif_mark_all_read')}</button>
           </div>
           {notifications.length === 0 ? (
             <p className="text-xs text-[var(--color-text-disabled)] p-4 text-center">{t('notif_empty')}</p>
@@ -131,7 +131,7 @@ export default function NotificationBell() {
                 className={`block p-3 border-b border-[var(--color-card-border)] last:border-0 hover:bg-[var(--color-card-border)] transition ${n.read_at ? '' : 'bg-[var(--color-primary)]/10'}`}>
                 <p className="text-xs font-medium">{n.data?.title || ''}</p>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{n.data?.message || ''}</p>
-                <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-SA')}</p>
+                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-SA')}</p>
               </a>
             ))
           )}

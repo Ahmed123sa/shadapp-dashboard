@@ -141,17 +141,17 @@ export default function ClientSettingsPage() {
 
         {/* نوع العميل */}
         <div>
-          <p className="text-[10px] tracking-wider font-medium text-[var(--color-text-muted)] uppercase mb-2">{t('client_type')}</p>
+          <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{t('client_type')}</p>
           <div className="grid grid-cols-2 gap-3">
             {(['business', 'individual'] as const).map(ct => {
               const active = form.client_type === ct;
               const isBiz = ct === 'business';
               return (
                 <button type="button" key={ct} onClick={() => setForm(f => ({ ...f, client_type: ct }))}
-                  className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-muted)]'}`}>
+                  className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
                   <span className="text-xl">{isBiz ? <Building2 size={20} strokeWidth={1.5} /> : <User size={20} strokeWidth={1.5} />}</span>
-                  <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
-                  <span className="text-[9px] text-[var(--color-text-muted)]">{isBiz ? 'Business' : 'Individual'}</span>
+                  <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
+                  <span className="text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
                 </button>
               );
             })}
@@ -217,7 +217,7 @@ export default function ClientSettingsPage() {
                 <MapPin size={13} strokeWidth={1.5} /> {t('open_on_maps')}
               </button>
             </div>
-            <p className="text-[11px] text-[var(--color-text-muted)]">{t('maps_link_hint')}</p>
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('maps_link_hint')}</p>
           </div>
         </div>
 

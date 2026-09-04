@@ -42,7 +42,7 @@ export default function ErrorState({ onRetry, fullScreen = false }: ErrorStatePr
       <div className="w-12 h-12 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[var(--color-primary-light)] text-xl">
         !
       </div>
-      <h2 className="text-base font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
+      <h2 className="text-base font-bold font-display">
         {text.title}
       </h2>
       <p className="text-[13px] text-[var(--color-text-secondary)] max-w-sm">{text.body}</p>
@@ -50,14 +50,14 @@ export default function ErrorState({ onRetry, fullScreen = false }: ErrorStatePr
         {onRetry && (
           <button
             onClick={onRetry}
-            className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-[var(--color-foreground)] text-[12.5px] font-medium hover:bg-[var(--color-primary-dark)] transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-[var(--color-foreground)] text-[length:var(--fs-2)] font-medium hover:bg-[var(--color-primary-dark)] transition-colors cursor-pointer"
           >
             {text.retry}
           </button>
         )}
         <Link
           href="/"
-          className="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--color-text-secondary)] text-[12.5px] hover:text-[var(--color-foreground)] transition-colors"
+          className="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--color-text-secondary)] text-[length:var(--fs-2)] hover:text-[var(--color-foreground)] transition-colors"
         >
           {text.home}
         </Link>

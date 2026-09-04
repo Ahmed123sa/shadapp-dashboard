@@ -49,6 +49,8 @@
     "manage": "إدارة",
     "logout": "تسجيل الخروج",
     "search_placeholder": "بحث سريع...",
+    "switch_to_light": "التبديل للثيم الفاتح",
+    "switch_to_dark": "التبديل للثيم الغامق",
     "role_admin": "المدير العام",
     "role_am": "مدير حسابات",
     "nav_group_main": "الرئيسية",

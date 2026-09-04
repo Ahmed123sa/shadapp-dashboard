@@ -35,7 +35,7 @@ export default function MeetingChip({ metadata }: MeetingChipProps) {
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-white truncate">{title}</p>
           {scheduledAt && (
-            <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] mt-0.5">
               {formatMeetingDate(scheduledAt, locale)}{duration ? ` • ${duration}m` : ''}
             </p>
           )}
@@ -45,13 +45,13 @@ export default function MeetingChip({ metadata }: MeetingChipProps) {
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 text-[10px] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors"
+            className="flex-shrink-0 text-[length:var(--fs-1)] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors"
           >
             {t('meeting_chip_join_now')}
           </a>
         )}
         {joinStatus && (!link || !joinStatus.canJoin || status !== 'scheduled') && (
-          <span className={`flex-shrink-0 text-[10px] px-2 py-1 rounded-md ${
+          <span className={`flex-shrink-0 text-[length:var(--fs-1)] px-2 py-1 rounded-md ${
             joinStatus.label === t('meeting_chip_ended')
               ? 'bg-gray-600/40 text-gray-400'
               : 'bg-[#1a5276]/20 text-[#5dade2]'
@@ -61,7 +61,7 @@ export default function MeetingChip({ metadata }: MeetingChipProps) {
         )}
       </div>
       {metadata.passcode && (
-        <p className="text-[10px] text-[var(--color-text-disabled)] mt-1.5">{t('meeting_chip_passcode', { code: metadata.passcode })}</p>
+        <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1.5">{t('meeting_chip_passcode', { code: metadata.passcode })}</p>
       )}
     </div>
   );

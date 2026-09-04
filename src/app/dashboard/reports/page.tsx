@@ -10,6 +10,11 @@ import { ReportsSkeleton } from '@/components/ui/LoadingSkeleton';
 import { reportError } from '@/lib/error-reporting';
 import type { ReportsData, Client, User } from '@/types';
 
+// ملحوظة: القيم دي hex حرفي مقصود مش توكن CSS — بتتبعت مباشرة لـ Recharts
+// <Cell fill={...}/> واللي بيرندرها كـ attribute مش كـ style، فموثوقية var() معاها
+// مش مؤكدة بصريًا في كل المتصفحات من غير تجربة حية. القيم دي بتطابق التوكنات:
+// --color-text-disabled, --color-status-blue, --color-success, --color-error,
+// --color-status-purple, --color-status-orange, --color-warning (شوف globals.css).
 const STATUS_COLORS: Record<string, string> = {
   draft: '#606060', sent: '#60A5FA', client_approved: '#22C55E', client_rejected: '#EF4444',
   company_approved: '#A78BFA', completed: '#22C55E', archived: '#FB923C', edit_requested: '#EAB308',
@@ -125,11 +130,11 @@ export default function ReportsPage() {
   if (loadError) return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{t('reports_page_title')}</h2>
+        <h2 className="text-xl font-bold font-display">{t('reports_page_title')}</h2>
       </div>
       <div className="bg-red-900/30 border border-red-900/30 rounded-xl p-6 text-center">
         <p className="text-red-400 font-medium mb-2">{loadError}</p>
-        <button onClick={loadReports} className="text-sm text-[var(--color-gold)] hover:underline">{t('retry')}</button>
+        <button onClick={loadReports} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('retry')}</button>
       </div>
     </div>
   );
@@ -154,6 +159,7 @@ export default function ReportsPage() {
   const tApprovalRejected = t('approval_rejected');
   const tApprovalPending = t('approval_pending');
 
+  // نفس ملحوظة STATUS_COLORS فوق — hex بتطابق --color-success / --color-error / --color-gold
   const approvalData = [
     { name: tApprovalAccepted, value: Number(approvalStats.approved), fill: '#22C55E' },
     { name: tApprovalRejected, value: Number(approvalStats.rejected), fill: '#EF4444' },
@@ -168,7 +174,7 @@ export default function ReportsPage() {
     total_clients: { value: String(reports?.total_clients ?? 0) },
     revenue: { value: `${(totalRevenue / 1000).toFixed(0)}K ${t('currency_egp')}` },
     active_workspaces: { value: String(totalContracts) },
-    pending_approvals: { value: String(reports?.pending_approvals ?? 0), valueColor: '#EF4444' },
+    pending_approvals: { value: String(reports?.pending_approvals ?? 0), valueColor: 'var(--color-error)' },
     spaces_active: { value: String(reports?.active_workspaces ?? 0) },
     conversion: { value: `${reports?.conversion_rate ?? 73}%` },
   };
@@ -182,17 +188,17 @@ export default function ReportsPage() {
       {/* Topbar */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{t('reports_page_title')}</h2>
-          <span className="text-[11px] text-[var(--color-text-secondary)]">{t('reports_last_update')}</span>
+          <h2 className="text-lg font-bold font-display">{t('reports_page_title')}</h2>
+          <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('reports_last_update')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="export-btn bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] text-[var(--color-primary)] px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-[var(--color-primary)] hover:text-white transition-all cursor-pointer">
+          <button className="export-btn bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] text-[var(--color-primary)] px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] font-bold flex items-center gap-1.5 hover:bg-[var(--color-primary)] hover:text-white transition-all cursor-pointer">
             ⬇ {t('export_csv')}
           </button>
-          <button className="export-btn bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold)] px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-[var(--color-gold)] hover:text-white transition-all cursor-pointer">
+          <button className="export-btn bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold-text)] px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] font-bold flex items-center gap-1.5 hover:bg-[var(--color-gold)] hover:text-white transition-all cursor-pointer">
             ⬇ {t('export_pdf')}
           </button>
-          <button onClick={loadReports} className="w-[34px] h-[34px] rounded-lg bg-white/[0.04] border border-[var(--border)] flex items-center justify-center cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] transition-colors">
+          <button onClick={loadReports} className="w-[34px] h-[34px] rounded-lg bg-white/[0.04] border border-[var(--border)] flex items-center justify-center cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] transition-colors">
             ↻
           </button>
         </div>
@@ -200,8 +206,8 @@ export default function ReportsPage() {
 
       {/* Advanced Filter Bar */}
       <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-        <div className="text-[11px] text-[var(--color-gold)] tracking-[1px] uppercase mb-2.5 flex items-center gap-1.5">
-          <Settings size={14} strokeWidth={1.5} className="text-[var(--color-gold)]" /> {t('filters_advanced')}
+        <div className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] tracking-[1px] uppercase mb-2.5 flex items-center gap-1.5">
+          <Settings size={14} strokeWidth={1.5} className="text-[var(--color-gold-text)]" /> {t('filters_advanced')}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
           <FilterGroup label={t('filter_period')}>
@@ -263,13 +269,13 @@ export default function ReportsPage() {
           </FilterGroup>
         </div>
         <div className="flex gap-2 mt-2.5">
-          <button onClick={applyFilters} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer hover:opacity-90 transition-opacity">{t('apply_filters')}</button>
-          <button onClick={clearFilters} className="border border-[var(--border)] text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg text-[11px] cursor-pointer hover:bg-white/[0.03] transition-colors">{t('reset_filters')}</button>
+          <button onClick={applyFilters} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[length:var(--fs-1)] font-bold cursor-pointer hover:opacity-90 transition-opacity">{t('apply_filters')}</button>
+          <button onClick={clearFilters} className="border border-[var(--border)] text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] cursor-pointer hover:bg-white/[0.03] transition-colors">{t('reset_filters')}</button>
         </div>
         {activeFilters.length > 0 && (
           <div className="flex gap-1.5 flex-wrap mt-2">
             {activeFilters.map((chip, i) => (
-              <span key={i} className="bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold)] px-2 py-0.5 rounded-[20px] text-[10px] flex items-center gap-1">
+              <span key={i} className="bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold-text)] px-2 py-0.5 rounded-[20px] text-[length:var(--fs-1)] flex items-center gap-1">
                 {chip}
                 <button type="button" onClick={() => removeFilter(chip)} aria-label={t('remove_filter', { chip })} className="cursor-pointer"><X size={12} strokeWidth={2} /></button>
               </span>
@@ -285,13 +291,13 @@ export default function ReportsPage() {
           return (
             <div key={key} className={`kpi ${cfg.accent}`}>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] text-[var(--color-text-secondary)]">{cfg.label}</span>
+                <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{cfg.label}</span>
                 <div className={`kpi-icon ${cfg.accent}`}><cfg.icon size={18} strokeWidth={1.5} /></div>
               </div>
-              <div className="text-[22px] font-bold leading-[1.1]" style={{ fontFamily: "'Playfair Display', serif", color: kv.valueColor || 'var(--color-foreground)' }}>
+              <div className="text-[length:var(--fs-6)] font-bold leading-[1.1] font-display" style={{ color: kv.valueColor || 'var(--color-foreground)' }}>
                 {kv.value}
               </div>
-              <div className={`text-[9.5px] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green)]' : 'text-[var(--color-red)]'}`}>
+              <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green)]' : 'text-[var(--color-red-accent)]'}`}>
                 {cfg.deltaUp ? '↑' : '↓'} {cfg.subtitle}
               </div>
             </div>
@@ -323,10 +329,10 @@ export default function ReportsPage() {
                     <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="month" tick={{ fontSize: 9, fill: '#555', fontFamily: 'Tajawal' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#555', fontFamily: 'Tajawal' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#555' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
-                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11, fontFamily: 'Tajawal' }}
+                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11 }}
                   formatter={(value: any) => [`${Number(value).toLocaleString()} ${t('currency_egp')}`, t('chart_revenue_tooltip')]}
                 />
                 <Area type="monotone" dataKey="amount" stroke="var(--color-primary)" strokeWidth={2} fill="url(#revGrad)" dot={{ r: 3, fill: 'var(--color-gold)', strokeWidth: 0 }} />
@@ -352,7 +358,7 @@ export default function ReportsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11, fontFamily: 'Tajawal' }}
+                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11 }}
                   formatter={(value: any, name: any) => [`${value}`, name]}
                 />
               </PieChart>
@@ -361,7 +367,7 @@ export default function ReportsPage() {
               {contractsData.map((entry, i) => (
                 <div key={i} className="flex items-center gap-1.5 py-0.5">
                   <span className="inline-block w-[7px] h-[7px] rounded-full" style={{ background: entry.fill }} />
-                  <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>{entry.status} ({entry.count})</span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{entry.status} ({entry.count})</span>
                 </div>
               ))}
             </div>
@@ -382,10 +388,10 @@ export default function ReportsPage() {
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={approvalData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#555', fontFamily: 'Tajawal' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#555', fontFamily: 'Tajawal' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} allowDecimals={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#555' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11, fontFamily: 'Tajawal' }}
+                  contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11 }}
                   formatter={(value: any) => [value, t('chart_count_label')]}
                 />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={36}>
@@ -408,16 +414,16 @@ export default function ReportsPage() {
           </div>
           <div className="flex flex-col gap-2 mt-2">
             <div className="flex items-center justify-between py-1.5 border-b border-[var(--color-card-border)]">
-              <span className="text-[11px] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_today')}</span>
-              <span className="font-bold text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>{reports?.recent_logins ?? 0}</span>
+              <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_today')}</span>
+              <span className="font-bold text-sm font-display">{reports?.recent_logins ?? 0}</span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-[var(--color-card-border)]">
-              <span className="text-[11px] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_total_visitors')}</span>
-              <span className="font-bold text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>{reports?.total_logins ?? (Number(reports?.recent_logins ?? 0) * 7)}</span>
+              <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_total_visitors')}</span>
+              <span className="font-bold text-sm font-display">{reports?.total_logins ?? (Number(reports?.recent_logins ?? 0) * 7)}</span>
             </div>
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-[11px] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_daily_avg')}</span>
-              <span className="font-bold text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>{reports?.avg_logins ?? Math.round(Number(reports?.recent_logins ?? 0) * 0.7)}</span>
+              <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_daily_avg')}</span>
+              <span className="font-bold text-sm font-display">{reports?.avg_logins ?? Math.round(Number(reports?.recent_logins ?? 0) * 0.7)}</span>
             </div>
           </div>
         </div>
@@ -455,7 +461,7 @@ export default function ReportsPage() {
               );
             })}
             {managerStats.length === 0 && (
-              <div className="text-center py-6 text-[12px] text-[var(--color-text-secondary)]">{t('no_performance_data')}</div>
+              <div className="text-center py-6 text-[length:var(--fs-2)] text-[var(--color-text-secondary)]">{t('no_performance_data')}</div>
             )}
           </div>
         </div>
@@ -463,7 +469,7 @@ export default function ReportsPage() {
 
       {/* Audit Log Link */}
       <div className="text-center pt-2">
-        <Link href="/dashboard/audit-log" className="text-[11px] text-[var(--color-gold)] hover:underline inline-flex items-center gap-1.5">
+        <Link href="/dashboard/audit-log" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] hover:underline inline-flex items-center gap-1.5">
           {t('view_full_audit')} ←
         </Link>
       </div>
@@ -493,10 +499,10 @@ export default function ReportsPage() {
         }
         .kpi.green::after { background: var(--color-success); }
         .kpi.gold::after { background: var(--color-gold); }
-        .kpi.blue::after { background: #60A5FA; }
+        .kpi.blue::after { background: var(--color-status-blue); }
         .kpi.red::after { background: var(--color-error); }
-        .kpi.purple::after { background: #A78BFA; }
-        .kpi.orange::after { background: #FB923C; }
+        .kpi.purple::after { background: var(--color-status-purple); }
+        .kpi.orange::after { background: var(--color-status-orange); }
         .kpi-icon {
           width: 28px;
           height: 28px;
@@ -525,7 +531,7 @@ export default function ReportsPage() {
           margin-bottom: 14px;
         }
         .chart-title {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-display);
           font-size: 14px;
           font-weight: 700;
         }
@@ -585,8 +591,8 @@ export default function ReportsPage() {
           flex-shrink: 0;
         }
         .lb-rank.r1 { background: var(--color-gold-soft); color: var(--color-gold); border: 1px solid var(--color-gold-border); }
-        .lb-rank.r2 { background: rgba(192,192,192,0.12); color: #C0C0C0; }
-        .lb-rank.r3 { background: rgba(205,127,50,0.12); color: #CD7F32; }
+        .lb-rank.r2 { background: rgba(192,192,192,0.12); color: var(--color-rank-silver); }
+        .lb-rank.r3 { background: rgba(205,127,50,0.12); color: var(--color-rank-bronze); }
         .lb-av {
           width: 28px; height: 28px;
           border-radius: 50%;
@@ -604,7 +610,7 @@ export default function ReportsPage() {
         .lb-name { font-size: 12px; font-weight: 600; }
         .lb-sub { font-size: 10px; color: var(--color-text-secondary); }
         .lb-val {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-display);
           font-size: 13px;
           color: var(--color-gold);
           font-weight: 600;

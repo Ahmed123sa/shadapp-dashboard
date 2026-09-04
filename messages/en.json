@@ -49,6 +49,8 @@
     "manage": "Manage",
     "logout": "Logout",
     "search_placeholder": "Quick search...",
+    "switch_to_light": "Switch to light theme",
+    "switch_to_dark": "Switch to dark theme",
     "role_admin": "Super Admin",
     "role_am": "Account Manager",
     "nav_group_main": "Main",

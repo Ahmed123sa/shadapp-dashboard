@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
 import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
+import ErrorState from '@/components/ErrorState';
 import { useTranslations } from 'next-intl';
 import type { ContractClauseTemplate } from '@/types';
 
@@ -52,6 +53,7 @@ export default function SettingsPage() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [clauses, setClauses] = useState<ContractClauseTemplate[]>([]);
   const [clausesLoading, setClausesLoading] = useState(true);
+  const [clausesLoadError, setClausesLoadError] = useState(false);
   const [clauseType, setClauseType] = useState<'fixed' | 'optional'>('optional');
   const [clauseContent, setClauseContent] = useState('');
   const [clauseCategory, setClauseCategory] = useState('');
@@ -59,6 +61,14 @@ export default function SettingsPage() {
   const [clausesMsg, setClausesMsg] = useState('');
   const [clausesMsgIsError, setClausesMsgIsError] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const loadClauses = () => {
+    setClausesLoading(true);
+    setClausesLoadError(false);
+    api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
+      .catch((err) => { reportError('SettingsPage.loadClauses', err); setClausesLoadError(true); })
+      .finally(() => setClausesLoading(false));
+  };
 
   useEffect(() => {
     api.get('/auth/me').then(({ data }) => {
@@ -81,9 +91,9 @@ export default function SettingsPage() {
         const cd = data.settings?.show_contract_dates?.value;
         if (cd !== undefined) setShowContractDates(asSettingFlag(cd));
       }).catch((err) => reportError('SettingsPage.loadSettings', err));
-      api.get('/contract-clause-templates?all=1').then(({ data }) => setClauses(data.templates || []))
-        .catch((err) => reportError('SettingsPage.loadClauses', err)).finally(() => setClausesLoading(false));
+      loadClauses();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,10 +339,10 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">{t('title')}</h1>
 
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-700 text-sm">{t('saved')}</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('saved')}</div>
       )}
       {sigSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-700 text-sm">{t('saved')}</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('saved')}</div>
       )}
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
@@ -459,7 +469,7 @@ export default function SettingsPage() {
         <h2 className="text-lg font-semibold">{t('system_settings')}</h2>
         <p className="text-xs text-[var(--color-text-secondary)]">{t('tax_description')}</p>
         {taxSuccess && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">{t('tax_saved')}</div>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">{t('tax_saved')}</div>
         )}
         <div className="flex items-center gap-3">
           <div className="flex-1">
@@ -496,7 +506,7 @@ export default function SettingsPage() {
           </label>
         </div>
         {datesSuccess && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">
             ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
           </div>
         )}
@@ -509,8 +519,8 @@ export default function SettingsPage() {
         </div>
         {clausesMsg && (
           <div className={clausesMsgIsError
-            ? 'bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm'
-            : 'bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm'}>
+            ? 'bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-300 text-sm'
+            : 'bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm'}>
             {clausesMsg}
           </div>
         )}
@@ -536,12 +546,14 @@ export default function SettingsPage() {
         {clauses.length > 0 && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-[var(--color-text-secondary)]">{t('reorder_hint')}</p>
-            <button onClick={saveOrder} className="text-xs text-[var(--color-gold)] hover:underline">{t('save_order')}</button>
+            <button onClick={saveOrder} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('save_order')}</button>
           </div>
         )}
 
         {clausesLoading ? (
           <p className="text-sm text-[var(--color-text-secondary)] py-4">{t('loading_clauses')}</p>
+        ) : clausesLoadError ? (
+          <ErrorState onRetry={loadClauses} fullScreen={false} />
         ) : clauses.length === 0 ? (
           <p className="text-sm text-[var(--color-text-secondary)] py-4">{t('clauses_empty')}</p>
         ) : (
@@ -576,7 +588,7 @@ export default function SettingsPage() {
                           {cl.type === 'fixed' ? t('clause_fixed') : t('clause_optional')}
                         </span>
                         {cl.category && <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]">{cl.category}</span>}
-                        {cl.is_active ? <span className="text-[10px] text-emerald-500">{t('active')}</span> : <span className="text-[10px] text-[var(--color-text-disabled)]">{t('inactive')}</span>}
+                        {cl.is_active ? <span className="text-[length:var(--fs-1)] text-emerald-500">{t('active')}</span> : <span className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)]">{t('inactive')}</span>}
                       </div>
                       <p className="text-sm mt-1">{cl.content}</p>
                     </div>
@@ -585,7 +597,7 @@ export default function SettingsPage() {
                         className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1 py-1 disabled:opacity-30 disabled:cursor-not-allowed">▲</button>
                       <button onClick={() => moveClause(idx, 1)} disabled={idx === clauses.length - 1} aria-label={t('move_clause_down')}
                         className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1 py-1 disabled:opacity-30 disabled:cursor-not-allowed">▼</button>
-                      <button onClick={() => updateClause(cl.id, { is_active: !cl.is_active })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] px-1.5 py-1">
+                      <button onClick={() => updateClause(cl.id, { is_active: !cl.is_active })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] px-1.5 py-1">
                         {cl.is_active ? t('deactivate') : t('activate')}
                       </button>
                       <button onClick={() => setEditingClause({ id: cl.id, content: cl.content, type: cl.type, category: cl.category })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1.5 py-1">{t('edit')}</button>

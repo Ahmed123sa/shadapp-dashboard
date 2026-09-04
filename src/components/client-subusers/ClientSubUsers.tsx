@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import PasswordField from '@/components/ui/PasswordField';
 import type { SubUser } from '@/types';
@@ -91,12 +91,12 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (loadError) return <p className="text-sm text-red-500 text-center py-8">{loadError}</p>;
 
   return (
     <div className="space-y-4">
-      <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
+      <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
         {t('subuser_new')}
       </button>
 
@@ -150,7 +150,7 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                       setEditingId(u.id);
                       setEditForm({ name: u.name || '', email: u.email || '', phone: u.phone || '', date_of_birth: u.date_of_birth ? String(u.date_of_birth).substring(0, 10) : '' });
                     }}
-                      className="text-xs text-[var(--color-gold)] hover:underline">{t('subuser_edit')}</button>
+                      className="text-xs text-[var(--color-gold-text)] hover:underline">{t('subuser_edit')}</button>
                     <button onClick={() => setExpandedId(isExpanded ? null : u.id)}
                       className="text-xs text-[var(--color-text-secondary)] hover:underline">
                       {isExpanded ? t('subuser_hide') : t('subuser_permissions')}

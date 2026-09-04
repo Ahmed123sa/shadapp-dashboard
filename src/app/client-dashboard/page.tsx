@@ -117,13 +117,13 @@ export default function ClientDashboardPage() {
             <p className="text-[var(--color-text-secondary)] mb-6">{t('client_welcome_desc')}</p>
 
             <div className="space-y-3 text-right max-w-md mx-auto">
-              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
-                <span className="text-emerald-600 text-lg">✅</span>
-                <span className="text-sm text-emerald-700 font-medium">{t('client_account_created')}</span>
+              <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <span className="text-emerald-400 text-lg">✅</span>
+                <span className="text-sm text-emerald-300 font-medium">{t('client_account_created')}</span>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-300">
-                <span className="text-amber-600 text-lg">📝</span>
-                <span className="text-sm text-amber-700 font-medium">{t('client_sign_required')}</span>
+              <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <span className="text-amber-400 text-lg">📝</span>
+                <span className="text-sm text-amber-300 font-medium">{t('client_sign_required')}</span>
               </div>
               <div className="flex items-center gap-3 p-3 bg-[var(--color-card-border)] rounded-lg text-[var(--color-text-disabled)]">
                 <span className="text-lg">⏳</span>
@@ -153,13 +153,13 @@ export default function ClientDashboardPage() {
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-xl font-bold mb-2">{t('client_signature_saved')}</h2>
             <div className="space-y-3 text-right max-w-md mx-auto mt-6">
-              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
-                <span className="text-emerald-600 text-lg">✅</span>
-                <span className="text-sm text-emerald-700 font-medium">{t('client_e_signature')}</span>
+              <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <span className="text-emerald-400 text-lg">✅</span>
+                <span className="text-sm text-emerald-300 font-medium">{t('client_e_signature')}</span>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-300">
-                <span className="text-blue-600 text-lg">⏳</span>
-                <span className="text-sm text-blue-700 font-medium">{t('client_waiting_workspace_creation')}</span>
+              <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <span className="text-blue-400 text-lg">⏳</span>
+                <span className="text-sm text-blue-300 font-medium">{t('client_waiting_workspace_creation')}</span>
               </div>
             </div>
             <p className="text-sm text-[var(--color-text-disabled)] mt-6">{t('client_notifications_incoming')}</p>
@@ -175,7 +175,7 @@ export default function ClientDashboardPage() {
         <h1 className="text-lg font-bold">ShadApp</h1>
           <div className="flex items-center gap-3">
             {isSubUser() ? (
-              <span className="text-sm text-[var(--color-gold)]">👤 {getSubUser()?.name}</span>
+              <span className="text-sm text-[var(--color-gold-text)]">👤 {getSubUser()?.name}</span>
             ) : (
               <span className="text-sm text-[var(--color-text-secondary)]">{session.company_name}</span>
             )}
@@ -190,8 +190,8 @@ export default function ClientDashboardPage() {
         <StagesStepper client={client} workspace={workspace} onStageClick={(tab) => setActiveTab(tab as Tab)} />
 
         {workspace?.payments?.some((p) => p.status === 'approved') && !wsActive && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-            <p className="text-emerald-700 font-medium">✅ {t('client_payment_accepted')}</p>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
+            <p className="text-emerald-300 font-medium">✅ {t('client_payment_accepted')}</p>
           </div>
         )}
 
@@ -220,7 +220,7 @@ export default function ClientDashboardPage() {
           <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
             {ALL_TABS.filter((t) => t.perm === null || hasSubUserPermission(t.perm)).map((t) => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
-                className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === t.key ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
+                className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === t.key ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
                 {TAB_LABELS[t.key] || t.key}
               </button>
             ))}

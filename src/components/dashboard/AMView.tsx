@@ -60,15 +60,15 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
           <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[12.5px] font-bold">{t('my_clients')}</span>
-              <Link href="/dashboard/clients" className="text-[10.5px] text-[var(--color-gold)]">{t('view_all')}</Link>
+              <span className="text-[length:var(--fs-2)] font-bold">{t('my_clients')}</span>
+              <Link href="/dashboard/clients" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('view_all')}</Link>
             </div>
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,13 +82,13 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
                         {c.avatar_url ? (
                           <img src={resolveFileUrl(c.avatar_url)} alt="" className="w-[26px] h-[26px] rounded-full object-cover border border-[var(--border)] flex-shrink-0" />
                         ) : (
-                          <div className="w-[26px] h-[26px] rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9.5px] font-bold text-[var(--color-gold)] flex-shrink-0">
+                          <div className="w-[26px] h-[26px] rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[length:var(--fs-1)] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                             {c.company_name?.slice(0, 2) || '?'}
                           </div>
                         )}
                         <div>
-                          <div className="text-[11.5px] font-bold">{c.company_name}</div>
-                          <div className="text-[9.5px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
+                          <div className="text-[length:var(--fs-2)] font-bold">{c.company_name}</div>
+                          <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
                             {c.contact_person}
                             <ClientTypeBadge clientType={c.client_type} compact />
                           </div>
@@ -98,7 +98,7 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
                     <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
                       <StatusBadge status={c.workspace?.status || c.status} />
                     </td>
-                    <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[10px] text-[var(--color-text-secondary)]">
+                    <td className="px-3.5 py-2.5 border-b border-white/[0.04] text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
                       {timeAgo(c.updated_at, locale, t)}
                     </td>
                   </tr>
@@ -109,7 +109,7 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
 
           <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[12.5px] font-bold">{t('recent_activity')}</span>
+              <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
             </div>
             <ActivityFeed items={activityItems} />
           </div>

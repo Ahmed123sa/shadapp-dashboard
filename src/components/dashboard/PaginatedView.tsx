@@ -45,10 +45,10 @@ export function PaginatedView<T extends { id: number | string }>({
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
               <config.icon size={20} strokeWidth={1.5} />
-              <span className="text-[12.5px] font-bold">{config.title}</span>
-              <span className="text-[10px] bg-[var(--color-card-border)] text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full">{total}</span>
+              <span className="text-[length:var(--fs-2)] font-bold">{config.title}</span>
+              <span className="text-[length:var(--fs-1)] bg-[var(--color-card-border)] text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full">{total}</span>
             </div>
-            <Link href="/dashboard" className="text-[10.5px] text-[var(--color-gold)]">{t('paginated_back')}</Link>
+            <Link href="/dashboard" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('paginated_back')}</Link>
           </div>
           {apiLoading ? (
             <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('paginated_loading')}</div>
@@ -62,7 +62,7 @@ export function PaginatedView<T extends { id: number | string }>({
                 <thead>
                   <tr>
                     {config.headers.map((h: string, i: number) => (
-                      <th key={i} className="text-center text-[11px] text-[var(--color-text-secondary)] px-3.5 py-2.5 border-b border-[var(--border)]">{h}</th>
+                      <th key={i} className="text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)] px-3.5 py-2.5 border-b border-[var(--border)]">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -87,17 +87,17 @@ export function PaginatedView<T extends { id: number | string }>({
                   <button
                     disabled={page <= 1}
                     onClick={(e) => { e.stopPropagation(); onPrevPage(); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     {t('paginated_previous')}
                   </button>
-                  <span className="text-[11px] text-[var(--color-text-secondary)]">
+                  <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
                     {page} / {lastPage}
                   </span>
                   <button
                     disabled={page >= lastPage}
                     onClick={(e) => { e.stopPropagation(); onNextPage(); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] border border-[var(--border)] text-[var(--color-text-secondary)] hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     {t('paginated_next')}
                   </button>

@@ -11,10 +11,11 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
+import ErrorState from '@/components/ErrorState';
 import type { Client } from '@/types';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] tracking-wider font-medium text-[var(--color-text-muted)] uppercase mb-2">{children}</p>;
+  return <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{children}</p>;
 }
 
 function InputField({ label, required, id, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
@@ -23,7 +24,7 @@ function InputField({ label, required, id, ...props }: React.InputHTMLAttributes
   return (
     <div>
       <label htmlFor={inputId} className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 ms-0.5">*</span>}</label>
-      <input id={inputId} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
+      <input id={inputId} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
     </div>
   );
 }
@@ -45,6 +46,7 @@ export default function ClientsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 400);
@@ -52,12 +54,14 @@ export default function ClientsPage() {
   }, [searchQuery]);
 
   const fetchClients = useCallback((p: number, q?: string) => {
+    setLoading(true);
+    setLoadError(false);
     const params = new URLSearchParams({ page: String(p), per_page: '30' });
     if (q) params.set('q', q);
     api.get(`/clients?${params}`).then(({ data }) => {
       setClients(data.clients?.data || data.clients || []);
       setTotalPages(data.clients?.last_page || 1);
-    }).catch((err) => reportError('ClientsPage.fetchClients', err)).finally(() => setLoading(false));
+    }).catch((err) => { reportError('ClientsPage.fetchClients', err); setLoadError(true); }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { setPage(1); fetchClients(1, debouncedQuery); }, [debouncedQuery]);
@@ -109,6 +113,7 @@ export default function ClientsPage() {
   };
 
   if (loading) return <div className="p-4"><TableSkeleton rows={6} /></div>;
+  if (loadError) return <ErrorState onRetry={() => fetchClients(page, debouncedQuery)} />;
 
   const isSA = getUser()?.role === 'super_admin';
 
@@ -129,9 +134,9 @@ export default function ClientsPage() {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder={t('client_search')}
-          className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none"
+          className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none"
         />
-        <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+        <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
       </div>
 
       {newCreds && (
@@ -152,12 +157,12 @@ export default function ClientsPage() {
               {avatarPreview ? (
                 <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
               ) : (
-                <Building2 size={32} strokeWidth={1} className="text-[var(--color-text-muted)]" />
+                <Building2 size={32} strokeWidth={1} className="text-[var(--color-text-secondary)]" />
               )}
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--color-foreground)]">{t('client_photo')}</p>
-              <p className="text-[11px] text-[var(--color-text-muted)] mb-2">{t('client_photo_hint')}</p>
+              <p className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] mb-2">{t('client_photo_hint')}</p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] cursor-pointer hover:bg-[var(--color-input-fill)] transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 {t('add_photo')}
@@ -175,10 +180,10 @@ export default function ClientsPage() {
                 const isBiz = ct === 'business';
                 return (
                   <button type="button" key={ct} onClick={() => update('client_type', ct)}
-                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-muted)]'}`}>
+                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
                     <span className="text-xl">{isBiz ? <Building2 size={20} strokeWidth={1.5} /> : <User size={20} strokeWidth={1.5} />}</span>
-                    <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
-                    <span className="text-[9px] text-[var(--color-text-muted)]">{isBiz ? 'Business' : 'Individual'}</span>
+                    <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
+                    <span className="text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
                   </button>
                 );
               })}
@@ -210,7 +215,7 @@ export default function ClientsPage() {
           <div>
             <SectionLabel>{t('address_location')}</SectionLabel>
             <div className="space-y-3">
-              <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('address_ph')} value={form.address} onChange={e => update('address', e.target.value)} />
+              <textarea className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('address_ph')} value={form.address} onChange={e => update('address', e.target.value)} />
               <InputField label={t('maps_link')} placeholder={t('maps_link_ph')} value={form.maps_url} onChange={e => update('maps_url', e.target.value)} />
               <button type="button" onClick={() => { const q = form.address.trim() || form.maps_url.trim(); if (q) window.open(q.startsWith('http') ? q : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition-colors">
@@ -225,7 +230,7 @@ export default function ClientsPage() {
             <div className="flex items-center justify-between bg-[var(--color-card-border)]/30 rounded-lg px-4 py-3 border border-[var(--color-card-border)] mb-3">
               <div>
               <p className="text-sm font-medium text-[var(--color-foreground)]">{t('auto_password')}</p>
-              <p className="text-[11px] text-[var(--color-text-muted)]">{t('auto_password_hint')}</p>
+              <p className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('auto_password_hint')}</p>
               </div>
               <button type="button" onClick={() => setAutoPassword(!autoPassword)}
                 className={`relative w-10 h-5 rounded-full transition-colors ${autoPassword ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`}>
@@ -240,7 +245,7 @@ export default function ClientsPage() {
           {/* ملاحظات */}
           <div>
             <SectionLabel>{t('notes')}</SectionLabel>
-            <textarea aria-label={t('notes')} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('notes_ph')} value={form.notes} onChange={e => update('notes', e.target.value)} />
+            <textarea aria-label={t('notes')} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" rows={2} placeholder={t('notes_ph')} value={form.notes} onChange={e => update('notes', e.target.value)} />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-[var(--color-foreground)] cursor-pointer">
@@ -270,15 +275,15 @@ export default function ClientsPage() {
           <tbody>
             {clients.map((client) => (
               <tr key={client.id} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-card-border)]">
-                <td className="p-4">
-                  <Link href={`/dashboard/clients/${client.id}`} className="text-[var(--color-gold)] hover:underline font-medium">{client.company_name}</Link>
+                <td className="p-4 text-center">
+                  <Link href={`/dashboard/clients/${client.id}`} className="text-[var(--color-gold-text)] hover:underline font-medium">{client.company_name}</Link>
                 </td>
-                <td className="p-4"><ClientTypeBadge clientType={client.client_type} /></td>
-                <td className="p-4 text-[var(--color-text-secondary)]">{client.contact_person}</td>
-                <td className="p-4">
+                <td className="p-4 text-center"><ClientTypeBadge clientType={client.client_type} /></td>
+                <td className="p-4 text-center text-[var(--color-text-secondary)]">{client.contact_person}</td>
+                <td className="p-4 text-center">
                   <span className={`px-2 py-1 rounded-full text-xs ${client.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-zinc-700/30 text-zinc-400'}`}>{client.status}</span>
                 </td>
-                <td className="p-4">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
+                <td className="p-4 text-center">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
                 <td className="p-4 text-end whitespace-nowrap">
                   {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
                   {!isSA && <button onClick={() => deleteClient(client.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}

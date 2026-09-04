@@ -81,7 +81,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
           {availableMethods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)]">
+        <label className="flex items-center gap-2 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)]">
           <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
           <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFile ? proofFile.name : t('pay_choose_proof')}</span>
         </label>

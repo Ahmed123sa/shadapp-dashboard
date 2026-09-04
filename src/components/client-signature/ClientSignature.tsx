@@ -106,7 +106,7 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
             ) : null}
             <div className="flex justify-center gap-3 mt-4">
               <button onClick={() => setDone(false)}
-                className="text-sm text-[var(--color-gold)] hover:underline">{t('sig_edit')}</button>
+                className="text-sm text-[var(--color-gold-text)] hover:underline">{t('sig_edit')}</button>
               <button onClick={deleteSignature} disabled={deleting}
                 className="text-sm text-red-600 hover:underline disabled:opacity-50">
                 {deleting ? t('sig_deleting') : t('sig_delete')}

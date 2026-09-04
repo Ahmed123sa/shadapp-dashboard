@@ -20,9 +20,9 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
         {STATUS_STEPS.map((step, i) => (
           <div key={step.key} className="flex items-center">
             <div className={`
-              w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium
+              w-6 h-6 rounded-full flex items-center justify-center text-[length:var(--fs-1)] font-medium
               ${i < current ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : ''}
-              ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold)]' : ''}
+              ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold-text)]' : ''}
               ${i > current ? 'bg-[var(--color-card-border)] text-[var(--color-text-disabled)]' : ''}
             `}>
               {i < current ? '✓' : i + 1}
@@ -43,7 +43,7 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
           <div className={`
             w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
             ${i < current ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : ''}
-            ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold)]' : ''}
+            ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold-text)]' : ''}
             ${i > current ? 'bg-[var(--color-card-border)] text-[var(--color-text-disabled)]' : ''}
           `}>
             {i < current ? '✓' : i + 1}

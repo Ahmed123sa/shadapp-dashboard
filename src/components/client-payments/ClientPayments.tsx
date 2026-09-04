@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl } from '@/lib/utils';
@@ -112,7 +112,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
     setSaving(false);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   const pendingPayment = payments.find((p) => p.status === 'pending');
@@ -131,21 +131,21 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   return (
     <div className="space-y-3">
       {/* إجمالي المدفوع */}
-      <div className="bg-[#0d0d0d] border border-[var(--color-card-border)] rounded-xl p-4">
+      <div className="bg-[var(--bg-dark)] border border-[var(--color-card-border)] rounded-xl p-4">
         {isFullyPaid ? (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[var(--color-success)] text-lg">✅</span>
-              <p className="text-sm font-bold text-[var(--color-success)]">{t('pay_fully_paid')}</p>
+              <span className="text-[var(--color-success-text)] text-lg">✅</span>
+              <p className="text-sm font-bold text-[var(--color-success-text)]">{t('pay_fully_paid')}</p>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-2xl font-bold text-[var(--color-gold-text)] font-display">
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
           </>
         ) : (
           <>
-            <p className="text-xs text-[var(--color-gold)] font-medium">{t('pay_total_paid')}</p>
-            <p className="text-2xl font-bold text-[var(--color-gold)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-xs text-[var(--color-gold-text)] font-medium">{t('pay_total_paid')}</p>
+            <p className="text-2xl font-bold text-[var(--color-gold-text)] mt-1 font-display">
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
             <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
@@ -171,7 +171,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           <p className="text-sm font-medium mb-2">{t('pay_method_ph')}:</p>
           <div className="flex flex-wrap gap-2">
             {methods.map((m) => (
-              <span key={m} className="px-3 py-1 bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-full text-xs font-medium">
+              <span key={m} className="px-3 py-1 bg-[var(--color-primary)]/20 text-[var(--color-foreground)] rounded-full text-xs font-medium">
                 {methodLabels[m] || m}
               </span>
             ))}
@@ -182,7 +182,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
       {/* تنبيه بوجود عقد معتمد يتطلب الدفع */}
       {!pendingPayment && payableContract && (
         <div className="bg-[var(--color-card)] border border-[var(--color-gold)]/30 rounded-xl p-4">
-          <p className="text-sm text-[var(--color-gold)] font-medium">
+          <p className="text-sm text-[var(--color-gold-text)] font-medium">
             💳 {t('pay_approved_contract_notice', { title: payableContract.title, value: payableContract.value ?? '', taxSuffix: taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ${t('plus_tax')}` : '' })}
           </p>
         </div>
@@ -201,7 +201,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
                   {t('pay_complete_notice', { title: payableContract?.title || '' })}
                 </p>
               )}
-              <p className="text-xs text-[var(--color-gold)] mt-0.5">{t('pay_upload_proof_hint')}</p>
+              <p className="text-xs text-[var(--color-gold-text)] mt-0.5">{t('pay_upload_proof_hint')}</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -211,7 +211,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
             {effectiveCurrencies.length === 1 ? (
               <div className="border border-[var(--color-input-border)] rounded-lg px-4 py-2.5 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] flex items-center justify-between">
                 <span className="text-xs text-[var(--color-text-secondary)]">{t('currency') || 'العملة'}</span>
-                <span className="font-semibold text-[var(--color-gold)]">{effectiveCurrencies[0]}</span>
+                <span className="font-semibold text-[var(--color-gold-text)]">{effectiveCurrencies[0]}</span>
               </div>
             ) : (
               <select value={currency} onChange={(e) => setCurrency(e.target.value)}
@@ -227,7 +227,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
               <option value="">{t('pay_method_ph')}</option>
               {methods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
             </select>
-            <label className="flex items-center gap-2 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)]">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)]">
               <input type="file" accept="image/*,.pdf" className="hidden"
                 onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
               <span className="border border-blue-200 rounded-lg px-4 py-2 bg-[var(--color-card)]">
@@ -257,7 +257,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           const linkedContract = p.contract;
           const isPending = p.status === 'pending';
           const isApproved = p.status === 'approved';
-          const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-disabled)]';
+          const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-disabled)]';
           const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : 'bg-gray-500';
           const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : p.status;
 
@@ -267,8 +267,8 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>
             {/* ── القسم العلوي ── */}
             <div className="px-5 pt-5 pb-4">
-              <p className="text-xs text-[var(--color-gold)] font-medium">{installmentName(idx)}</p>
-              <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{p.amount} <span className="text-sm font-normal text-[var(--color-text-disabled)]">{p.currency || 'SAR'}</span></p>
+              <p className="text-xs text-[var(--color-gold-text)] font-medium">{installmentName(idx)}</p>
+              <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1 font-display">{p.amount} <span className="text-sm font-normal text-[var(--color-text-disabled)]">{p.currency || 'SAR'}</span></p>
               <div className="flex items-center gap-1.5 mt-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                 <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
@@ -295,12 +295,12 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
               {proofUrl && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs">📎</span>
-                  <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold)] hover:underline">{t('pay_view_proof')}</a>
+                  <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('pay_view_proof')}</a>
                 </div>
               )}
               {isPending && (
                 <div className="pt-2">
-                  <button onClick={() => startEdit(p)} className="w-full text-sm text-[var(--color-gold)] hover:underline font-medium">{t('pay_edit')}</button>
+                  <button onClick={() => startEdit(p)} className="w-full text-sm text-[var(--color-gold-text)] hover:underline font-medium">{t('pay_edit')}</button>
                 </div>
               )}
             </div>

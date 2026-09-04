@@ -7,7 +7,7 @@ import { getUser } from '@/lib/auth';
 import { asSettingFlag, resolveFileUrl } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
 import { useModalA11y } from '@/hooks/useModalA11y';
@@ -110,14 +110,14 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     setSavedUserSig(null);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-400 text-center py-8">{error}</p>;
   if (isSA && contracts.length === 0) return <EmptyState message={t('no_contracts')} />;
 
   return (
     <div className="space-y-3">
       {!isSA && (
-        <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline font-medium">
+        <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
           {wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`}
         </button>
       )}
@@ -153,7 +153,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('optional_clauses_heading')}</h3>
               {optionalTemplates.map((tpl) => (
-                <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold)]">
+                <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold-text)]">
                   <input type="checkbox" checked={!!selectedOptional[tpl.id]} onChange={() => toggleOptional(tpl.id)} className="mt-0.5" />
                   <span>{tpl.content}</span>
                 </label>
@@ -203,7 +203,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${
                 c.contract_type === 'main' || c.contract_type === null
-                  ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold)] border border-[var(--color-gold-border)]'
+                  ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] border border-[var(--color-gold-border)]'
                   : 'bg-blue-900/30 text-blue-400'
               }`}>
                 {c.contract_type === 'main' || c.contract_type === null ? t('main_contract') : t('additional_contract')}
@@ -220,7 +220,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           )}
           <div className="mt-2 flex gap-2 flex-wrap">
-            {!isSA && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold)] hover:underline">{t('send_contract')}</button>}
+            {!isSA && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
             {!isSA && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
             {c.status === 'client_approved' && (
               <>

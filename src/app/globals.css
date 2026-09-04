@@ -1,17 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
+/*
+ * Fonts are loaded via next/font (see src/lib/fonts.ts), not the @import
+ * this file used to have. next/font self-hosts the font files at build
+ * time and exposes them as the --font-tajawal / --font-playfair CSS
+ * variables below, set on <html> in layout.tsx and global-error.tsx.
+ * `@theme inline` is required (rather than plain `@theme`) so Tailwind
+ * resolves these var() references at the point of use instead of trying
+ * to inline a literal value that doesn't exist here.
+ */
 @theme inline {
+  --font-display: var(--font-playfair), serif;
+
   --color-background: #1C1C1C;
   --color-foreground: #F0F0F0;
   --color-primary: #941414;
   --color-primary-dark: #6B0E0E;
-  --color-primary-light: #B71C1C;
+  /* بند 1.2 — القيمة القديمة (#B71C1C) كانت برضو فاشلة كنص فوق خلفيات
+     غامقة (~2.96:1 فوق #0D0D0D، ~4.27:1 فوق #181818 — لسه أقل من حد الـ
+     WCAG AA للنص الصغير 4.5:1). القيمة الجديدة محسوبة فعليًا (luminance
+     WCAG) عشان تعدّي 4.5:1 فوق أغمق خلفيات المشروع (#0D0D0D): بتدّي
+     4.80:1 فوق #0D0D0D و4.38:1 فوق #181818 (بس النص هناك 24px bold،
+     يعني حد "النص الكبير" 3:1 بينطبق مش 4.5). ده يصلح تلقائيًا
+     الاستخدامين الموجودين فعلًا (ErrorState.tsx، LocationPickerModal.tsx)
+     بالإضافة لبادچات السايدبار وعداد الرسائل غير المقروءة (بند 1.2). */
+  --color-primary-light: #DE4A4A;
   --color-gold: #D4AF37;
-  --color-sidebar: #0D0D0D;
+  /* الثيم الفاتح (دفعة 2) — --color-gold نفسه فاشل كنص فوق خلفية فاتحة
+     (1.85:1 بس فوق #F0F0F0). --color-gold-text هو نفس قيمة --color-gold
+     بالظبط في الغامق (زيرو تغيير هناك)، وبيتغيّر لدرجة أغمق بس تحت
+     [data-theme="light"] تحت. يُستخدم في أي استخدام "نص" أو "حدّ وظيفي"
+     للذهبي جوه منطقة المحتوى (مش خلفيات الأزرار المصمتة زي bg-gold
+     text-black، ودي مش محتاجة تغيير لأنها مستقلة عن خلفية الصفحة). */
+  --color-gold-text: #D4AF37;
+  /* دفعة 3 — نفس مبدأ --color-gold-text بالظبط، لكن لـ--color-success
+     و--color-error: القيمتين الخام فاشلتين كنص فوق خلفية فاتحة (احسبتها
+     فعليًا: ~2.0:1 للأخضر و~3.3:1 للأحمر فوق #F0F0F0 — الاتنين تحت حد
+     الـ4.5:1 للنص العادي). زيرو تغيير في الغامق، وبيتغيّروا لدرجة أغمق بس
+     تحت [data-theme="light"] تحت. ملحوظة: --color-warning و--color-info
+     و--color-purple اتفحصوا كمان ومفيش أي استخدام فعلي لهم كنص في الكود —
+     مستخدمين خلفيات/حدود بس، فمحتاجوش توكن مقابل. */
+  --color-success-text: #22C55E;
+  --color-error-text: #EF4444;
+  /* --color-sidebar و--bg-dark نفس القيمة بالظبط (#0D0D0D) — --bg-dark هو
+     الأوسع استخدامًا فعليًا فبقى الأساسي، و--color-sidebar بقى alias ليه
+     (بند 3.3). نفس المبدأ لـ --color-card-border مقابل --border تحت. */
+  --color-sidebar: var(--bg-dark);
   --color-sidebar-hover: #1A1A1A;
   --color-card: #222222;
-  --color-card-border: #2A2A2A;
+  --color-card-border: var(--border);
   --color-text-secondary: #A0A0A0;
   --color-text-disabled: #606060;
   --color-input-fill: #2A2A2A;
@@ -33,13 +70,86 @@
   --color-red-accent: #E24B4A;
   --border: #2A2A2A;
   --bg-dark: #0D0D0D;
+
+  /* حالات إضافية مش موجودة في نظام الألوان الأساسي (بند 3.2) */
+  --color-status-blue: #60A5FA;
+  --color-status-purple: #A78BFA;
+  --color-status-orange: #FB923C;
+  --color-rank-silver: #C0C0C0;
+  --color-rank-bronze: #CD7F32;
+
+  /*
+   * سلّم الطباعة (بند 2) — 6 درجات بتحل محل 12 مقاس متفرق (بعضها بفروق
+   * نصف بكسل زي 10 مقابل 10.5) كانت مكتوبة كـ text-[Npx] حرفي في كل مكان.
+   * ملحوظة مهمة: التوكنات دي بأسماء --fs-* مقصودة، مش --text-* — لو
+   * استخدمنا --text-xs/sm/base/lg/xl كنا هنغيّر سلّم Tailwind الافتراضي
+   * نفسه، اللي مستخدم فعليًا 719 مرة عبر 52 ملف تاني في المشروع (text-sm,
+   * text-lg...) وده هيكسر حاجات مالهاش علاقة بالبند ده. فالتوكنات دي بتتفعّل
+   * بس في المواضع اللي بنستبدلها يدويًا بـ text-[length:var(--fs-N)].
+   */
+  --fs-1: 11px;  /* بديل 8.5 / 9.5 / 10 / 10.5px */
+  --fs-2: 12px;  /* بديل 11.5 / 12.5px */
+  --fs-3: 14px;
+  --fs-4: 16px;  /* بديل 15px */
+  --fs-5: 20px;  /* بديل 18px */
+  --fs-6: 24px;  /* بديل 22px */
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: 'Tajawal', 'Noto Sans Arabic', 'Archivo', system-ui, sans-serif;
+  font-family: var(--font-tajawal), system-ui, sans-serif;
   margin: 0;
+}
+
+/* دليل الهوية بيحدد Archivo كخط نص إنجليزي أساسي (مش Tajawal). بيتفعّل بس
+   في النسخة الإنجليزية (html[lang="en"]) — العربي فاضل Tajawal زي ما هو. */
+html[lang="en"] body {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+}
+
+/*
+ * المرحلة 4.5 — الثيم الفاتح (دفعة 1: الآلية + التوكنات الأساسية بس).
+ *
+ * القرار المعماري: [data-theme="light"] متطبّق على <main> بس في
+ * dashboard/layout.tsx — مش على <html> ولا حتى على الـ wrapper اللي فيه
+ * الهيدر. يعني: الـ sidebar والـ header (الـ "chrome") فاضلين غامقين دايمًا
+ * بقرار من المستخدم (زي Notion/Slack) — بس منطقة المحتوى (<main>) هي اللي
+ * بتحترم اختيار الثيم. ده تصميم آمن لأنه محتاجش أي لمس في أي مكوّن تاني —
+ * كل مكوّنات المحتوى أصلًا بتستخدم var(--color-*) بفضل بند 3.2/3.3، فبمجرد
+ * ما نعرّف قيم بديلة تحت [data-theme="light"] هي بترث تلقائيًا.
+ *
+ * ✅ دفعة 2 (تصنيف --color-gold) تمّت — شوف [data-theme="light"] تحت
+ * لتوكن --color-gold-text الجديد وتفاصيل التطبيق.
+ *
+ * ⚠️ لسه فاضل (مؤجّل لدفعة تالتة محتملة): ألوان الحالة (success/warning/
+ * error/info/purple) نفس المشكلة المحتملة — بس معملتش فيهم لسه.
+ *
+ */
+[data-theme="light"] {
+  --color-background: #F0F0F0;
+  --color-foreground: #1C1C1C;
+  --color-card: #FFFFFF;
+  --color-card-bg: #FAFAFA;
+  --border: #DADADA;
+  /* بند دفعة 2 — محسوبة عشان تعدّي 4.5:1 حتى فوق أفتح خلفية جوه المحتوى
+     (#FFFFFF): بتدّي 6.37:1 فوقها و5.59:1 فوق --color-background. */
+  --color-gold-text: #7A5A12;
+  /* بند دفعة 3 — نفس المبدأ: محسوبة عشان تعدّي 4.5:1 فوق أصعب خلفية
+     (--color-background #F0F0F0، لأنها أفتح شوية من --color-card الأبيض
+     بالنسبة للنص الغامق فبتدّي تباين أقل). #166534 (أخضر غامق) بيدّي
+     6.26:1، و#B91C1C (أحمر غامق) بيدّي 5.68:1 — هامش أمان كويس فوق الحد. */
+  --color-success-text: #166534;
+  --color-error-text: #B91C1C;
+  --color-input-fill: #E8E8E8;
+  --color-input-border: #C7C7C7;
+  --color-text-secondary: #5A5A5A;
+  --color-text-disabled: #8A8A8A;
+}
+
+[data-theme="light"] {
+  background: var(--color-background);
+  color: var(--color-foreground);
 }
 
 .nav-item-active::after {
@@ -51,10 +161,6 @@ body {
   width: 2.5px;
   background: var(--color-gold);
   border-radius: 2px;
-}
-
-td.p-4 {
-  text-align: center;
 }
 
 .stat-card-hover {

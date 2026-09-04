@@ -65,7 +65,7 @@ export default function ProfilePage() {
       <h1 className="text-2xl font-bold">{t('title')}</h1>
 
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-700 text-sm">{t('profile_saved')}</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('profile_saved')}</div>
       )}
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">

@@ -1,12 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import type { Client, Payment, Contract, PaymentTaxSummary, Workspace } from '@/types';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
@@ -21,6 +22,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [taxSummary, setTaxSummary] = useState<PaymentTaxSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', currency: 'SAR', notes: '' });
@@ -34,7 +36,12 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const canReview = user?.role === 'super_admin';
   const isSA = user?.role === 'super_admin';
 
+  const hasLoadedOnceRef = useRef(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const retry = () => { setLoading(true); setRetryKey((k) => k + 1); };
+
   useEffect(() => {
+    hasLoadedOnceRef.current = false;
     const load = () => {
       return Promise.all([
         api.get(`/workspaces/${wsId}/payments`),
@@ -44,12 +51,20 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         setTaxSummary(payRes.data.tax_summary || null);
         const raw = contRes.data.contracts;
         setContracts(Array.isArray(raw) ? raw : (raw?.data || []));
-      }).catch((err) => reportError('PaymentsTab.load', err));
+        setLoadError(false);
+        hasLoadedOnceRef.current = true;
+      }).catch((err) => {
+        reportError('PaymentsTab.load', err);
+        // Only surface an error screen for the initial load — once we've shown
+        // real data at least once, a background poll hiccup shouldn't yank the
+        // screen away. The stale data staying visible is the better failure mode.
+        if (!hasLoadedOnceRef.current) setLoadError(true);
+      });
     };
     load().finally(() => setLoading(false));
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [wsId]);
+  }, [wsId, retryKey]);
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('method_bank_transfer'), swift: t('method_swift'), corporate_account: t('method_corporate_account'),
@@ -112,7 +127,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
+  if (loadError) return <ErrorState onRetry={retry} />;
 
   const payableContracts = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
   const contractValue = payableContracts.reduce((s, c) => s + Number(c.value), 0);
@@ -129,21 +145,21 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   return (
     <div className="space-y-4">
       {/* ملخص الدفعات */}
-      <div className="bg-[#0d0d0d] border border-[var(--color-card-border)] rounded-xl p-4">
+      <div className="bg-[var(--bg-dark)] border border-[var(--color-card-border)] rounded-xl p-4">
         {isFullyPaid ? (
           <>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-green-400 text-lg">✅</span>
               <p className="text-sm font-bold text-green-400">{t('fully_paid')}</p>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-2xl font-bold text-[var(--color-gold-text)] font-display">
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
           </>
         ) : (
           <>
-            <p className="text-xs text-[var(--color-gold)] font-medium">{t('total_paid_label')}</p>
-            <p className="text-2xl font-bold text-[var(--color-gold)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <p className="text-xs text-[var(--color-gold-text)] font-medium">{t('total_paid_label')}</p>
+            <p className="text-2xl font-bold text-[var(--color-gold-text)] mt-1 font-display">
               {totalPaid.toFixed(2)} {contractCurrency}
             </p>
             <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
@@ -169,7 +185,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           <button onClick={() => setShowRequest(true)} className="px-4 py-2 bg-[var(--color-gold)] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             {t('request_payment')}
           </button>
-          <button onClick={() => setShowSchedule(true)} className="px-4 py-2 border border-[var(--color-gold)] text-[var(--color-gold)] text-sm font-medium rounded-lg hover:bg-[var(--color-gold)]/10 transition-colors">
+          <button onClick={() => setShowSchedule(true)} className="px-4 py-2 border border-[var(--color-gold)] text-[var(--color-gold-text)] text-sm font-medium rounded-lg hover:bg-[var(--color-gold)]/10 transition-colors">
             {t('schedule_payments')}
           </button>
         </div>
@@ -190,8 +206,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>
             {/* ── القسم العلوي ── */}
             <div className="px-5 pt-5 pb-4">
-              <p className="text-xs text-[var(--color-gold)] font-medium">{installmentName(idx)}</p>
-              <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{p.amount} <span className="text-sm font-normal text-[var(--color-text-disabled)]">{p.currency || contractCurrency}</span></p>
+              <p className="text-xs text-[var(--color-gold-text)] font-medium">{installmentName(idx)}</p>
+              <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1 font-display">{p.amount} <span className="text-sm font-normal text-[var(--color-text-disabled)]">{p.currency || contractCurrency}</span></p>
               <div className="flex items-center gap-1.5 mt-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                 <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
@@ -225,7 +241,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               {p.proof_file_url && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs">📎</span>
-                  <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold)] hover:underline">{t('view_proof')}</a>
+                  <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('view_proof')}</a>
                 </div>
               )}
               {isPending && canReview && (
@@ -249,40 +265,40 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             ref={scheduleDialogRef}
             {...scheduleDialogProps}
             aria-labelledby={scheduleTitleId}
-            className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--color-sidebar-hover)] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 id={scheduleTitleId} className="text-lg font-bold text-[var(--color-text-primary)]">{t('schedule_title')}</h3>
+              <h3 id={scheduleTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('schedule_title')}</h3>
               <button onClick={() => setShowSchedule(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
             <div className="space-y-3">
               <div>
                 <label htmlFor="pay-schedule-amount" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
-                <input id="pay-schedule-amount" type="number" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
+                <input id="pay-schedule-amount" type="number" value={scheduleForm.amount} onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" placeholder="0.00" />
               </div>
               <div>
                 <label htmlFor="pay-schedule-label" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('description_optional')}</label>
-                <input id="pay-schedule-label" type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('installment_ph')} />
+                <input id="pay-schedule-label" type="text" value={scheduleForm.installment_label} onChange={(e) => setScheduleForm({ ...scheduleForm, installment_label: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" placeholder={t('installment_ph')} />
               </div>
               <div>
                 <label htmlFor="pay-schedule-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select id="pay-schedule-currency" value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                <select id="pay-schedule-currency" value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label htmlFor="pay-schedule-due-date" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('due_date_required')}</label>
-                <input id="pay-schedule-due-date" type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" />
+                <input id="pay-schedule-due-date" type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" />
               </div>
-              <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">{t('add_installment')}</button>
+              <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold-text)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">{t('add_installment')}</button>
               {installments.length > 0 && (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {installments.map((inst, i) => (
                     <div key={i} className="flex items-center justify-between bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2">
                       <div>
-                        <p className="text-xs text-[var(--color-text-primary)]">{inst.installment_label}</p>
-                        <p className="text-[10px] text-[var(--color-text-secondary)]">{inst.amount} {inst.currency} — {inst.due_date}</p>
+                        <p className="text-xs text-[var(--color-foreground)]">{inst.installment_label}</p>
+                        <p className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{inst.amount} {inst.currency} — {inst.due_date}</p>
                       </div>
                       <button onClick={() => removeInstallment(i)} className="text-red-400 hover:text-red-300 text-xs">{t('remove_installment')}</button>
                     </div>
@@ -302,28 +318,28 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             ref={requestDialogRef}
             {...requestDialogProps}
             aria-labelledby={requestTitleId}
-            className="bg-[#1a1a1a] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md"
+            className="bg-[var(--color-sidebar-hover)] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 id={requestTitleId} className="text-lg font-bold text-[var(--color-text-primary)]">{t('request_title')}</h3>
+              <h3 id={requestTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('request_title')}</h3>
               <button onClick={() => setShowRequest(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
             </div>
             <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('request_desc')}</p>
             <div className="space-y-3">
               <div>
                 <label htmlFor="pay-request-amount" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('amount_required')}</label>
-                <input id="pay-request-amount" type="number" value={requestForm.amount} onChange={(e) => setRequestForm({ ...requestForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder="0.00" />
+                <input id="pay-request-amount" type="number" value={requestForm.amount} onChange={(e) => setRequestForm({ ...requestForm, amount: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" placeholder="0.00" />
               </div>
               <div>
                 <label htmlFor="pay-request-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select id="pay-request-currency" value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                <select id="pay-request-currency" value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
                   {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label htmlFor="pay-request-notes" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('notes_optional')}</label>
-                <input id="pay-request-notes" type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)]" placeholder={t('payment_request_ph')} />
+                <input id="pay-request-notes" type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" placeholder={t('payment_request_ph')} />
               </div>
               <button onClick={submitRequest} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90">
                 {t('send_request')}

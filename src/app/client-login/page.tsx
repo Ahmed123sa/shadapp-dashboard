@@ -21,16 +21,16 @@ export default function ClientLoginPage() {
   if (existing) {
     const subName = isSubUser() ? getSubUser()?.name : null;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 text-center border border-[#D4AF37]/20">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 text-center border border-[var(--color-gold)]/20">
           <h1 className="text-2xl font-bold mb-2 text-white">
             {subName ? t('client_greeting', { name: subName }) : t('client_greeting', { name: existing.contact_person })}
           </h1>
-          <p className="text-[#D4AF37] mb-4">
+          <p className="text-[var(--color-gold)] mb-4">
             {subName ? t('client_sub_user_label') : existing.company_name}
           </p>
           <div className="flex gap-2 justify-center">
-            <Link href="/client-dashboard" className="bg-[#941414] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
+            <Link href="/client-dashboard" className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
               {t('client_enter_dashboard')}
             </Link>
             <button onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch (err) { reportError('client-login.logout', err); } window.location.reload(); }}
@@ -59,27 +59,27 @@ export default function ClientLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1A1A] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[#D4AF37]/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#941414]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#D4AF37]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[var(--color-gold)]/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--color-gold)]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
         <div className="relative">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="ShadApp" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
           </div>
-          <h1 className="text-2xl font-bold text-center mb-1 text-white" style={{ fontFamily: "'Playfair Display', serif" }}>ShadApp</h1>
-          <p className="text-[#D4AF37] text-center text-sm mb-6">{t('login_client_link')}</p>
+          <h1 className="text-2xl font-bold text-center mb-1 text-white font-display">ShadApp</h1>
+          <p className="text-[var(--color-gold)] text-center text-sm mb-6">{t('login_client_link')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-[#941414]/20 text-[#D4AF37] text-sm p-3 rounded-lg border border-[#941414]/30">{error}</div>
+              <div className="bg-[var(--color-primary)]/20 text-[var(--color-gold)] text-sm p-3 rounded-lg border border-[var(--color-primary)]/30">{error}</div>
             )}
 
             <div>
               <label htmlFor="client-login-email" className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
               <input id="client-login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30"
+                className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30"
                 required dir="ltr" />
             </div>
 
@@ -87,7 +87,7 @@ export default function ClientLoginPage() {
               <label htmlFor="client-login-password" className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
               <div className="relative">
                 <input id="client-login-password" type={visible ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white/5 text-white placeholder-white/30 pe-10"
+                  className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30 pe-10"
                   required dir="ltr" autoComplete="new-password" />
                 <button type="button" onClick={() => setVisible(!visible)}
                   className="absolute top-1/2 -translate-y-1/2 end-0 flex items-center px-3 text-white/40 hover:text-white/60 h-10"
@@ -107,17 +107,17 @@ export default function ClientLoginPage() {
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full bg-[#941414] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors">
+              className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors">
               {loading ? t('login_loading') : t('login_submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-white/50 mt-4">
-            <Link href="/forgot-password?type=client" className="text-[#D4AF37] hover:underline">{t('forgot_link')}</Link>
+            <Link href="/forgot-password?type=client" className="text-[var(--color-gold)] hover:underline">{t('forgot_link')}</Link>
           </p>
 
           <p className="text-center text-sm text-white/50 mt-3">
-            <Link href="/login" className="text-[#D4AF37] hover:underline">{t('client_admin_login_link')}</Link>
+            <Link href="/login" className="text-[var(--color-gold)] hover:underline">{t('client_admin_login_link')}</Link>
           </p>
         </div>
       </div>

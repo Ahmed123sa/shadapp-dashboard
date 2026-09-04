@@ -88,7 +88,7 @@ export default function ClientWorkspace() {
 
   return (
     <div className="space-y-6">
-      {deleteError && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{deleteError}</div>}
+      {deleteError && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-300 text-sm">{deleteError}</div>}
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
         <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ export default function ClientWorkspace() {
         <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
           {TABS.map((tab) => (
             <button key={tab} ref={(el) => { tabRefs.current[tab] = el; }} onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
+              className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
               {t(TAB_LABELS[tab])}
             </button>
           ))}

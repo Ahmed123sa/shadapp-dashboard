@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl } from '@/lib/utils';
 import type { Approval } from '@/types';
@@ -39,7 +39,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
     setSending(false);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-400 text-center py-8">{error}</p>;
 
   return (
@@ -52,7 +52,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
 
           <div className="flex items-center gap-2">
             <input type="file" ref={fileRef} multiple className="hidden" onChange={(e) => { if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files!)]); }} />
-            <button onClick={() => fileRef.current?.click()} className="text-sm text-[var(--color-gold)] hover:underline">{t('attach_files')}</button>
+            <button onClick={() => fileRef.current?.click()} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('attach_files')}</button>
             {files.length > 0 && (
               <div className="flex items-center gap-1">
                 {files.map((f, i) => (
@@ -103,7 +103,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
               <div className="mt-2 flex flex-wrap gap-1">
                 {a.files.map((f) => (
                   <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-[var(--color-gold)] underline bg-blue-900/30 px-2 py-0.5 rounded">
+                    className="text-xs text-[var(--color-gold-text)] underline bg-blue-900/30 px-2 py-0.5 rounded">
                     📎 {f.name || t('file_label')}
                   </a>
                 ))}
@@ -112,7 +112,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
 
             {/* Certificate */}
             {a.certificate && (
-              <div className="mt-2 text-xs text-[var(--color-gold)]">
+              <div className="mt-2 text-xs text-[var(--color-gold-text)]">
                 <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer">{t('download_certificate')}</a>
               </div>
             )}

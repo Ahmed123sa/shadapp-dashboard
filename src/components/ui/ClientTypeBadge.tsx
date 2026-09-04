@@ -22,10 +22,10 @@ export function ClientTypeBadge({ clientType, compact = false }: ClientTypeBadge
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-md font-medium ${
-        compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]'
+        compact ? 'px-1.5 py-0.5 text-[length:var(--fs-1)]' : 'px-2 py-0.5 text-[length:var(--fs-2)]'
       } ${
         isBusiness
-          ? 'bg-[var(--color-gold)]/15 text-[var(--color-gold)]'
+          ? 'bg-[var(--color-gold)]/15 text-[var(--color-gold-text)]'
           : 'bg-[var(--color-card-border)] text-[var(--color-text-secondary)]'
       }`}
     >

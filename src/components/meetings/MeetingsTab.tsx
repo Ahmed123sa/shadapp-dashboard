@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { getMeetingJoinStatus } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Meeting, Contract } from '@/types';
 
@@ -48,7 +48,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
     if (data) setMeetings((prev) => prev.map((m) => m.id === id ? data.meeting : m));
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-400 text-center py-8">{error}</p>;
 
   const user = getUser();
@@ -66,7 +66,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
   return (
     <div className="space-y-4">
-      {!isSA && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold)] hover:underline">{t('new_meeting')}</button>}
+      {!isSA && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('new_meeting')}</button>}
       {!isSA && showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('meeting_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />

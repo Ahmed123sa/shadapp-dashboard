@@ -23,7 +23,7 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
   return (
     <div className="border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card)] overflow-hidden">
       <div className="bg-[var(--color-card-border)] px-4 py-2 border-b border-[var(--color-card-border)] flex items-center justify-between">
-        <span className="text-xs font-bold text-[var(--color-gold)]">{t('contract_card_service')}</span>
+        <span className="text-xs font-bold text-[var(--color-gold-text)]">{t('contract_card_service')}</span>
         {statusBadge(contract.status)}
       </div>
       <div className="p-4 space-y-2">

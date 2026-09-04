@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
 import type { Meeting, Contract, Approval } from '@/types';
 
@@ -13,18 +14,23 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const t = useTranslations('dashboard');
   const tCal = useTranslations('calendar');
 
-  useEffect(() => {
-    Promise.all([
+  const load = () => {
+    setLoading(true);
+    setLoadError(false);
+    return Promise.all([
       api.get(`/workspaces/${wsId}/meetings`).then(({ data }) => setMeetings(data.meetings?.data || data.meetings || [])),
       api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
       api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])),
-    ]).catch((err) => reportError('CalendarTab.load', err)).finally(() => setLoading(false));
-  }, [wsId]);
+    ]).catch((err) => { reportError('CalendarTab.load', err); setLoadError(true); }).finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [wsId]);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
+  if (loadError) return <ErrorState onRetry={load} />;
 
   const items: { date: string; title: string; type: string; id: number }[] = [];
 

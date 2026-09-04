@@ -108,8 +108,7 @@ export default function ShowcaseDemoPage() {
                 variants={logoLetterVariants}
                 initial="hidden"
                 animate="visible"
-                className={i === 1 ? 'text-[var(--color-primary)]' : i === 0 ? 'text-2xl italic font-bold tracking-wide' : 'text-sm font-semibold tracking-[0.2em] text-white/80'}
-                style={i === 0 ? { fontFamily: "'Playfair Display', serif" } : i > 1 ? { fontFamily: "'Playfair Display', serif" } : {}}
+                className={`font-display ${i === 1 ? 'text-[var(--color-primary)]' : i === 0 ? 'text-2xl italic font-bold tracking-wide' : 'text-sm font-semibold tracking-[0.2em] text-white/80'}`}
               >
                 {letter}
               </motion.span>
@@ -129,7 +128,7 @@ export default function ShowcaseDemoPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.7, type: 'spring', stiffness: 200 }}
-            className="inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold tracking-wider bg-[var(--color-primary)] text-white rounded"
+            className="inline-block mt-1 px-2 py-0.5 text-[length:var(--fs-1)] font-semibold tracking-wider bg-[var(--color-primary)] text-white rounded"
           >
             ACCOUNT MANAGER
           </motion.span>
@@ -149,7 +148,7 @@ export default function ShowcaseDemoPage() {
               >
                 <motion.p
                   variants={itemVariants}
-                  className="px-4 py-1 text-[10px] font-semibold tracking-widest text-white/40 uppercase"
+                  className="px-4 py-1 text-[length:var(--fs-1)] font-semibold tracking-widest text-white/40 uppercase"
                 >
                   {sectionLabels[section.label] || section.label}
                 </motion.p>
@@ -189,7 +188,7 @@ export default function ShowcaseDemoPage() {
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ delay: 1 + idx * 0.05, type: 'spring' }}
-                              className="mr-auto bg-[var(--color-primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+                              className="mr-auto bg-[var(--color-primary)] text-white text-[length:var(--fs-1)] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
                             >
                               {item.badge}
                             </motion.span>
@@ -242,8 +241,7 @@ export default function ShowcaseDemoPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, type: 'spring' }}
-              className="text-lg font-semibold"
-              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-lg font-semibold font-display"
             >
               {t('showcase_nav_dashboard')}
             </motion.h1>
@@ -320,7 +318,7 @@ export default function ShowcaseDemoPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}
           >
-            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{t('showcase_welcome')}</h2>
+            <h2 className="text-2xl font-bold mb-2 font-display">{t('showcase_welcome')}</h2>
             <p className="text-[var(--color-text-secondary)] mb-8">{t('showcase_subtitle')}</p>
 
             {/* Stats cards */}
@@ -348,7 +346,7 @@ export default function ShowcaseDemoPage() {
                       className="h-1 bg-[var(--color-primary)] rounded-full"
                     />
                   </div>
-                  <p className="text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{stat.value}</p>
+                  <p className="text-2xl font-bold font-display">{stat.value}</p>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-1">{showcaseStatLabels[stat.label] || stat.label}</p>
                   <p className="text-xs text-[var(--color-gold)] mt-0.5">{stat.change}</p>
                 </motion.div>
@@ -405,7 +403,7 @@ export default function ShowcaseDemoPage() {
                           </div>
                         </td>
                         <td className="px-5 py-3 text-[var(--color-text-secondary)]">{row.contract}</td>
-                        <td className="px-5 py-3 text-[var(--color-gold)]" style={{ fontFamily: "'Playfair Display', serif" }}>{row.amount}</td>
+                        <td className="px-5 py-3 text-[var(--color-gold)] font-display">{row.amount}</td>
                         <td className="px-5 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             row.status === 'مكتمل' ? 'bg-green-900/30 text-green-400' :

@@ -190,13 +190,13 @@ export default function AccountManagersPage() {
           <tbody>
             {managers.map((m) => (
               <tr key={m.id} className="border-b border-[var(--color-card-border)]">
-                <td className="p-4">{m.name}</td>
-                <td className="p-4">{m.email}</td>
-                <td className="p-4">{m.phone || '—'}</td>
-                <td className="p-4">{m.managed_clients_count || 0}</td>
+                <td className="p-4 text-center">{m.name}</td>
+                <td className="p-4 text-center">{m.email}</td>
+                <td className="p-4 text-center">{m.phone || '—'}</td>
+                <td className="p-4 text-center">{m.managed_clients_count || 0}</td>
                 <td className="p-4 text-center">
                   <div className="flex gap-2 justify-center">
-                    <button onClick={() => startEdit(m)} className="text-xs text-[var(--color-gold)] hover:underline border border-blue-200 rounded px-2 py-1">{t('manager_edit')}</button>
+                    <button onClick={() => startEdit(m)} className="text-xs text-[var(--color-gold-text)] hover:underline border border-blue-200 rounded px-2 py-1">{t('manager_edit')}</button>
                     <button onClick={() => deleteManager(m.id)} className="text-xs text-red-400 hover:underline border border-red-200 rounded px-2 py-1">{t('manager_delete')}</button>
                   </div>
                 </td>

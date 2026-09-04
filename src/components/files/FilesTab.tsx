@@ -4,8 +4,9 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
@@ -18,11 +19,19 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   const [paymentFiles, setPaymentFiles] = useState<PaymentProofFile[]>([]);
   const [definitions, setDefinitions] = useState<DocumentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');
 
-  const load = () => api.get(`/workspaces/${wsId}/files`).then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); }).catch((err) => reportError('FilesTab.load', err)).finally(() => setLoading(false));
+  const load = () => {
+    setLoading(true);
+    setLoadError(false);
+    return api.get(`/workspaces/${wsId}/files`)
+      .then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); })
+      .catch((err) => { reportError('FilesTab.load', err); setLoadError(true); })
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, [wsId]);
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,13 +55,14 @@ export default function FilesTab({ wsId }: { wsId: number }) {
     if (data) setFiles((prev) => prev.map((f) => f.id === fid ? data.file : f));
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
+  if (loadError) return <ErrorState onRetry={load} />;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         {definitions.map((d) => <span key={d.id} className="px-2 py-0.5 bg-blue-900/30 text-blue-400 rounded-full text-xs">{d.name} {d.is_required ? '*' : ''}</span>)}
-        <button onClick={() => setShowDefForm(!showDefForm)} className="text-xs text-[var(--color-gold)] hover:underline">{t('define_document')}</button>
+        <button onClick={() => setShowDefForm(!showDefForm)} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('define_document')}</button>
       </div>
       {showDefForm && (
         <div className="flex gap-2">
@@ -67,7 +77,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
             <option value="">{t('no_category')}</option>
             {definitions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-          <label className="inline-flex items-center gap-1.5 text-sm text-[var(--color-gold)] cursor-pointer hover:text-[var(--color-gold)]">
+          <label className="inline-flex items-center gap-1.5 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)]">
             <input type="file" className="hidden" onChange={upload} />{t('upload_file')}
           </label>
         </div>
@@ -81,7 +91,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
               <div className="flex items-center gap-2">
                 <p className="font-medium">{f.name}</p>
                 {f.tag && (
-                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[10px] font-bold">{f.tag}</span>
+                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[length:var(--fs-1)] font-bold">{f.tag}</span>
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-disabled)]">
@@ -111,14 +121,14 @@ export default function FilesTab({ wsId }: { wsId: number }) {
 
       {paymentFiles.length > 0 && (
         <>
-          <h4 className="text-sm font-bold text-[var(--color-gold)] mt-4">{t('payment_proofs_heading')}</h4>
+          <h4 className="text-sm font-bold text-[var(--color-gold-text)] mt-4">{t('payment_proofs_heading')}</h4>
           <div className="space-y-2">
             {paymentFiles.map((pf) => (
               <div key={pf.id} className="border border-[var(--color-card-border)] rounded-lg p-3 text-sm flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{pf.name}</p>
-                    <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[10px] font-bold">{t('payment_proof_tag')}</span>
+                    <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[length:var(--fs-1)] font-bold">{t('payment_proof_tag')}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-disabled)]">{pf.amount} {pf.currency}</p>
                 </div>

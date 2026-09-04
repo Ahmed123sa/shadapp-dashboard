@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
@@ -43,7 +43,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
     setConfirmAction(null);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   return (
@@ -61,7 +61,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           </div>
           <ContractStatusStepper status={c.status} compact />
           <div className="mt-2 flex gap-2">
-            <button onClick={() => setViewContract(c)} className="text-xs text-[var(--color-gold)] hover:underline">
+            <button onClick={() => setViewContract(c)} className="text-xs text-[var(--color-gold-text)] hover:underline">
               {t('contract_view_details')}
             </button>
             {c.status === 'sent' && (

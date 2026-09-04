@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { MapPin, Pencil, ExternalLink, FileText, CreditCard, Stamp, CalendarDays, ChevronLeft, Map } from 'lucide-react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import LocationPickerModal from './LocationPickerModal';
@@ -86,7 +86,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (!profile) return <EmptyState message={t('not_found')} />;
 
   const c = profile.client;
@@ -106,7 +106,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
   return (
     <div className="space-y-4">
       {msg && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-emerald-700 text-sm">{msg}</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-emerald-300 text-sm">{msg}</div>
       )}
 
       {/* بطاقة العميل */}
@@ -129,7 +129,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
             <p className="text-sm text-[var(--color-text-secondary)]">{c.contact_person || '—'}{c.contact_person && c.email ? ' • ' : ''}{c.email || ''}</p>
           </div>
           {isAM && (
-            <Link href={`/dashboard/clients/${clientId}/settings`} className="ms-auto inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)] hover:underline flex-shrink-0">
+            <Link href={`/dashboard/clients/${clientId}/settings`} className="ms-auto inline-flex items-center gap-1.5 text-xs text-[var(--color-gold-text)] hover:underline flex-shrink-0">
               <Pencil size={13} strokeWidth={1.5} /> {t('profile_edit')}
             </Link>
           )}
@@ -138,21 +138,21 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-[var(--color-card-border)] rounded-lg p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_contracts')}</p>
+          <p className="text-[length:var(--fs-1)] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_contracts')}</p>
           <p className="text-2xl font-bold mt-1">{s.total_contracts}</p>
           <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{s.draft_contracts} {t('profile_draft_contracts')} • {s.sent_contracts} {t('profile_in_progress')}</p>
         </div>
         <div className="bg-[var(--color-card-border)] rounded-lg p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_completed_contracts')}</p>
+          <p className="text-[length:var(--fs-1)] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_completed_contracts')}</p>
           <p className="text-2xl font-bold mt-1">{s.completed_contracts}</p>
           <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{s.meetings_count} {t('profile_meetings')} • {s.approvals_count} {t('profile_approvals')}</p>
         </div>
         <div className="bg-[var(--color-card-border)] rounded-lg p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_value')}</p>
+          <p className="text-[length:var(--fs-1)] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_value')}</p>
           <p className="text-2xl font-bold mt-1">{Number(s.total_contract_value || 0).toLocaleString()}</p>
         </div>
         <div className="bg-[var(--color-card-border)] rounded-lg p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_paid')}</p>
+          <p className="text-[length:var(--fs-1)] uppercase tracking-wide text-[var(--color-text-secondary)]">{t('profile_total_paid')}</p>
           <p className="text-2xl font-bold mt-1">{Number(s.total_paid || 0).toLocaleString()}</p>
           <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('profile_pending_payments')}: {Number(s.pending_payments || 0).toLocaleString()}</p>
         </div>
@@ -174,7 +174,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold flex items-center gap-2"><MapPin size={16} strokeWidth={1.5} className="text-[var(--color-primary)]" /> {t('profile_location')}</h3>
+          <h3 className="font-semibold flex items-center gap-2"><MapPin size={16} strokeWidth={1.5} className="text-[var(--color-primary-light)]" /> {t('profile_location')}</h3>
           {isAM && (
             <button onClick={() => setShowLocationPicker(true)}
               className="inline-flex items-center gap-1.5 bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-[var(--color-primary-dark)]">
@@ -193,7 +193,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
             )}
             {mapsUrl && (
               <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)] hover:underline">
+                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold-text)] hover:underline">
                 <ExternalLink size={13} strokeWidth={1.5} /> {t('profile_open_maps')}
               </a>
             )}
@@ -204,7 +204,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
             <p className="text-xs text-[var(--color-text-secondary)]">{t('profile_last_updated')}: {updatedAt}</p>
             {mapsUrl && (
               <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)] hover:underline">
+                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold-text)] hover:underline">
                 <ExternalLink size={13} strokeWidth={1.5} /> {t('profile_open_maps')}
               </a>
             )}
@@ -246,7 +246,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
                     {e.title}{e.amount != null ? ` • ${Number(e.amount).toLocaleString()} ${e.currency || ''}` : ''} • {new Date(e.timestamp).toLocaleString()}
                   </span>
                 </span>
-                {onNavigate && <ChevronLeft size={16} strokeWidth={1.5} className="text-[var(--color-text-muted)] flex-shrink-0" />}
+                {onNavigate && <ChevronLeft size={16} strokeWidth={1.5} className="text-[var(--color-text-secondary)] flex-shrink-0" />}
               </button>
             ))}
           </div>

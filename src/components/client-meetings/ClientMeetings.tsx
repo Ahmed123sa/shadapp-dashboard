@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
 import type { Meeting } from '@/types';
@@ -25,7 +25,7 @@ export default function ClientMeetings({ wsId }: { wsId: number }) {
 
   const formatDate = (d: string) => formatMeetingDate(d, locale);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   const now = new Date();

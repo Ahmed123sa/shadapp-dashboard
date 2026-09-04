@@ -85,7 +85,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
         <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
           <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('builder_optional_heading')}</h4>
           {optionalTemplates.map((t) => (
-            <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold)]">
+            <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold-text)]">
               <input type="checkbox" checked={!!selectedOptional[t.id]} onChange={() => toggleOptional(t.id)} className="mt-0.5" />
               <span>{t.content}</span>
             </label>

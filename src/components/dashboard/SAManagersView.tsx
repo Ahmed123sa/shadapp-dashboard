@@ -87,15 +87,15 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
           <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[12.5px] font-bold">{t('managers')}</span>
-              <Link href="/dashboard/account-managers" className="text-[10.5px] text-[var(--color-gold)]">{t('manage')}</Link>
+              <span className="text-[length:var(--fs-2)] font-bold">{t('managers')}</span>
+              <Link href="/dashboard/account-managers" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('manage')}</Link>
             </div>
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
-                  <th className="text-end text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
+                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,9 +111,9 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
             {expandedManager && (
               <div className="border-t border-[var(--border)] bg-white/[0.015]">
                 {managerClientsLoading ? (
-                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{t('loading_clients')}</div>
+                  <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('loading_clients')}</div>
                 ) : managerClients.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-[var(--color-text-secondary)]">{t('no_clients')}</div>
+                  <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('no_clients')}</div>
                 ) : (
                   <div className="divide-y divide-white/[0.04]">
                     {managerClients.map((c) => (
@@ -122,12 +122,12 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
                         href={c.workspace ? `/dashboard/clients/${c.id}` : '#'}
                         className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.03] transition-colors"
                       >
-                        <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold)] flex-shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
                           {c.company_name?.slice(0, 2) || '?'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[11.5px] font-bold truncate">{c.company_name}</div>
-                          <div className="text-[9.5px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
+                          <div className="text-[length:var(--fs-2)] font-bold truncate">{c.company_name}</div>
+                          <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
                             {c.contact_person}
                             <ClientTypeBadge clientType={c.client_type} compact />
                           </div>
@@ -145,8 +145,8 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
             {pendingApprovals.length > 0 && (
               <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-                  <span className="text-[12.5px] font-bold">{t('pending_approvals')}</span>
-                  <span className="text-[10.5px] text-[var(--color-text-secondary)]">{pendingApprovals.length}</span>
+                  <span className="text-[length:var(--fs-2)] font-bold">{t('pending_approvals')}</span>
+                  <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{pendingApprovals.length}</span>
                 </div>
                 {pendingApprovals.slice(0, 4).map((a) => (
                   <Link
@@ -156,12 +156,12 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
                   >
                     <div className="w-[3px] h-9 rounded-sm bg-[var(--color-gold)] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-bold truncate">{a.title}</div>
-                      <div className="text-[10px] text-[var(--color-text-secondary)] truncate">
+                      <div className="text-[length:var(--fs-2)] font-bold truncate">{a.title}</div>
+                      <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">
                         {a.workspace?.client?.company_name || ''} — {timeAgo(a.created_at, locale, t)}
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-gold-soft)] text-[var(--color-gold)] flex-shrink-0">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] flex-shrink-0">
                       {t('pending_status')}
                     </span>
                   </Link>
@@ -171,7 +171,7 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
 
             <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
               <div className="px-4 py-3 border-b border-[var(--border)]">
-                <span className="text-[12.5px] font-bold">{t('recent_activity')}</span>
+                <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
               </div>
               <ActivityFeed items={activityItems} />
             </div>

@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck, Reply } from 'lucide-react';
@@ -92,7 +92,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
     edit_requested: t('chat_action_edit_requested'),
   };
 
-  if (loading) return <LoadingSkeleton message={t('chat_loading')} />;
+  if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   if (!wsActive) {
@@ -133,7 +133,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             <div key={m.id} className={`flex gap-2 ${isClientTeam ? 'justify-end' : 'justify-start'}`}
               onContextMenu={(e) => handleContextMenu(e, m)}>
               {!isClientTeam && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-primary)] overflow-hidden bg-[var(--color-input-fill)] flex items-center justify-center text-xs text-[var(--color-gold)] font-bold mt-1">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-primary)] overflow-hidden bg-[var(--color-input-fill)] flex items-center justify-center text-xs text-[var(--color-gold-text)] font-bold mt-1">
                   {senderAvatarUrl ? (
                     <img src={resolveFileUrl(senderAvatarUrl)} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -152,13 +152,13 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
               )}
               <div className="max-w-xs">
                 <div className={`px-3 py-2 text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white rounded-br-lg rounded-tl-lg rounded-tr-lg' : 'bg-[var(--color-card)] text-[var(--color-foreground)] rounded-bl-lg rounded-tl-lg rounded-tr-lg'}`}>
-                  <p className={`text-xs mb-0.5 ${isClientTeam ? 'text-[var(--color-gold)]' : 'text-[var(--color-text-secondary)]'}`}>
+                  <p className={`text-xs mb-0.5 ${isClientTeam ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                     {sentByClient ? (senderName || t('sender_you')) : isSubUser ? (m.sender?.name || t('sender_team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager')) + ': ' + (m.sender?.name || ''))}
                   </p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
-                      <p className="text-[10px] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
-                      <p className="text-[10px] truncate max-w-[180px]">{m.reply_to.message || '...'}</p>
+                      <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
+                      <p className="text-[length:var(--fs-1)] truncate max-w-[180px]">{m.reply_to.message || '...'}</p>
                     </div>
                   )}
                   {m.type === 'file' && m.file_url && (
@@ -166,7 +166,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                       {m.file_url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
                         <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
                       ) : (
-                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold)] underline text-xs">{t('view_attachment')}</a>
+                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
                       )}
                     </div>
                   )}
@@ -218,7 +218,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
       {replyTo && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-input-fill)] border border-[var(--color-primary)] border-r-4 rounded-lg text-sm relative">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-[var(--color-primary)]">{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</p>
+            <p className="text-[length:var(--fs-1)] font-medium text-[var(--color-foreground)]">{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
           <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
@@ -228,8 +228,8 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
       <div className="flex gap-2 items-center">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>📎</button>
-        {uploadFile && <span className="text-xs text-[var(--color-gold)] self-center truncate max-w-24 flex-shrink-0">{uploadFile.name}</span>}
+        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>📎</button>
+        {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24 flex-shrink-0">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           className="flex-1 border border-[var(--color-input-border)] rounded-full px-4 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" placeholder={t('chat_input_placeholder')} />

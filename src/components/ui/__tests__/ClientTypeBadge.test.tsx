@@ -22,7 +22,7 @@ describe('ClientTypeBadge', () => {
   it('uses smaller icon/text sizing when compact is set', () => {
     const { container: normal } = renderWithIntl(<ClientTypeBadge clientType="business" />);
     const { container: compact } = renderWithIntl(<ClientTypeBadge clientType="business" compact />);
-    expect(normal.querySelector('span')?.className).toContain('text-[11px]');
-    expect(compact.querySelector('span')?.className).toContain('text-[10px]');
+    expect(normal.querySelector('span')?.className).toContain('text-[length:var(--fs-2)]');
+    expect(compact.querySelector('span')?.className).toContain('text-[length:var(--fs-1)]');
   });
 });
