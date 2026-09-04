@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE } from '@/lib/session';
+import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE } from '@/lib/session';
 
 // Clears the httpOnly session cookie (client JS cannot do this itself).
 // For staff (super_admin/account_manager) sessions we also ask Laravel to
@@ -31,5 +31,6 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ ok: true });
   response.cookies.delete(SESSION_COOKIE);
   response.cookies.delete(SESSION_TYPE_COOKIE);
+  response.cookies.delete(SESSION_ROLE_COOKIE);
   return response;
 }

@@ -1,23 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/api';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
-import type { Payment, Contract, PaymentTaxSummary } from '@/types';
+import type { Payment, Contract } from '@/types';
+import { useSubmitClientPayment, useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [methods, setMethods] = useState<string[]>([]);
   const [payableContract, setPayableContract] = useState<Contract | null>(null);
   const [payableContracts, setPayableContracts] = useState<Contract[]>([]);
-  const [taxSummary, setTaxSummary] = useState<PaymentTaxSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('SAR');
   const [methodType, setMethodType] = useState('');
@@ -25,40 +20,39 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const [saving, setSaving] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
-  useEffect(() => {
-    const loadAll = async () => {
-      try {
-        const [payRes, contRes] = await Promise.all([
-          api.get(`/workspaces/${wsId}/payments`),
-          api.get(`/workspaces/${wsId}/contracts`),
-        ]);
-        const payData = payRes.data;
-        setPayments(payData.payments || []);
-        setMethods(payData.available_methods || []);
-        setTaxSummary(payData.tax_summary || null);
+  const paymentsQuery = useWorkspacePayments(wsId);
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const submitMutation = useSubmitClientPayment(wsId);
 
-        const contracts: Contract[] = contRes.data.contracts?.data ?? contRes.data.contracts ?? [];
-        const payableList = contracts.filter((c) =>
-          c.status === 'company_approved' || c.status === 'completed'
-        );
-        if (payableList.length > 0) {
-          setPayableContract(payableList[0]);
-          setPayableContracts(payableList);
-          const initialCur = payableList[0].currency || 'SAR';
-          setCurrency(initialCur);
-          if (!payData.payments?.length) setAmount(String(payData.tax_summary?.grand_total ?? payableList[0].value));
-        } else if (contracts.length > 0 && contracts[0].currency) {
-          setCurrency(contracts[0].currency);
-        }
-      } catch (e) {
-        console.error(e);
-        setError(t('load_error'));
+  const payments = paymentsQuery.data?.payments ?? [];
+  const methods = paymentsQuery.data?.methods ?? [];
+  const taxSummary = paymentsQuery.data?.taxSummary ?? null;
+  const loading = paymentsQuery.isLoading || contractsQuery.isLoading;
+  const error = (paymentsQuery.isError || contractsQuery.isError) ? t('load_error') : '';
+
+  // Derives/initializes form defaults (payable contract, starting currency,
+  // a pre-filled amount) from whatever the payments+contracts queries most
+  // recently resolved to. This mirrors the original effect's behavior
+  // exactly, including re-running on every 30s poll (not just the first
+  // load) — e.g. the amount field keeps resetting to the contract value
+  // for as long as no payment has been submitted yet.
+  useEffect(() => {
+    if (!paymentsQuery.data || !contractsQuery.data) return;
+    const contracts = contractsQuery.data;
+    const payableList = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
+    if (payableList.length > 0) {
+      setPayableContract(payableList[0]);
+      setPayableContracts(payableList);
+      const initialCur = payableList[0].currency || 'SAR';
+      setCurrency(initialCur);
+      if (!paymentsQuery.data.payments.length) {
+        setAmount(String(taxSummary?.grand_total ?? payableList[0].value));
       }
-    };
-    loadAll().finally(() => setLoading(false));
-    const interval = setInterval(loadAll, 30000);
-    return () => clearInterval(interval);
-  }, [wsId, t]);
+    } else if (contracts.length > 0 && contracts[0].currency) {
+      setCurrency(contracts[0].currency);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentsQuery.data, contractsQuery.data]);
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
@@ -101,15 +95,9 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
     const url = editingPayment
       ? `/workspaces/${wsId}/payments/${editingPayment.id}`
       : `/workspaces/${wsId}/payments`;
-    const { data } = await api.post(url, form).catch((err) => { notifyWriteError(tc, 'ClientPayments.submit', err); return { data: null }; });
-    if (data) {
-      if (editingPayment) {
-        setPayments((prev) => prev.map((p) => p.id === editingPayment.id ? data.payment : p));
-      } else {
-        setPayments((prev) => [...prev, data.payment]);
-      }
-      cancelEdit();
-    }
+    await submitMutation.mutateAsync({ url, form, editingPaymentId: editingPayment?.id ?? null })
+      .then(() => cancelEdit())
+      .catch((err) => notifyWriteError(tc, 'ClientPayments.submit', err));
     setSaving(false);
   };
 

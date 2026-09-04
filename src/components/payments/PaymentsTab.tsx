@@ -1,16 +1,23 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState } from 'react';
-import api from '@/lib/api';
+import { useId, useState } from 'react';
 import { getUser } from '@/lib/auth';
-import type { Client, Payment, Contract, PaymentTaxSummary, Workspace } from '@/types';
+import type { Client, Workspace } from '@/types';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import {
+  useDeletePaymentSchedule,
+  useRequestPayment,
+  useReviewPayment,
+  useSchedulePayments,
+  useWorkspaceContracts,
+  useWorkspacePayments,
+} from '@/hooks/queries/usePayments';
 
 type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
 type RequestForm = { amount: string; currency: string; notes: string };
@@ -18,11 +25,6 @@ type RequestForm = { amount: string; currency: string; notes: string };
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: Workspace) => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [taxSummary, setTaxSummary] = useState<PaymentTaxSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', currency: 'SAR', notes: '' });
@@ -36,47 +38,40 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const canReview = user?.role === 'super_admin';
   const isSA = user?.role === 'super_admin';
 
-  const hasLoadedOnceRef = useRef(false);
-  const [retryKey, setRetryKey] = useState(0);
-  const retry = () => { setLoading(true); setRetryKey((k) => k + 1); };
+  const paymentsQuery = useWorkspacePayments(wsId);
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const reviewMutation = useReviewPayment(wsId);
+  const scheduleMutation = useSchedulePayments(wsId);
+  const requestMutation = useRequestPayment(wsId);
+  const deleteScheduleMutation = useDeletePaymentSchedule(wsId);
 
-  useEffect(() => {
-    hasLoadedOnceRef.current = false;
-    const load = () => {
-      return Promise.all([
-        api.get(`/workspaces/${wsId}/payments`),
-        api.get(`/workspaces/${wsId}/contracts`),
-      ]).then(([payRes, contRes]) => {
-        setPayments(payRes.data.payments?.data || payRes.data.payments || []);
-        setTaxSummary(payRes.data.tax_summary || null);
-        const raw = contRes.data.contracts;
-        setContracts(Array.isArray(raw) ? raw : (raw?.data || []));
-        setLoadError(false);
-        hasLoadedOnceRef.current = true;
-      }).catch((err) => {
-        reportError('PaymentsTab.load', err);
-        // Only surface an error screen for the initial load — once we've shown
-        // real data at least once, a background poll hiccup shouldn't yank the
-        // screen away. The stale data staying visible is the better failure mode.
-        if (!hasLoadedOnceRef.current) setLoadError(true);
-      });
-    };
-    load().finally(() => setLoading(false));
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
-  }, [wsId, retryKey]);
+  const payments = paymentsQuery.data?.payments ?? [];
+  const taxSummary = paymentsQuery.data?.taxSummary ?? null;
+  const contracts = contractsQuery.data ?? [];
+
+  // Only the *first* fetch failing should replace the screen with a full
+  // error state — once we've shown real data at least once (query.data is
+  // set), a later background poll hiccup shouldn't yank it away. TanStack
+  // Query keeps the last successful `data` around across a failed refetch by
+  // default, so this mirrors the manual `hasLoadedOnceRef` guard the old
+  // useEffect-based version used.
+  const loading = paymentsQuery.isLoading || contractsQuery.isLoading;
+  const loadError = (paymentsQuery.isError && paymentsQuery.data === undefined)
+    || (contractsQuery.isError && contractsQuery.data === undefined);
+  const retry = () => { paymentsQuery.refetch(); contractsQuery.refetch(); };
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('method_bank_transfer'), swift: t('method_swift'), corporate_account: t('method_corporate_account'),
     instapay: t('method_instapay'), vodafone_cash: t('method_vodafone_cash'), mobile_wallet: t('method_mobile_wallet'),
   };
 
-  const reviewPayment = async (pid: number, action: string) => {
-    const { data } = await api.post(`/payments/${pid}/review`, { action }).catch((err) => { notifyWriteError(tc, 'PaymentsTab.reviewPayment', err); return { data: null }; });
-    if (data?.payment) {
-      setPayments((prev) => prev.map((p) => p.id === pid ? data.payment : p));
-      if (data?.workspace && onWorkspaceUpdate) onWorkspaceUpdate(data.workspace);
-    }
+  const reviewPayment = (pid: number, action: string) => {
+    reviewMutation.mutate({ pid, action }, {
+      onError: (err) => notifyWriteError(tc, 'PaymentsTab.reviewPayment', err),
+      onSuccess: (data) => {
+        if (data?.workspace && onWorkspaceUpdate) onWorkspaceUpdate(data.workspace);
+      },
+    });
   };
 
   const addInstallment = () => {
@@ -87,44 +82,35 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   const removeInstallment = (idx: number) => setInstallments((prev) => prev.filter((_, i) => i !== idx));
 
-  const submitSchedule = async () => {
+  const submitSchedule = () => {
     if (installments.length === 0) return;
-    try {
-      await api.post(`/workspaces/${wsId}/payments/schedule`, { installments });
-      setShowSchedule(false);
-      setInstallments([]);
-      const { data: payRes } = await api.get(`/workspaces/${wsId}/payments`);
-      setPayments(payRes.payments?.data || payRes.payments || []);
-    } catch (e: any) {
-      alert(t('schedule_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
-    }
+    scheduleMutation.mutate(installments, {
+      onSuccess: () => { setShowSchedule(false); setInstallments([]); },
+      onError: (e: any) => {
+        alert(t('schedule_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
+      },
+    });
   };
 
-  const submitRequest = async () => {
+  const submitRequest = () => {
     if (!requestForm.amount || Number(requestForm.amount) <= 0) return;
-    try {
-      await api.post(`/workspaces/${wsId}/payments/request`, {
-        amount: Number(requestForm.amount),
-        currency: requestForm.currency,
-        notes: requestForm.notes || undefined,
-      });
-      setShowRequest(false);
-      setRequestForm({ amount: '', currency: 'SAR', notes: '' });
-      const { data: payRes } = await api.get(`/workspaces/${wsId}/payments`);
-      setPayments(payRes.payments?.data || payRes.payments || []);
-    } catch (e: any) {
-      alert(t('request_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
-    }
+    requestMutation.mutate({
+      amount: Number(requestForm.amount),
+      currency: requestForm.currency,
+      notes: requestForm.notes || undefined,
+    }, {
+      onSuccess: () => { setShowRequest(false); setRequestForm({ amount: '', currency: 'SAR', notes: '' }); },
+      onError: (e: any) => {
+        alert(t('request_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
+      },
+    });
   };
 
-  const deleteSchedule = async (pid: number) => {
+  const deleteSchedule = (pid: number) => {
     if (!confirm(t('confirm_delete_schedule'))) return;
-    try {
-      await api.delete(`/payments/${pid}/schedule`);
-      setPayments((prev) => prev.filter((p) => p.id !== pid));
-    } catch (err) {
-      reportError('PaymentsTab.deleteSchedule', err);
-    }
+    deleteScheduleMutation.mutate(pid, {
+      onError: (err) => reportError('PaymentsTab.deleteSchedule', err),
+    });
   };
 
   if (loading) return <TableSkeleton />;

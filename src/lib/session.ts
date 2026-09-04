@@ -6,6 +6,13 @@
 
 export const SESSION_COOKIE = 'sa_session';
 export const SESSION_TYPE_COOKIE = 'sa_session_type'; // 'staff' | 'client' | 'sub_user' — non-secret, lets proxy.ts and route handlers tell guards apart without decoding the token.
+// 'super_admin' | 'account_manager' — only set for staff sessions. Non-secret
+// (same trust level as SESSION_TYPE_COOKIE: it only decides which *page* gets
+// served, never bypasses the backend's own role checks). Lets proxy.ts gate
+// SA-only pages (e.g. /dashboard/account-managers) server-side instead of
+// shipping the full page to an account_manager and only refusing after
+// hydration — matches the pattern already used for session-type gating.
+export const SESSION_ROLE_COOKIE = 'sa_session_role';
 
 export const LARAVEL_ORIGIN = (
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'

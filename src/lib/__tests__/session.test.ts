@@ -43,6 +43,14 @@ describe('LARAVEL_ORIGIN / LARAVEL_API_BASE', () => {
   });
 });
 
+describe('SESSION_ROLE_COOKIE', () => {
+  it('is a distinct cookie name from the session token and session type', async () => {
+    const { SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE } = await loadWithApiUrl(undefined);
+    expect(SESSION_ROLE_COOKIE).toBe('sa_session_role');
+    expect(new Set([SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE]).size).toBe(3);
+  });
+});
+
 describe('sessionCookieOptions', () => {
   it('is not marked secure outside production', async () => {
     const originalEnv = process.env.NODE_ENV;

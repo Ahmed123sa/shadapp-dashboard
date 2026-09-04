@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE, sessionCookieOptions } from '@/lib/session';
+import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE, sessionCookieOptions } from '@/lib/session';
 
 // Admin / account-manager login. Forwards credentials to Laravel, and on
 // success stores the Sanctum token in an httpOnly cookie instead of
@@ -26,5 +26,6 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ user: data.user });
   response.cookies.set(SESSION_COOKIE, data.token, sessionCookieOptions());
   response.cookies.set(SESSION_TYPE_COOKIE, 'staff', sessionCookieOptions());
+  response.cookies.set(SESSION_ROLE_COOKIE, data.user?.role || '', sessionCookieOptions());
   return response;
 }

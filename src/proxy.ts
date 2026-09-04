@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { SESSION_COOKIE, SESSION_TYPE_COOKIE } from '@/lib/session';
+import { SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE } from '@/lib/session';
 import { assertProductionEnv } from '@/lib/env-guard';
 
 // Runs once, when this module is first loaded — which Next.js does before
@@ -30,6 +30,14 @@ function getLocale(request: NextRequest): string {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Internal UI/UX design showcase (static, no real data) — never meant to
+  // ship to production, just not previously blocked from being reachable
+  // there. Kept in the repo (not deleted) so it's still usable for local
+  // design work; just not servable once NODE_ENV is production.
+  if (pathname.startsWith('/showcase-demo') && process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
 
   // Proxy /storage/* by fetching the file from Laravel and passing it through.
   //
@@ -72,6 +80,22 @@ export async function proxy(request: NextRequest) {
     if (!sessionToken || sessionType !== 'staff') {
       const loginUrl = new URL('/login', request.url);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // SA-only pages: previously gated only in the page component itself
+    // (account-managers/page.tsx checks getUser()?.role client-side), which
+    // means the full page HTML/JS shipped to an account_manager and only
+    // refused to render *after* hydration — the same served-then-refused gap
+    // proxy.ts was introduced to close for unauthenticated visitors. The
+    // backend still enforces this independently (AccountManagerController
+    // checks isSuperAdmin() on every method) — this is a UX/defense-in-depth
+    // layer, not the only guard, same as the session-type check above.
+    if (pathname.startsWith('/dashboard/account-managers')) {
+      const sessionRole = request.cookies.get(SESSION_ROLE_COOKIE)?.value;
+      if (sessionRole !== 'super_admin') {
+        const homeUrl = new URL('/dashboard', request.url);
+        return NextResponse.redirect(homeUrl);
+      }
     }
   }
 

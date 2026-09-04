@@ -1,10 +1,8 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { reportError } from '@/lib/error-reporting';
 import {
   CreditCard, Search, Download, RefreshCw, CheckCircle2,
   Clock, AlertCircle, DollarSign, ChevronLeft, ChevronRight, ExternalLink
@@ -12,35 +10,13 @@ import {
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import Link from 'next/link';
 import { resolveFileUrl } from '@/lib/utils';
-import type { Payment, Client, User } from '@/types';
-
-// Aggregate counters from /all-payments (PaymentController::index's 'stats'
-// block) — counts are plain ints; the two sums come from a query-builder
-// sum() on a decimal column, which some DB drivers return as numeric strings.
-type FinanceStats = {
-  total_count?: number;
-  approved_count?: number;
-  pending_count?: number;
-  approved_total_sar?: number | string;
-  approved_total_usd?: number | string;
-};
-
-type FinancePagination = { current_page: number; last_page: number; total: number };
+import { useAllPayments, useFinanceFilterOptions, type FinanceFilters } from '@/hooks/queries/usePayments';
 
 export default function FinancePage() {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const user = getUser();
   const isSA = user?.role === 'super_admin';
-
-  const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [stats, setStats] = useState<FinanceStats | null>(null);
-  const [pagination, setPagination] = useState<FinancePagination>({ current_page: 1, last_page: 1, total: 0 });
-
-  // Filter options lists
-  const [clients, setClients] = useState<Client[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -52,57 +28,28 @@ export default function FinancePage() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
 
-  // Load filter dropdown data
-  useEffect(() => {
-    api.get('/clients?per_page=100').then(({ data }) => {
-      setClients(data.clients?.data || data.clients || []);
-    }).catch((err) => reportError('FinancePage.loadClients', err));
+  const filters: FinanceFilters = { page, search, status, currency, clientId, managerId, dateFrom, dateTo };
 
-    api.get('/account-managers').then(({ data }) => {
-      setManagers(data.account_managers || data.users || []);
-    }).catch(() => {
-      api.get('/users').then(({ data }) => setManagers(data || [])).catch((err) => reportError('FinancePage.loadManagers', err));
-    });
-  }, []);
+  // The queryKey is the whole `filters` object, so any of these state
+  // changes above already triggers a refetch on their own — same as the old
+  // useCallback (which depended on all of them) + useEffect([page, loadPayments])
+  // pair, where changing a filter changed loadPayments' identity and refetched.
+  const paymentsQuery = useAllPayments(filters);
+  const filterOptionsQuery = useFinanceFilterOptions();
 
-  const loadPayments = useCallback((targetPage = 1) => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    params.set('page', String(targetPage));
-    params.set('per_page', '25');
-    if (search.trim()) params.set('search', search.trim());
-    if (status) params.set('status', status);
-    if (currency) params.set('currency', currency);
-    if (clientId) params.set('client_id', clientId);
-    if (managerId) params.set('manager_id', managerId);
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
-
-    api.get(`/all-payments?${params.toString()}`)
-      .then(({ data }) => {
-        const paginated = data.payments;
-        setPayments(paginated?.data || []);
-        setPagination({
-          current_page: paginated?.current_page || 1,
-          last_page: paginated?.last_page || 1,
-          total: paginated?.total || 0,
-        });
-        if (data.stats) setStats(data.stats);
-      })
-      .catch((err) => {
-        console.error('Finance load error', err);
-      })
-      .finally(() => setLoading(false));
-  }, [search, status, currency, clientId, managerId, dateFrom, dateTo]);
-
-  useEffect(() => {
-    loadPayments(page);
-  }, [page, loadPayments]);
+  const payments = paymentsQuery.data?.payments ?? [];
+  const stats = paymentsQuery.data?.stats ?? null;
+  const pagination = paymentsQuery.data?.pagination ?? { current_page: 1, last_page: 1, total: 0 };
+  const clients = filterOptionsQuery.data?.clients ?? [];
+  const managers = filterOptionsQuery.data?.managers ?? [];
+  // isFetching (not isLoading) so the table goes back to a full skeleton on
+  // every filter/page change too, matching the old `setLoading(true)` at the
+  // top of every loadPayments call — not just the very first one.
+  const loading = paymentsQuery.isFetching;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadPayments(1);
   };
 
   const handleResetFilters = () => {
@@ -183,7 +130,7 @@ export default function FinancePage() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => loadPayments(page)}
+            onClick={() => paymentsQuery.refetch()}
             className="p-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition"
             title={locale === 'ar' ? 'تحديث' : 'Refresh'}
             aria-label={locale === 'ar' ? 'تحديث' : 'Refresh'}
