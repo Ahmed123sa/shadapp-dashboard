@@ -1,51 +1,62 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import type { Meeting, Contract } from '@/types';
+import { useWorkspaceMeetings, useCreateMeeting, useCompleteMeeting, useCancelMeeting } from '@/hooks/queries/useMeetings';
+import { useWorkspaceContracts } from '@/hooks/queries/usePayments';
+import type { Meeting } from '@/types';
 
 export default function MeetingsTab({ wsId }: { wsId: number }) {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
   const [form, setForm] = useState({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' });
-  const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(true);
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
 
-  useEffect(() => {
-    api.get(`/workspaces/${wsId}/meetings`).then(({ data }) => setMeetings(data.meetings?.data || data.meetings || [])).catch((err) => { console.error('MeetingsTab: GET /workspaces/${wsId}/meetings failed', err); setError(t('meetings_load_error')); });
-    api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])).catch((err) => { console.error('MeetingsTab: GET /workspaces/${wsId}/contracts failed', err); setError(t('meetings_contracts_error')); }).finally(() => setLoading(false));
-  }, [wsId]);
+  const meetingsQuery = useWorkspaceMeetings(wsId);
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const createMutation = useCreateMeeting(wsId);
+  const completeMutation = useCompleteMeeting(wsId);
+  const cancelMutation = useCancelMeeting(wsId);
 
-  const create = async () => {
+  const meetings = meetingsQuery.data ?? [];
+  const contracts = contractsQuery.data ?? [];
+  // Loading is gated on the contracts fetch alone, same as the original
+  // two-parallel-requests effect (only the contracts `.finally` cleared
+  // `loading`) — preserved rather than "fixed" to keep this a pure
+  // behavior-preserving refactor.
+  const loading = contractsQuery.isLoading;
+  const error = meetingsQuery.isError && meetingsQuery.data === undefined
+    ? t('meetings_load_error')
+    : contractsQuery.isError && contractsQuery.data === undefined
+      ? t('meetings_contracts_error')
+      : '';
+
+  const create = () => {
     if (!form.title || !form.date) return;
     const localDate = new Date(`${form.date}T${form.time || '00:00'}`);
     const payload: { title: string; scheduled_at: string; duration_minutes: number; notes: string; contract_id?: string; approval_id?: string } =
       { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
     if (form.contract_id) payload.contract_id = form.contract_id;
     if (form.approval_id) payload.approval_id = form.approval_id;
-    const { data } = await api.post(`/workspaces/${wsId}/meetings`, payload).catch((err) => { notifyWriteError(tc, 'MeetingsTab.create', err); return { data: null }; });
-    if (data) { setMeetings((prev) => [...prev, data.meeting]); setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); }
+    createMutation.mutate(payload, {
+      onSuccess: () => { setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); },
+      onError: (err) => notifyWriteError(tc, 'MeetingsTab.create', err),
+    });
   };
 
-  const completeMeeting = async (id: number) => {
+  const completeMeeting = (id: number) => {
     if (!confirm(t('confirm_complete_meeting'))) return;
-    const { data } = await api.patch(`/meetings/${id}/complete`).catch((err) => { notifyWriteError(tc, 'MeetingsTab.completeMeeting', err); return { data: null }; });
-    if (data) setMeetings((prev) => prev.map((m) => m.id === id ? data.meeting : m));
+    completeMutation.mutate(id, { onError: (err) => notifyWriteError(tc, 'MeetingsTab.completeMeeting', err) });
   };
 
-  const cancelMeeting = async (id: number) => {
+  const cancelMeeting = (id: number) => {
     if (!confirm(t('confirm_cancel_meeting'))) return;
-    const { data } = await api.patch(`/meetings/${id}/cancel`).catch((err) => { notifyWriteError(tc, 'MeetingsTab.cancelMeeting', err); return { data: null }; });
-    if (data) setMeetings((prev) => prev.map((m) => m.id === id ? data.meeting : m));
+    cancelMutation.mutate(id, { onError: (err) => notifyWriteError(tc, 'MeetingsTab.cancelMeeting', err) });
   };
 
   if (loading) return <TableSkeleton />;

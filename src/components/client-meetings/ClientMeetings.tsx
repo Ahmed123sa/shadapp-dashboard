@@ -1,27 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import api from '@/lib/api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
-import type { Meeting } from '@/types';
+import { useWorkspaceMeetings } from '@/hooks/queries/useMeetings';
 
 export default function ClientMeetings({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    api.get(`/workspaces/${wsId}/meetings`)
-      .then(({ data }) => setMeetings(data.meetings?.data || data.meetings || []))
-      .catch(() => setError(t('meeting_load_failed')))
-      .finally(() => setLoading(false));
-  }, [wsId]);
+  const meetingsQuery = useWorkspaceMeetings(wsId);
+  const meetings = meetingsQuery.data ?? [];
+  const loading = meetingsQuery.isLoading;
+  const error = meetingsQuery.isError && meetingsQuery.data === undefined ? t('meeting_load_failed') : '';
 
   const formatDate = (d: string) => formatMeetingDate(d, locale);
 
