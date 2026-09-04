@@ -77,6 +77,22 @@
   --color-status-orange: #FB923C;
   --color-rank-silver: #C0C0C0;
   --color-rank-bronze: #CD7F32;
+  /* دفعة 4 — نفس مبدأ دفعة 2/3 بالظبط: التوكنات دي كلها ألوان "باستيل"
+     مصممة أصلًا للثيم الغامق (فاتحة بالنسبة لخلفية غامقة) — يعني فاشلة
+     أسوأ من الذهب والأخضر/الأحمر كنص فوق خلفية فاتحة (حسبتها فعليًا: كلها
+     بين 1.5:1 و2.8:1، تحت حتى حد الـ3:1). زيرو تغيير في الغامق، درجة أغمق
+     بس تحت [data-theme="light"] تحت. */
+  --color-status-blue-text: #60A5FA;
+  --color-status-purple-text: #A78BFA;
+  --color-status-orange-text: #FB923C;
+  --color-green-text: #97C459;
+  --color-blue-text: #85B7EB;
+  --color-rank-silver-text: #C0C0C0;
+  --color-rank-bronze-text: #CD7F32;
+  /* --color-red-accent: اكتشفتها أثناء إصلاح جنبه في reports/page.tsx —
+     نفس المشكلة (3.45:1 فوق #F0F0F0، يعدّي حد الـ3:1 للنص الكبير بس مش
+     4.5:1 للنص الصغير اللي هي مستخدمة فيه فعليًا هناك). */
+  --color-red-accent-text: #E24B4A;
 
   /*
    * سلّم الطباعة (بند 2) — 6 درجات بتحل محل 12 مقاس متفرق (بعضها بفروق
@@ -141,6 +157,18 @@ html[lang="en"] body {
      6.26:1، و#B91C1C (أحمر غامق) بيدّي 5.68:1 — هامش أمان كويس فوق الحد. */
   --color-success-text: #166534;
   --color-error-text: #B91C1C;
+  /* بند دفعة 4 — نفس المبدأ، محسوبة عشان تعدّي 4.5:1 (أو 3:1 للعناصر
+     الرسومية زي أعمدة الرسم البياني) فوق --color-background: أزرق 5.88:1،
+     بنفسجي 6.13:1، برتقالي 6.41:1، أخضر (درجة مختلفة عن success) 6.21:1،
+     رمادي (رانك فضة) 9.04:1، برونزي 6.22:1. */
+  --color-status-blue-text: #1D4ED8;
+  --color-status-purple-text: #7E22CE;
+  --color-status-orange-text: #9A3412;
+  --color-green-text: #3F6212;
+  --color-blue-text: #1D4ED8;
+  --color-rank-silver-text: #374151;
+  --color-rank-bronze-text: #92400E;
+  --color-red-accent-text: #B91C1C;
   --color-input-fill: #E8E8E8;
   --color-input-border: #C7C7C7;
   --color-text-secondary: #5A5A5A;

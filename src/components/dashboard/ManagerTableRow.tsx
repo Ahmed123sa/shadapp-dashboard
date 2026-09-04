@@ -5,11 +5,11 @@ import { resolveFileUrl } from '@/lib/utils';
 const avatarColors = [
   { bg: 'var(--color-crimson-soft)', border: 'var(--color-crimson-border)', text: 'var(--color-gold-text)' },
   { bg: 'var(--color-gold-soft)', border: 'var(--color-gold-border)', text: 'var(--color-gold-text)' },
-  { bg: 'rgba(133,183,235,.14)', border: 'rgba(133,183,235,.3)', text: 'var(--color-blue)' },
+  { bg: 'rgba(133,183,235,.14)', border: 'rgba(133,183,235,.3)', text: 'var(--color-blue-text)' },
 ];
 
 const badgeStatus: Record<number, { bg: string; color: string }> = {
-  0: { bg: 'rgba(151,196,89,.14)', color: 'var(--color-green)' },
+  0: { bg: 'rgba(151,196,89,.14)', color: 'var(--color-green-text)' },
 };
 
 interface Manager {

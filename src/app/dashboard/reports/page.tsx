@@ -297,7 +297,7 @@ export default function ReportsPage() {
               <div className="text-[length:var(--fs-6)] font-bold leading-[1.1] font-display" style={{ color: kv.valueColor || 'var(--color-foreground)' }}>
                 {kv.value}
               </div>
-              <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green)]' : 'text-[var(--color-red-accent)]'}`}>
+              <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green-text)]' : 'text-[var(--color-red-accent-text)]'}`}>
                 {cfg.deltaUp ? '↑' : '↓'} {cfg.subtitle}
               </div>
             </div>
@@ -445,7 +445,7 @@ export default function ReportsPage() {
               const name = m.name ?? `${t('lb_manager_fallback')} ${i + 1}`;
               const initials = name.slice(0, 2);
               const pct = i === 0 ? 90 : i === 1 ? 65 : 72;
-              const barColor = i === 0 ? 'var(--color-primary)' : i === 1 ? 'var(--color-purple)' : 'var(--color-blue)';
+              const barColor = i === 0 ? 'var(--color-primary)' : i === 1 ? 'var(--color-purple)' : 'var(--color-blue-text)';
 
               return (
                 <div key={i} className="lb-item">
@@ -590,9 +590,9 @@ export default function ReportsPage() {
           font-weight: 700;
           flex-shrink: 0;
         }
-        .lb-rank.r1 { background: var(--color-gold-soft); color: var(--color-gold); border: 1px solid var(--color-gold-border); }
-        .lb-rank.r2 { background: rgba(192,192,192,0.12); color: var(--color-rank-silver); }
-        .lb-rank.r3 { background: rgba(205,127,50,0.12); color: var(--color-rank-bronze); }
+        .lb-rank.r1 { background: var(--color-gold-soft); color: var(--color-gold-text); border: 1px solid var(--color-gold-border); }
+        .lb-rank.r2 { background: rgba(192,192,192,0.12); color: var(--color-rank-silver-text); }
+        .lb-rank.r3 { background: rgba(205,127,50,0.12); color: var(--color-rank-bronze-text); }
         .lb-av {
           width: 28px; height: 28px;
           border-radius: 50%;
@@ -603,7 +603,7 @@ export default function ReportsPage() {
           justify-content: center;
           font-size: 10px;
           font-weight: 700;
-          color: var(--color-gold);
+          color: var(--color-gold-text);
           flex-shrink: 0;
         }
         .lb-info { flex: 1; }
@@ -612,7 +612,7 @@ export default function ReportsPage() {
         .lb-val {
           font-family: var(--font-display);
           font-size: 13px;
-          color: var(--color-gold);
+          color: var(--color-gold-text);
           font-weight: 600;
         }
         .lb-bar-wrap {

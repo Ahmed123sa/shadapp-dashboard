@@ -134,10 +134,10 @@ function getAvatarColors(name: string): { bg: string; border: string; text: stri
   const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const palettes = [
     { bg: 'rgba(148,20,20,0.16)', border: 'rgba(148,20,20,0.32)', text: 'var(--color-gold-text)' },
-    { bg: 'rgba(167,139,250,0.16)', border: 'rgba(167,139,250,0.32)', text: 'var(--color-status-purple)' },
-    { bg: 'rgba(96,165,250,0.16)', border: 'rgba(96,165,250,0.32)', text: 'var(--color-status-blue)' },
+    { bg: 'rgba(167,139,250,0.16)', border: 'rgba(167,139,250,0.32)', text: 'var(--color-status-purple-text)' },
+    { bg: 'rgba(96,165,250,0.16)', border: 'rgba(96,165,250,0.32)', text: 'var(--color-status-blue-text)' },
     { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', text: 'var(--color-success-text)' },
-    { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: 'var(--color-status-orange)' },
+    { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: 'var(--color-status-orange-text)' },
     { bg: 'rgba(212,175,55,0.13)', border: 'rgba(212,175,55,0.28)', text: 'var(--color-gold-text)' },
   ];
   return palettes[hash % palettes.length];
@@ -300,7 +300,7 @@ export default function AuditLogPage() {
                           {date}, {time}
                         </td>
                         <td>
-                          <span style={{ color: 'var(--color-status-blue)', fontSize: 11, cursor: 'pointer' }}>{t('audit_view')} ←</span>
+                          <span style={{ color: 'var(--color-status-blue-text)', fontSize: 11, cursor: 'pointer' }}>{t('audit_view')} ←</span>
                         </td>
                       </tr>
                     );
@@ -385,14 +385,14 @@ export default function AuditLogPage() {
           font-weight: 600;
           white-space: nowrap;
         }
-        .ab-contract { background: rgba(96,165,250,0.12); color: var(--color-status-blue); }
+        .ab-contract { background: rgba(96,165,250,0.12); color: var(--color-status-blue-text); }
         .ab-payment { background: rgba(212,175,55,0.13); color: var(--color-gold-text); }
         .ab-client { background: rgba(34,197,94,0.1); color: var(--color-success-text); }
-        .ab-approval { background: rgba(167,139,250,0.12); color: var(--color-status-purple); }
-        .ab-login { background: rgba(251,146,60,0.1); color: var(--color-status-orange); }
+        .ab-approval { background: rgba(167,139,250,0.12); color: var(--color-status-purple-text); }
+        .ab-login { background: rgba(251,146,60,0.1); color: var(--color-status-orange-text); }
         .ab-meeting { background: rgba(148,20,20,0.16); color: var(--color-primary); }
-        .ab-file { background: rgba(96,165,250,0.1); color: var(--color-status-blue); }
-        .ab-workspace { background: rgba(167,139,250,0.1); color: var(--color-status-purple); }
+        .ab-file { background: rgba(96,165,250,0.1); color: var(--color-status-blue-text); }
+        .ab-workspace { background: rgba(167,139,250,0.1); color: var(--color-status-purple-text); }
         .ab-default { background: rgba(255,255,255,0.05); color: var(--color-text-secondary); }
         .td-user {
           display: flex;
