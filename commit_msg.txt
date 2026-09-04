@@ -1,0 +1,26 @@
+﻿Add Sentry error monitoring (Round 1 item 1, closes the last P0 gap)
+
+- Run sentry-wizard for Next.js: adds sentry.server.config.ts,
+  sentry.edge.config.ts, src/instrumentation.ts,
+  src/instrumentation-client.ts, and wraps next.config.ts with
+  withSentryConfig (org shad-a6, project shadapp-dashboard). Tracing and
+  Session Replay enabled; browser requests tunneled through /monitoring
+  to dodge ad blockers.
+- Wire lib/error-reporting.ts's reportError() (the single funnel already
+  used at all ~25 previously-silent write-failure sites, plus every other
+  catch block in the app) to also call Sentry.captureException, tagged
+  with the call-site context. No call sites changed -- only the one
+  function they all route through.
+- Exclude /monitoring from proxy.ts's middleware matcher so the Sentry
+  tunnel route never runs through session/locale guard logic.
+- Fix withSentryConfig import to the non-deprecated @sentry/nextjs/config
+  path (v10 warns it moves in v11).
+- Add a global @sentry/nextjs mock in src/test/setup.ts (the real SDK
+  does Next.js-runtime-specific init work jsdom/vitest can't provide) and
+  a characterization test asserting reportError forwards to
+  Sentry.captureException with the right tags/extra.
+
+Verified: npm test (245/245), npm run build (clean, no deprecation
+warning), npm run lint (0 errors, 149 warnings, unchanged). Manually
+confirmed end-to-end via /sentry-example-page -- triggered test error
+now visible in Sentry Issues (shad-a6.sentry.io/shadapp-dashboard).

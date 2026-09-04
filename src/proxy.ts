@@ -124,5 +124,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|_vercel).*)'],
+  // `monitoring` is Sentry's tunnelRoute (next.config.ts) — browser error/
+  // trace reports get proxied through it same-origin to dodge ad blockers.
+  // Excluded here so those requests skip locale-cookie/session logic and
+  // can't accidentally get redirected by a future guard added above.
+  matcher: ['/((?!api|_next|_vercel|monitoring).*)'],
 };

@@ -3,6 +3,20 @@ import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import React from 'react';
 
+// The real @sentry/nextjs SDK does Next.js-runtime-specific setup on import
+// (server/edge/client entry points) that jsdom + vitest doesn't provide, and
+// hitting the network / a missing DSN in every test run would be both slow
+// and pointless. Stubbed globally so lib/error-reporting.ts (and anything
+// else that imports Sentry, e.g. global-error.tsx) gets no-op functions —
+// individual tests can still assert on these via `vi.mocked(Sentry.foo)`.
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+  captureRequestError: vi.fn(),
+  captureRouterTransitionStart: vi.fn(),
+  init: vi.fn(),
+  replayIntegration: vi.fn(),
+}));
+
 // next/link reaches for the App Router context (for prefetching) that only
 // exists inside a real Next.js tree. Outside one — i.e. every component
 // test — it throws rather than degrading gracefully, so it's replaced
