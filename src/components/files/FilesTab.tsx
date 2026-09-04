@@ -1,62 +1,61 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
+import { useState } from 'react';
 import { getUser } from '@/lib/auth';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
-import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
+import { useWorkspaceFiles, useUploadFile, useAddDocumentDefinition, useReviewFile } from '@/hooks/queries/useFiles';
 
 export default function FilesTab({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const isSA = getUser()?.role === 'super_admin';
-  const [files, setFiles] = useState<FileEntry[]>([]);
-  const [paymentFiles, setPaymentFiles] = useState<PaymentProofFile[]>([]);
-  const [definitions, setDefinitions] = useState<DocumentDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');
 
-  const load = () => {
-    setLoading(true);
-    setLoadError(false);
-    return api.get(`/workspaces/${wsId}/files`)
-      .then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); })
-      .catch((err) => { reportError('FilesTab.load', err); setLoadError(true); })
-      .finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [wsId]);
+  const filesQuery = useWorkspaceFiles(wsId);
+  const uploadMutation = useUploadFile(wsId);
+  const addDefMutation = useAddDocumentDefinition(wsId);
+  const reviewMutation = useReviewFile(wsId);
 
-  const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = filesQuery.data?.files ?? [];
+  const paymentFiles = filesQuery.data?.paymentFiles ?? [];
+  const definitions = filesQuery.data?.definitions ?? [];
+  const loading = filesQuery.isLoading;
+  // Only show the full error screen when no data has ever loaded — a later
+  // background retry failing should not yank away files already on screen.
+  const loadError = filesQuery.isError && filesQuery.data === undefined;
+
+  const upload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
     if (uploadDef) form.append('document_definition_id', uploadDef);
-    const { data } = await api.post(`/workspaces/${wsId}/files`, form).catch((err) => { notifyWriteError(tc, 'FilesTab.upload', err); return { data: null }; });
-    if (data) { setFiles((prev) => [...prev, data.file]); setUploadDef(''); }
+    uploadMutation.mutate(form, {
+      onSuccess: () => setUploadDef(''),
+      onError: (err) => notifyWriteError(tc, 'FilesTab.upload', err),
+    });
   };
 
-  const addDef = async () => {
+  const addDef = () => {
     if (!defName) return;
-    const { data } = await api.post(`/workspaces/${wsId}/document-definitions`, { name: defName }).catch((err) => { notifyWriteError(tc, 'FilesTab.addDef', err); return { data: null }; });
-    if (data) { setDefinitions((prev) => [...prev, data.definition]); setDefName(''); setShowDefForm(false); }
+    addDefMutation.mutate(defName, {
+      onSuccess: () => { setDefName(''); setShowDefForm(false); },
+      onError: (err) => notifyWriteError(tc, 'FilesTab.addDef', err),
+    });
   };
 
-  const reviewFile = async (fid: number, action: string, rejection_reason?: string) => {
-    const body: { action: string; rejection_reason?: string } = { action };
-    if (rejection_reason) body.rejection_reason = rejection_reason;
-    const { data } = await api.post(`/files/${fid}/review`, body).catch((err) => { notifyWriteError(tc, 'FilesTab.reviewFile', err); return { data: null }; });
-    if (data) setFiles((prev) => prev.map((f) => f.id === fid ? data.file : f));
+  const reviewFile = (fid: number, action: string, rejection_reason?: string) => {
+    reviewMutation.mutate({ fid, action, rejection_reason }, {
+      onError: (err) => notifyWriteError(tc, 'FilesTab.reviewFile', err),
+    });
   };
 
   if (loading) return <TableSkeleton />;
-  if (loadError) return <ErrorState onRetry={load} />;
+  if (loadError) return <ErrorState onRetry={() => filesQuery.refetch()} />;
 
   return (
     <div className="space-y-4">

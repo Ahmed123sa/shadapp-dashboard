@@ -1,28 +1,29 @@
 'use client';
- 
-import { useEffect, useState } from 'react';
+
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import api from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
 import { resolveFileUrl } from '@/lib/utils';
+import { useWorkspaceFiles, fileKeys } from '@/hooks/queries/useFiles';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 export default function ClientFiles({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
-  const [files, setFiles] = useState<FileEntry[]>([]);
-  const [paymentFiles, setPaymentFiles] = useState<PaymentProofFile[]>([]);
-  const [definitions, setDefinitions] = useState<DocumentDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const [showUpload, setShowUpload] = useState(false);
 
-  const load = () => api.get(`/workspaces/${wsId}/files`)
-    .then(({ data }) => { setFiles(data.files || []); setPaymentFiles(data.paymentFiles || []); setDefinitions(data.definitions || []); })
-    .catch(() => setError(t('file_load_failed')))
-    .finally(() => setLoading(false));
-  useEffect(() => { load(); }, [wsId]);
+  const filesQuery = useWorkspaceFiles(wsId);
+  const files = filesQuery.data?.files ?? [];
+  const paymentFiles = filesQuery.data?.paymentFiles ?? [];
+  const definitions = filesQuery.data?.definitions ?? [];
+  const loading = filesQuery.isLoading;
+  // Same "only show a full error screen on the very first failed load"
+  // guard used elsewhere in this migration (Payments slice) — a later
+  // background refetch failing leaves stale data on screen instead.
+  const error = filesQuery.isError && filesQuery.data === undefined ? t('file_load_failed') : '';
 
   if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
@@ -110,7 +111,13 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
           wsId={wsId}
           definitions={definitions}
           onClose={() => setShowUpload(false)}
-          onCreated={(file) => { setFiles((prev) => [...prev, file]); setShowUpload(false); }}
+          onCreated={(file: FileEntry) => {
+            queryClient.setQueryData<{ files: FileEntry[]; paymentFiles: PaymentProofFile[]; definitions: DocumentDefinition[] } | undefined>(
+              fileKeys.workspace(wsId),
+              (old) => (old ? { ...old, files: [...old.files, file] } : old)
+            );
+            setShowUpload(false);
+          }}
         />
       )}
     </div>
