@@ -2,7 +2,6 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { subscribeToWorkspace } from '@/lib/echo';
 import ChatContractCard from '@/components/chat/ChatContractCard';
@@ -12,20 +11,23 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck, Reply } from 'lucide-react';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
+import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
+import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
 import type { ChatMessage, Contract, User } from '@/types';
 
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const chatQuery = useWorkspaceChat(wsId);
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const sendMutation = useSendChatMessage(wsId);
+  const toggleActionMutation = useToggleChatAction(wsId);
+  const contractActionMutation = useContractAction(wsId);
+  const messages = chatQuery.data ?? [];
+  const contracts = contractsQuery.data ?? [];
   const [text, setText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const hasLoadedOnceRef = useRef(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [sendError, setSendError] = useState('');
@@ -35,36 +37,22 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  const load = () => {
-    setLoadError(false);
-    return Promise.all([
-      api.get(`/workspaces/${wsId}/chat`).then(({ data }) => {
-        setMessages(data.messages || []);
-        api.post(`/workspaces/${wsId}/chat/mark-read`).catch((err) => reportError('ChatTab.markRead', err));
-      }),
-      api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
-    ]).then(() => {
-      hasLoadedOnceRef.current = true;
-    }).catch((err) => {
-      reportError('ChatTab.load', err);
-      // Only surface an error screen for the initial load — once we've shown
-      // real data at least once, a background poll/websocket hiccup shouldn't
-      // yank the screen away. The stale data staying visible is the better
-      // failure mode.
-      if (!hasLoadedOnceRef.current) setLoadError(true);
-    }).finally(() => setLoading(false));
-  };
+  // Reproduces the original load()'s behavior of reloading BOTH messages and
+  // contracts together on any trigger (interval, either websocket event),
+  // not just the one that fired.
+  const reloadAll = useCallback(() => {
+    chatQuery.refetch();
+    contractsQuery.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsId]);
 
   useEffect(() => {
-    hasLoadedOnceRef.current = false;
-    load();
-    const iv = setInterval(load, 60000);
     const unsub = subscribeToWorkspace(wsId, {
-      onMessageSent: () => { load(); },
-      onContractStatusChanged: () => { load(); },
+      onMessageSent: () => { reloadAll(); },
+      onContractStatusChanged: () => { reloadAll(); },
     });
-    return () => { clearInterval(iv); if (unsub) unsub(); };
-  }, [wsId]);
+    return () => { if (unsub) unsub(); };
+  }, [wsId, reloadAll]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -87,34 +75,42 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     if (uploadFile) form.append('file', uploadFile);
     if (replyTo) form.append('reply_to_id', String(replyTo.id));
     try {
-      const { data } = await api.post(`/workspaces/${wsId}/chat`, form);
-      if (data) { setMessages((prev) => [...prev, data.message]); setText(''); setUploadFile(null); setReplyTo(null); if (fileRef.current) fileRef.current.value = ''; }
+      await sendMutation.mutateAsync(form);
+      setText(''); setUploadFile(null); setReplyTo(null); if (fileRef.current) fileRef.current.value = '';
     } catch {
       setText('');
       setUploadFile(null);
       setReplyTo(null);
       if (fileRef.current) fileRef.current.value = '';
-      load();
+      reloadAll();
     }
   };
 
   const toggleAction = async (id: number) => {
-    const { data } = await api.patch(`/chat/${id}/require-action`).catch((err) => { notifyWriteError(tc, 'ChatTab.toggleAction', err); return { data: null }; });
-    if (data) setMessages((prev) => prev.map((m) => m.id === id ? data.message : m));
+    try {
+      await toggleActionMutation.mutateAsync(id);
+    } catch (err) {
+      notifyWriteError(tc, 'ChatTab.toggleAction', err);
+    }
   };
 
   const doContractAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/${action}`).catch((err) => { notifyWriteError(tc, 'ChatTab.doContractAction', err); return { data: null }; });
-    if (data) setContracts((prev) => prev.map((c) => c.id === id ? data.contract : c));
+    try {
+      await contractActionMutation.mutateAsync({ id, action });
+    } catch (err) {
+      notifyWriteError(tc, 'ChatTab.doContractAction', err);
+    }
   };
 
-  const onContractCreated = (contract: Contract) => {
-    setContracts((prev) => [contract, ...prev]);
+  const onContractCreated = (_contract: Contract) => {
+    // ContractBuilder's own useCreateContract(wsId) mutation already
+    // prepends the new contract to this same shared contracts cache — no
+    // local state to update here, just close the builder.
     setShowBuilder(false);
   };
 
-  if (loading) return <TableSkeleton />;
-  if (loadError) return <ErrorState onRetry={load} />;
+  if (chatQuery.isLoading || contractsQuery.isLoading) return <TableSkeleton />;
+  if (chatQuery.isError || contractsQuery.isError) return <ErrorState onRetry={reloadAll} />;
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';

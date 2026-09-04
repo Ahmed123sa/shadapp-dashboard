@@ -1,25 +1,25 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck, Reply } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useWorkspaceChat, useSendChatMessage, useRespondChatAction } from '@/hooks/queries/useChat';
 import type { ChatMessage, User } from '@/types';
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const chatQuery = useWorkspaceChat(wsId);
+  const sendMutation = useSendChatMessage(wsId);
+  const respondMutation = useRespondChatAction(wsId);
+  const messages = chatQuery.data ?? [];
   const [text, setText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [sendError, setSendError] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [responding, setResponding] = useState<Record<number, boolean>>({});
@@ -29,24 +29,12 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  const load = () => {
-    api.get(`/workspaces/${wsId}/chat`)
-      .then(({ data }) => {
-        setMessages(data.messages || []);
-        setError('');
-        api.post(`/workspaces/${wsId}/chat/mark-read`).catch((err) => reportError('ClientChat.markRead', err));
-      })
-      .catch(() => setError(t('chat_load_error')))
-      .finally(() => setLoading(false));
-  };
-
   useEffect(() => {
-    load();
-    const iv = setInterval(load, 60000);
     const unsub = subscribeToWorkspace(wsId, {
-      onMessageSent: () => { load(); },
+      onMessageSent: () => { chatQuery.refetch(); },
     });
-    return () => { clearInterval(iv); if (unsub) unsub(); };
+    return () => { if (unsub) unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -70,21 +58,24 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
     if (uploadFile) form.append('file', uploadFile);
     if (replyTo) form.append('reply_to_id', String(replyTo.id));
     try {
-      const { data } = await api.post(`/workspaces/${wsId}/chat`, form);
-      if (data?.message) { setMessages((prev) => [...prev, data.message]); setText(''); setUploadFile(null); setReplyTo(null); if (fileRef.current) fileRef.current.value = ''; }
+      await sendMutation.mutateAsync(form);
+      setText(''); setUploadFile(null); setReplyTo(null); if (fileRef.current) fileRef.current.value = '';
     } catch {
       setText('');
       setUploadFile(null);
       setReplyTo(null);
       if (fileRef.current) fileRef.current.value = '';
-      load();
+      chatQuery.refetch();
     }
   };
 
   const respond = async (id: number, action: string) => {
     setResponding((prev) => ({ ...prev, [id]: true }));
-    const { data } = await api.post(`/chat/${id}/respond`, { action }).catch((err) => { notifyWriteError(tc, 'ClientChat.respond', err); return { data: null }; });
-    if (data) setMessages((prev) => prev.map((m) => m.id === id ? data.message : m));
+    try {
+      await respondMutation.mutateAsync({ id, action });
+    } catch (err) {
+      notifyWriteError(tc, 'ClientChat.respond', err);
+    }
     setResponding((prev) => ({ ...prev, [id]: false }));
   };
 
@@ -93,8 +84,8 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
     edit_requested: t('chat_action_edit_requested'),
   };
 
-  if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (chatQuery.isLoading) return <TableSkeleton />;
+  if (chatQuery.isError) return <p className="text-sm text-red-500 text-center py-8">{t('chat_load_error')}</p>;
 
   if (!wsActive) {
     return (
