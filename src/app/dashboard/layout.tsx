@@ -164,7 +164,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ToastNotification />
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 end-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-s border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full lg:translate-x-0'}`}>
+      {/* end-0/border-s (logical CSS) flip under dir="rtl": end-0 resolves to
+          left:0, so in Arabic the off-canvas drawer opened flush against the
+          LEFT edge while its own toggle button sits at the top-right (the
+          header mirrors correctly via flex, this element didn't). Physical
+          right-0/border-l keep the drawer pinned to the same edge — and
+          hidden off-screen via the same rightward translate-x-full — in
+          both languages, matching the already-correct English behavior.
+          Only affects the <lg off-canvas state; lg:relative/lg:translate-x-0
+          make these values no-ops on desktop, where flex's own bidi-aware
+          ordering still places the sidebar left (en) / right (ar). */}
+      <aside className={`fixed inset-y-0 right-0 z-50 w-[220px] bg-[var(--bg-dark,#0D0D0D)] border-l border-[var(--border)] flex flex-col transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
 
         {/* Logo */}
         <div className="px-3.5 py-5 mb-4">

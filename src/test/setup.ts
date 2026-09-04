@@ -13,6 +13,16 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href: typeof href === 'string' ? href : href?.pathname, ...rest }, children),
 }));
 
+// jsdom doesn't implement Element.scrollIntoView at all — calling it throws
+// "scrollIntoView is not a function" rather than silently no-op'ing like a
+// real browser lacking smooth-scroll support would. Several components call
+// it directly in an effect (ChatTab, ClientChat, the clients workspace tab
+// bar), and since React 19 lets an error thrown inside a passive effect
+// unmount the whole tree (no error boundary needed), one uncaught call here
+// was enough to blank out an entire characterization test's render. No-op
+// stub, global, so any component under test can call it safely.
+Element.prototype.scrollIntoView = vi.fn();
+
 // Unmounts anything rendered by the previous test and clears jsdom's
 // localStorage/document between tests — without this, state set by
 // lib/auth.ts or lib/client-auth.ts (both of which write to localStorage)

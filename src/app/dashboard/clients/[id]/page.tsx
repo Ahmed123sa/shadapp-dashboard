@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Settings, Trash2, CheckCircle2 } from 'lucide-react';
-import type { Client } from '@/types';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -24,6 +22,8 @@ import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
+import { useClient, useDeleteClient } from '@/hooks/queries/useClients';
+import type { Client } from '@/types';
 
 const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
 type Tab = (typeof TABS)[number];
@@ -43,7 +43,6 @@ export default function ClientWorkspace() {
   const t = useTranslations('dashboard');
   const { id } = useParams();
   const searchParams = useSearchParams();
-  const [client, setClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('chat');
 
   useEffect(() => {
@@ -55,7 +54,6 @@ export default function ClientWorkspace() {
       }
     }
   }, [searchParams, t]);
-  const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
@@ -64,23 +62,22 @@ export default function ClientWorkspace() {
     tabRefs.current[activeTab]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [activeTab]);
 
-  const load = () => api.get(`/clients/${id}`).then(({ data }) => { setClient(data.client); }).catch((err) => reportError('ClientWorkspace.load', err)).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [id]);
+  const clientQuery = useClient(id as string);
+  const client = clientQuery.data ?? null;
+  const deleteMutation = useDeleteClient();
 
   const deleteClient = async () => {
-    const { data } = await api.delete(`/clients/${id}`).catch((err) => {
-      reportError('ClientWorkspace.deleteClient', err);
-      return { data: null };
-    });
-    if (data) {
+    try {
+      await deleteMutation.mutateAsync(Number(id));
       window.location.href = '/dashboard/clients';
-    } else {
+    } catch (err) {
+      reportError('ClientWorkspace.deleteClient', err);
       setDeleteConfirm(false);
       setDeleteError(t('delete_client_failed'));
     }
   };
 
-  if (loading) return <div className="py-20"><LoadingSkeleton message={t('loading_workspace')} /></div>;
+  if (clientQuery.isLoading) return <div className="py-20"><LoadingSkeleton message={t('loading_workspace')} /></div>;
   if (!client) return <EmptyState message={t('not_found')} />;
 
   const isSA = getUser()?.role === 'super_admin';
@@ -131,7 +128,7 @@ export default function ClientWorkspace() {
           ))}
         </div>
         <div className="p-5">
-          {wsId ? <TabContent tab={activeTab} wsId={wsId} client={client} onClientRefresh={load} onNavigate={(tab) => setActiveTab(tab)} /> :
+          {wsId ? <TabContent tab={activeTab} wsId={wsId} client={client} onClientRefresh={() => clientQuery.refetch()} onNavigate={(tab) => setActiveTab(tab)} /> :
             <NoWorkspace client={client} />}
         </div>
       </div>

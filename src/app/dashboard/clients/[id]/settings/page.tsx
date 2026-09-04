@@ -3,22 +3,22 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import api from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { Building2, User, MapPin } from 'lucide-react';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
-import type { Client } from '@/types';
+import { useClient, useUpdateClient, useUploadClientAvatar } from '@/hooks/queries/useClients';
 
 export default function ClientSettingsPage() {
   const { id } = useParams();
   const router = useRouter();
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [client, setClient] = useState<Client | null>(null);
-  const [loading, setLoading] = useState(true);
+  const clientQuery = useClient(id as string);
+  const client = clientQuery.data ?? null;
+  const updateMutation = useUpdateClient(id as string);
+  const uploadAvatarMutation = useUploadClientAvatar();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -31,27 +31,31 @@ export default function ClientSettingsPage() {
   });
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // The client is fetched once and copied into local `form` state — a later
+  // background refetch (e.g. after save invalidates the shared client-detail
+  // cache) must NOT re-sync the form and clobber in-progress edits, so this
+  // seed only ever runs the first time data resolves.
+  const seededRef = useRef(false);
   useEffect(() => {
-    api.get(`/clients/${id}`).then(({ data }) => {
-      const c = data.client;
-      setClient(c);
-      setForm({
-        company_name: c.company_name || '',
-        contact_person: c.contact_person || '',
-        phone: c.phone || '',
-        email: c.email || '',
-        country: c.country || '',
-        industry: c.industry || '',
-        notes: c.notes || '',
-        date_of_birth: c.date_of_birth ? String(c.date_of_birth).substring(0, 10) : '',
-        password: '',
-        client_type: c.client_type || 'business',
-        address: c.address || '',
-        maps_url: c.maps_url || '',
-      });
-      if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
-    }).catch((err) => reportError('ClientSettingsPage.loadClient', err)).finally(() => setLoading(false));
-  }, [id]);
+    const c = clientQuery.data;
+    if (!c || seededRef.current) return;
+    seededRef.current = true;
+    setForm({
+      company_name: c.company_name || '',
+      contact_person: c.contact_person || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      country: c.country || '',
+      industry: c.industry || '',
+      notes: c.notes || '',
+      date_of_birth: c.date_of_birth ? String(c.date_of_birth).substring(0, 10) : '',
+      password: '',
+      client_type: c.client_type || 'business',
+      address: c.address || '',
+      maps_url: c.maps_url || '',
+    });
+    if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
+  }, [clientQuery.data]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,7 +74,7 @@ export default function ClientSettingsPage() {
         const fd = new FormData();
         fd.append('avatar', avatar);
         fd.append('contact_person', form.contact_person);
-        await api.post(`/clients/${id}/profile`, fd);
+        await uploadAvatarMutation.mutateAsync({ id: id as string, formData: fd });
       }
 
       const payload: {
@@ -92,7 +96,7 @@ export default function ClientSettingsPage() {
         maps_url: form.maps_url || null,
       };
       if (form.password) payload.password = form.password;
-      await api.put(`/clients/${id}`, payload);
+      await updateMutation.mutateAsync(payload);
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -103,7 +107,7 @@ export default function ClientSettingsPage() {
     }
   };
 
-  if (loading) return <div className="py-20"><LoadingSkeleton message={t('loading_clients_settings')} /></div>;
+  if (clientQuery.isLoading) return <div className="py-20"><LoadingSkeleton message={t('loading_clients_settings')} /></div>;
   if (!client) return <div className="py-20 text-center text-[var(--color-text-secondary)]">{t('not_found')}</div>;
 
   return (

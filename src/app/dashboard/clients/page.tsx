@@ -2,8 +2,8 @@
 
 import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { useEffect, useState, useCallback, useId } from 'react';
-import api from '@/lib/api';
+import { useEffect, useState, useId } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getUser } from '@/lib/auth';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -13,7 +13,7 @@ import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
 import { notifyWriteError } from '@/lib/utils';
 import ErrorState from '@/components/ErrorState';
-import type { Client } from '@/types';
+import { clientKeys, useClients, useCreateClient, useDeleteClient, useUploadClientAvatar, type ClientsListData } from '@/hooks/queries/useClients';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{children}</p>;
@@ -33,8 +33,7 @@ function InputField({ label, required, id, ...props }: React.InputHTMLAttributes
 export default function ClientsPage() {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', country: '', industry: '', address: '', maps_url: '' });
   const [autoPassword, setAutoPassword] = useState(true);
@@ -45,28 +44,28 @@ export default function ClientsPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [loadError, setLoadError] = useState(false);
+  // The query actually fetched for the current page — kept separate from
+  // debouncedQuery because pagination (below) intentionally fetches with an
+  // empty query regardless of what's currently typed in the search box, a
+  // pre-existing quirk preserved as-is (see useClients' own comment).
+  const [fetchQuery, setFetchQuery] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 400);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const fetchClients = useCallback((p: number, q?: string) => {
-    setLoading(true);
-    setLoadError(false);
-    const params = new URLSearchParams({ page: String(p), per_page: '30' });
-    if (q) params.set('q', q);
-    api.get(`/clients?${params}`).then(({ data }) => {
-      setClients(data.clients?.data || data.clients || []);
-      setTotalPages(data.clients?.last_page || 1);
-    }).catch((err) => { reportError('ClientsPage.fetchClients', err); setLoadError(true); }).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { setPage(1); setFetchQuery(debouncedQuery); }, [debouncedQuery]);
 
-  useEffect(() => { setPage(1); fetchClients(1, debouncedQuery); }, [debouncedQuery]);
+  const clientsQuery = useClients(page, fetchQuery);
+  const createMutation = useCreateClient();
+  const uploadAvatarMutation = useUploadClientAvatar();
+  const deleteMutation = useDeleteClient();
+
+  const clients = clientsQuery.data?.clients || [];
+  const totalPages = clientsQuery.data?.totalPages || 1;
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
@@ -86,17 +85,19 @@ export default function ClientsPage() {
     try {
       const { password, ...rest } = form;
       const payload = autoPassword ? rest : { ...rest, password };
-      const { data } = await api.post('/clients', payload);
+      const data = await createMutation.mutateAsync(payload);
       if (data.client?.id && avatarFile) {
         try {
           const fd = new FormData();
           fd.append('avatar', avatarFile);
-          await api.post(`/clients/${data.client.id}/profile`, fd);
+          await uploadAvatarMutation.mutateAsync({ id: data.client.id, formData: fd });
         } catch (err) {
           reportError('ClientsPage.createClient.uploadAvatar', err);
         }
       }
-      setClients((prev) => [data.client, ...prev]);
+      queryClient.setQueryData<ClientsListData | undefined>(clientKeys.list(page, fetchQuery), (old) =>
+        old ? { ...old, clients: [data.client, ...old.clients] } : old
+      );
       setNewCreds(data.credentials);
       setShowCreate(false);
       setForm({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business', country: '', industry: '', address: '', maps_url: '' });
@@ -110,12 +111,18 @@ export default function ClientsPage() {
 
   const deleteClient = async (id: number) => {
     if (!confirm(t('delete_confirm'))) return;
-    const { data } = await api.delete(`/clients/${id}`).catch((err) => { notifyWriteError(tc, 'ClientsPage.deleteClient', err); return { data: null }; });
-    if (data) setClients((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await deleteMutation.mutateAsync(id);
+      queryClient.setQueryData<ClientsListData | undefined>(clientKeys.list(page, fetchQuery), (old) =>
+        old ? { ...old, clients: old.clients.filter((c) => c.id !== id) } : old
+      );
+    } catch (err) {
+      notifyWriteError(tc, 'ClientsPage.deleteClient', err);
+    }
   };
 
-  if (loading) return <div className="p-4"><TableSkeleton rows={6} /></div>;
-  if (loadError) return <ErrorState onRetry={() => fetchClients(page, debouncedQuery)} />;
+  if (clientsQuery.isFetching) return <div className="p-4"><TableSkeleton rows={6} /></div>;
+  if (clientsQuery.isError) return <ErrorState onRetry={() => clientsQuery.refetch()} />;
 
   const isSA = getUser()?.role === 'super_admin';
 
@@ -296,10 +303,10 @@ export default function ClientsPage() {
         </table>
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 p-4 border-t border-[var(--color-card-border)]">
-            <button onClick={() => { const p = page - 1; setPage(p); fetchClients(p); }} disabled={page <= 1}
+            <button onClick={() => { setPage(page - 1); setFetchQuery(''); }} disabled={page <= 1}
               className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">{t('previous')}</button>
             <span className="text-sm text-[var(--color-text-secondary)]">{t('page_of', { page, total: totalPages })}</span>
-            <button onClick={() => { const p = page + 1; setPage(p); fetchClients(p); }} disabled={page >= totalPages}
+            <button onClick={() => { setPage(page + 1); setFetchQuery(''); }} disabled={page >= totalPages}
               className="px-3 py-1.5 text-sm rounded border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)] disabled:opacity-50">{t('next')}</button>
           </div>
         )}

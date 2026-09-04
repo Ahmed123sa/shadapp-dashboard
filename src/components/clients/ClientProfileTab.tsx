@@ -1,42 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { MapPin, Pencil, ExternalLink, FileText, CreditCard, Stamp, CalendarDays, ChevronLeft, Map } from 'lucide-react';
-import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import LocationPickerModal from './LocationPickerModal';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
-import type { Client } from '@/types';
-
-// The /clients/{id}/profile aggregate response — a bespoke bundle distinct
-// from the plain Client record (adds computed stats + the location check-in).
-type ClientProfileStats = {
-  total_contracts: number; draft_contracts: number; sent_contracts: number;
-  completed_contracts: number; meetings_count: number; approvals_count: number;
-  total_contract_value?: number | string; total_paid?: number | string; pending_payments?: number | string;
-};
-type ClientProfileLocation = {
-  latitude?: number | string | null; longitude?: number | string | null;
-  updated_at?: string | null; address?: string | null; maps_url?: string | null;
-};
-type ClientProfileResponse = { client: Client; stats: ClientProfileStats; location?: ClientProfileLocation | null };
-
-type ActivityEvent = {
-  id: string;
-  kind: string;
-  timestamp: string;
-  ref_type: 'contract' | 'payment' | 'approval' | 'meeting';
-  ref_id: number;
-  title: string;
-  amount?: number;
-  currency?: string;
-};
+import { useClientProfile, useClientActivity, useCheckInClientLocation, type ActivityEvent } from '@/hooks/queries/useClients';
 
 const KIND_TAB: Record<string, string> = {
   contract: 'contracts',
@@ -54,39 +28,28 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 
 export default function ClientProfileTab({ clientId, onNavigate }: { clientId: number; onNavigate?: (tab: string) => void }) {
   const t = useTranslations('dashboard');
-  const [profile, setProfile] = useState<ClientProfileResponse | null>(null);
-  const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const profileQuery = useClientProfile(clientId);
+  const activityQuery = useClientActivity(clientId);
+  const checkInMutation = useCheckInClientLocation(clientId);
+  const profile = profileQuery.data ?? null;
+  const activity = activityQuery.data ?? [];
+  const activityLoading = activityQuery.isLoading;
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [msg, setMsg] = useState('');
 
   const isAM = getUser()?.role === 'account_manager';
 
-  const load = useCallback(() => {
-    api.get(`/clients/${clientId}/profile`).then(({ data }) => setProfile(data)).catch((err) => reportError('ClientProfileTab.loadProfile', err)).finally(() => setLoading(false));
-  }, [clientId]);
-
-  const loadActivity = useCallback(() => {
-    setActivityLoading(true);
-    api.get(`/clients/${clientId}/activity`).then(({ data }) => setActivity(data.activity || [])).catch((err) => reportError('ClientProfileTab.loadActivity', err)).finally(() => setActivityLoading(false));
-  }, [clientId]);
-
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { loadActivity(); }, [loadActivity]);
-
   const confirmLocation = async (lat: number, lng: number, address: string) => {
     try {
-      await api.post(`/clients/${clientId}/location`, { latitude: lat, longitude: lng, address: address || undefined });
+      await checkInMutation.mutateAsync({ latitude: lat, longitude: lng, address: address || undefined });
       setMsg(t('profile_check_in_success'));
       setShowLocationPicker(false);
-      load();
     } catch {
       setMsg(t('profile_check_in_failed'));
     }
   };
 
-  if (loading) return <TableSkeleton />;
+  if (profileQuery.isLoading) return <TableSkeleton />;
   if (!profile) return <EmptyState message={t('not_found')} />;
 
   const c = profile.client;

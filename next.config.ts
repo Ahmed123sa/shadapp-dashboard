@@ -27,9 +27,17 @@ const reverbWsOrigins = [`ws://${REVERB_HOST}:${REVERB_PORT}`, `wss://${REVERB_H
 // bigger refactor than this pass covers — this is still a real narrowing
 // (blocks loading script/frames/objects from any origin not listed here)
 // even with unsafe-inline present, just not the strongest form of CSP.
+// next dev's Fast Refresh runtime (react-refresh-utils) evaluates code via
+// eval() to apply hot updates — without 'unsafe-eval' the browser throws
+// "Uncaught EvalError" on that runtime chunk and the page never finishes
+// hydrating (stuck on the loading state forever). `next build` doesn't use
+// eval this way, so production is unaffected either way — this only relaxes
+// the policy for local `npm run dev`, not for what actually ships.
+const isDev = process.env.NODE_ENV !== 'production';
+
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline'`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   `style-src 'self' 'unsafe-inline'`,
   // cdnjs.cloudflare.com: Leaflet's default marker icons (LocationPickerMap.tsx).
   // tile.openstreetmap.org: the map tiles themselves. data:/blob: cover
