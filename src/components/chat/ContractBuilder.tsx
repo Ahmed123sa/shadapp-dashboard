@@ -1,31 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import api from '@/lib/api';
-import { asSettingFlag, notifyWriteError } from '@/lib/utils';
-import { reportError } from '@/lib/error-reporting';
+import { notifyWriteError } from '@/lib/utils';
+import { useContractClauseTemplates, useShowContractDatesSetting, useCreateContract } from '@/hooks/queries/useContracts';
 import type { Contract } from '@/types';
-
-type Template = { id: number; content: string; type: string };
 
 export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: Contract) => void; onCancel: () => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
-  const [showDates, setShowDates] = useState(true);
   const [selectedOptional, setSelectedOptional] = useState<Record<number, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
 
-  useEffect(() => {
-    api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])).catch((err) => reportError('ContractBuilder.loadTemplates', err));
-    api.get('/settings').then(({ data }) => {
-      const cd = data.settings?.show_contract_dates?.value;
-      if (cd !== undefined) setShowDates(asSettingFlag(cd));
-    }).catch((err) => reportError('ContractBuilder.loadSettings', err));
-  }, []);
+  const templatesQuery = useContractClauseTemplates();
+  const showDatesQuery = useShowContractDatesSetting();
+  const createMutation = useCreateContract(wsId);
+
+  const templates = templatesQuery.data ?? [];
+  const showDates = showDatesQuery.data ?? true;
 
   const fixedTemplates = templates.filter((t) => t.type === 'fixed');
   const optionalTemplates = templates.filter((t) => t.type === 'optional');
@@ -39,14 +33,16 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
 
   const removeCustom = (idx: number) => setCustomClauses((prev) => prev.filter((_, i) => i !== idx));
 
-  const create = async () => {
+  const create = () => {
     if (!form.title) return;
     const clauses: { content: string; type: 'optional' | 'custom'; sort_order: number }[] = [];
     optionalTemplates.forEach((t) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional', sort_order: clauses.length }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom', sort_order: clauses.length }));
 
-    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, clauses }).catch((err) => { notifyWriteError(tc, 'ContractBuilder.create', err); return { data: null }; });
-    if (data) onCreated(data.contract);
+    createMutation.mutate({ ...form, clauses }, {
+      onSuccess: (data) => { if (data?.contract) onCreated(data.contract); },
+      onError: (err) => notifyWriteError(tc, 'ContractBuilder.create', err),
+    });
   };
 
   return (

@@ -1,17 +1,24 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
-import { asSettingFlag, resolveFileUrl, notifyWriteError } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { reportError } from '@/lib/error-reporting';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import type { Contract, ContractClauseTemplate } from '@/types';
+import {
+  useWorkspaceContracts,
+  useContractClauseTemplates,
+  useShowContractDatesSetting,
+  useCreateContract,
+  useContractAction,
+  useCompanyApproveContract,
+} from '@/hooks/queries/useContracts';
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -24,35 +31,38 @@ function isImageSignature(val: string | null | undefined) {
 export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [templates, setTemplates] = useState<ContractClauseTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
   const [selectedOptional, setSelectedOptional] = useState<Record<number, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
-  const [error, setError] = useState('');
   const [newCustom, setNewCustom] = useState('');
   const [approveSig, setApproveSig] = useState<{ id: number; signature: string } | null>(null);
   const [savedUserSig, setSavedUserSig] = useState<{ data: string; type: string } | null>(null);
   const [useSavedSig, setUseSavedSig] = useState(false);
   const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
   const [newReqDoc, setNewReqDoc] = useState('');
-  const [showDates, setShowDates] = useState(true);
   const approveSigTitleId = useId();
   const closeApproveSig = () => { setApproveSig(null); setSavedUserSig(null); setUseSavedSig(false); };
   const { dialogRef: approveSigDialogRef, dialogProps: approveSigDialogProps } = useModalA11y<HTMLDivElement>(!!approveSig, closeApproveSig);
 
-  useEffect(() => {
-    Promise.all([
-      api.get(`/workspaces/${wsId}/contracts`).then(({ data }) => setContracts(data.contracts?.data || data.contracts || [])),
-      api.get('/contract-clause-templates').then(({ data }) => setTemplates(data.templates || [])),
-      api.get('/settings').then(({ data }) => {
-        const cd = data.settings?.show_contract_dates?.value;
-        if (cd !== undefined) setShowDates(asSettingFlag(cd));
-      }).catch((err) => reportError('ContractsTab.loadSettings', err)),
-    ]).catch((err) => { reportError('ContractsTab.load', err); setError(t('contracts_load_error')); }).finally(() => setLoading(false));
-  }, [wsId]);
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const templatesQuery = useContractClauseTemplates();
+  const showDatesQuery = useShowContractDatesSetting();
+  const createMutation = useCreateContract(wsId);
+  const actionMutation = useContractAction(wsId);
+  const companyApproveMutation = useCompanyApproveContract(wsId);
+
+  const contracts = contractsQuery.data ?? [];
+  const templates = templatesQuery.data ?? [];
+  const showDates = showDatesQuery.data ?? true;
+  const loading = contractsQuery.isLoading || templatesQuery.isLoading || showDatesQuery.isLoading;
+  // The settings fetch failing never surfaced as a page error in the
+  // original Promise.all (it had its own inline `.catch`) — only preserved
+  // here for contracts/templates, matching useShowContractDatesSetting's
+  // own doc comment.
+  const error = (contractsQuery.isError && contractsQuery.data === undefined) || (templatesQuery.isError && templatesQuery.data === undefined)
+    ? t('contracts_load_error')
+    : '';
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
@@ -60,7 +70,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const fixedTemplates = templates.filter((tpl) => tpl.type === 'fixed');
   const optionalTemplates = templates.filter((tpl) => tpl.type === 'optional');
 
-  const create = async () => {
+  const create = () => {
     if (!form.title) return;
     const clauses: { content: string; type: 'optional' | 'custom' }[] = [];
     optionalTemplates.forEach((tpl) => { if (selectedOptional[tpl.id]) clauses.push({ content: tpl.content, type: 'optional' }); });
@@ -69,8 +79,10 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     const required_documents = requiredDocs.map((name) => ({ name }));
     const contract_type = wsActive ? 'additional' : 'main';
 
-    const { data } = await api.post(`/workspaces/${wsId}/contracts`, { ...form, contract_type, clauses, required_documents }).catch((err) => { notifyWriteError(tc, 'ContractsTab.create', err); return { data: null }; });
-    if (data) { setContracts((prev) => [...prev, data.contract]); setShowForm(false); setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' }); setSelectedOptional({}); setCustomClauses([]); setNewCustom(''); setRequiredDocs([]); setNewReqDoc(''); }
+    createMutation.mutate({ ...form, contract_type, clauses, required_documents }, {
+      onSuccess: () => { setShowForm(false); setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' }); setSelectedOptional({}); setCustomClauses([]); setNewCustom(''); setRequiredDocs([]); setNewReqDoc(''); },
+      onError: (err) => notifyWriteError(tc, 'ContractsTab.create', err),
+    });
   };
 
   const toggleOptional = (id: number) => setSelectedOptional((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -82,9 +94,8 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
 
   const removeCustom = (idx: number) => setCustomClauses((prev) => prev.filter((_, i) => i !== idx));
 
-  const doAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/${action}`).catch((err) => { notifyWriteError(tc, 'ContractsTab.doAction', err); return { data: null }; });
-    if (data) setContracts((prev) => prev.map((c) => c.id === id ? data.contract : c));
+  const doAction = (id: number, action: string) => {
+    actionMutation.mutate({ id, action }, { onError: (err) => notifyWriteError(tc, 'ContractsTab.doAction', err) });
   };
 
   const openApproveSig = async (contractId: number) => {
@@ -101,13 +112,13 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     }
   };
 
-  const doCompanyApprove = async () => {
+  const doCompanyApprove = () => {
     if (!approveSig) return;
-    const payload = useSavedSig ? { use_saved_signature: true } : { signature: approveSig.signature };
-    const { data } = await api.post(`/contracts/${approveSig.id}/company-approve`, payload).catch((err) => { notifyWriteError(tc, 'ContractsTab.doCompanyApprove', err); return { data: null }; });
-    if (data) setContracts((prev) => prev.map((c) => c.id === approveSig.id ? data.contract : c));
-    setApproveSig(null);
-    setSavedUserSig(null);
+    const payload = useSavedSig ? { use_saved_signature: true as const } : { signature: approveSig.signature };
+    companyApproveMutation.mutate({ id: approveSig.id, payload }, {
+      onError: (err) => notifyWriteError(tc, 'ContractsTab.doCompanyApprove', err),
+      onSettled: () => { setApproveSig(null); setSavedUserSig(null); },
+    });
   };
 
   if (loading) return <TableSkeleton />;

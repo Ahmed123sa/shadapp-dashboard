@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
+import { useState } from 'react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -10,39 +9,32 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
 import { useTranslations } from 'next-intl';
 import { notifyWriteError } from '@/lib/utils';
-import type { Contract } from '@/types';
+import { useWorkspaceContracts, useClientContractAction } from '@/hooks/queries/useContracts';
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [viewContract, setViewContract] = useState<Contract | null>(null);
+  const [viewContractId, setViewContractId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: number; action: string } | null>(null);
 
-  const load = () => {
-    setLoading(true);
-    api.get(`/workspaces/${wsId}/contracts`)
-      .then(({ data }) => {
-        const list = data.contracts?.data ?? data.contracts ?? [];
-        const arr: Contract[] = Array.isArray(list) ? list : [];
-        setContracts(arr);
-        setViewContract((prev) => prev ? arr.find((c) => c.id === prev.id) || prev : prev);
-      })
-      .catch(() => setError(t('contract_load_failed')))
-      .finally(() => setLoading(false));
-  };
+  const contractsQuery = useWorkspaceContracts(wsId);
+  const clientActionMutation = useClientContractAction(wsId);
 
-  useEffect(() => { load(); }, [wsId]);
+  const contracts = contractsQuery.data ?? [];
+  const loading = contractsQuery.isLoading;
+  const error = contractsQuery.isError && contractsQuery.data === undefined ? t('contract_load_failed') : '';
+  // Deriving from the live query data (rather than keeping a separate
+  // snapshot in state, as the original did) means the open modal always
+  // reflects the latest fetched contract automatically — including after
+  // the refetch triggered by a document upload — without a manual re-sync.
+  const viewContract = contracts.find((c) => c.id === viewContractId) ?? null;
 
-  const doAction = async (id: number, action: string) => {
-    const { data } = await api.post(`/contracts/${id}/client-action`, { action }).catch((err) => { notifyWriteError(tc, 'ClientContracts.doAction', err); return { data: null }; });
-    if (data) {
-      setContracts((prev) => Array.isArray(prev) ? prev.map((c) => c.id === id ? data.contract : c) : prev);
-      setViewContract(null);
-    }
-    setConfirmAction(null);
+  const doAction = (id: number, action: string) => {
+    clientActionMutation.mutate({ id, action }, {
+      onSuccess: () => setViewContractId(null),
+      onError: (err) => notifyWriteError(tc, 'ClientContracts.doAction', err),
+      onSettled: () => setConfirmAction(null),
+    });
   };
 
   if (loading) return <TableSkeleton />;
@@ -63,7 +55,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           </div>
           <ContractStatusStepper status={c.status} compact />
           <div className="mt-2 flex gap-2">
-            <button onClick={() => setViewContract(c)} className="text-xs text-[var(--color-gold-text)] hover:underline">
+            <button onClick={() => setViewContractId(c.id)} className="text-xs text-[var(--color-gold-text)] hover:underline">
               {t('contract_view_details')}
             </button>
             {c.status === 'sent' && (
@@ -98,9 +90,9 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           contract={viewContract}
           wsId={wsId}
           clientType={clientType}
-          onClose={() => setViewContract(null)}
+          onClose={() => setViewContractId(null)}
           onAction={(action) => setConfirmAction({ id: viewContract.id, action })}
-          onUpload={load}
+          onUpload={() => contractsQuery.refetch()}
         />
       )}
 
