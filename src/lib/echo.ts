@@ -123,6 +123,8 @@ export function subscribeToWorkspace(
   callbacks: {
     onMessageSent?: (payload: any) => void;
     onContractStatusChanged?: () => void;
+    onWorkspaceStatusChanged?: (payload: any) => void;
+    onPaymentStatusChanged?: (payload: any) => void;
   }
 ): (() => void) | null {
   const echo = getEcho() || getClientEcho();
@@ -142,12 +144,30 @@ export function subscribeToWorkspace(
     });
   }
 
+  if (callbacks.onWorkspaceStatusChanged) {
+    channel.listen('.workspace.status_changed', (e: any) => {
+      callbacks.onWorkspaceStatusChanged!(e);
+    });
+  }
+
+  if (callbacks.onPaymentStatusChanged) {
+    channel.listen('.payment.status_changed', (e: any) => {
+      callbacks.onPaymentStatusChanged!(e);
+    });
+  }
+
   return () => {
     if (callbacks.onMessageSent) {
       channel.stopListening('.message.sent');
     }
     if (callbacks.onContractStatusChanged) {
       channel.stopListening('.contract.status_changed');
+    }
+    if (callbacks.onWorkspaceStatusChanged) {
+      channel.stopListening('.workspace.status_changed');
+    }
+    if (callbacks.onPaymentStatusChanged) {
+      channel.stopListening('.payment.status_changed');
     }
     echo.leaveChannel(`private-workspace.${wsId}`);
   };

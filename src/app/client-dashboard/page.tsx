@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { isClientAuthenticated, getClient, clientLogout, isSubUser, hasSubUserPermission, getSubUser } from '@/lib/client-auth';
-import api from '@/lib/api';
-import { reportError } from '@/lib/error-reporting';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import ClientContracts from '@/components/client-contracts/ClientContracts';
 import ClientPayments from '@/components/client-payments/ClientPayments';
@@ -17,7 +15,10 @@ import ClientSubUsers from '@/components/client-subusers/ClientSubUsers';
 import StagesStepper from '@/components/client-dashboard/StagesStepper';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import type { Client, Workspace } from '@/types';
+import { useClient } from '@/hooks/queries/useClients';
+import { useWorkspace } from '@/hooks/queries/useWorkspace';
+import { useWorkspaceRealtime } from '@/hooks/queries/useWorkspaceRealtime';
+import type { Client } from '@/types';
 
 const ALL_TABS = [
   { key: 'العقود', perm: 'can_view_contracts' },
@@ -47,8 +48,6 @@ export default function ClientDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [client, setClient] = useState<Client | null>(null);
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('العقود');
 
   useEffect(() => {
@@ -60,8 +59,6 @@ export default function ClientDashboardPage() {
       }
     }
   }, [searchParams, TAB_LABELS]);
-  const [loading, setLoading] = useState(true);
-  const [fetchKey, setFetchKey] = useState(0);
   const session = getClient();
 
   useEffect(() => {
@@ -71,29 +68,21 @@ export default function ClientDashboardPage() {
     }
   }, [router]);
 
-  useEffect(() => {
-    if (!session?.id) return;
-    api.get(`/clients/${session.id}`).then(({ data }) => {
-      setClient(data.client);
-      const ws = data.client.workspace;
-      if (ws?.id) {
-        api.get(`/workspaces/${ws.id}`).then(({ data: wsData }) => setWorkspace(wsData.workspace)).catch((err) => reportError('ClientDashboardPage.loadWorkspace', err));
-      }
-    }).catch((err) => reportError('ClientDashboardPage.loadClient', err)).finally(() => setLoading(false));
-  }, [session?.id, fetchKey]);
-
-  // Periodic workspace refresh — must be before any early return
-  useEffect(() => {
-    const id = workspace?.id;
-    if (!id) return;
-    const interval = setInterval(() => {
-      api.get(`/workspaces/${id}`).then(({ data }) => setWorkspace(data.workspace)).catch((err) => reportError('ClientDashboardPage.pollWorkspace', err));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [workspace?.id]);
+  // REALTIME_PLAN.md Stage 3 — migrated off manual useState/useEffect/
+  // api.get() onto TanStack Query. `enabled: !!session?.id` reproduces the
+  // old effect's own `if (!session?.id) return;` guard: no session yet ⇒ no
+  // request. `clientLoading` folds "no session yet" into "still loading" so
+  // this keeps showing the loading skeleton (not a blank `null`) during the
+  // brief window before the redirect effect above fires — matching the old
+  // `loading` state, which likewise never flipped to `false` in that case.
+  const { data: client, isLoading: clientQueryLoading, refetch: refetchClient } = useClient(session?.id ?? '', { enabled: !!session?.id });
+  const clientLoading = !session?.id || clientQueryLoading;
+  const clientWorkspaceId = client?.workspace?.id;
+  const { data: workspace } = useWorkspace(clientWorkspaceId);
+  useWorkspaceRealtime(clientWorkspaceId);
 
   if (!mounted) return <div className="min-h-screen flex items-center justify-center text-[var(--color-text-secondary)]">{t('client_loading')}</div>;
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
+  if (clientLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
   if (!session || !client) return null;
 
   const hasSigned = !!client.signed_at;
@@ -132,7 +121,7 @@ export default function ClientDashboardPage() {
             </div>
           </div>
 
-          <ClientSignature clientId={session.id} clientData={client} onSigned={() => setFetchKey((k) => k + 1)} />
+          <ClientSignature clientId={session.id} clientData={client} onSigned={() => refetchClient()} />
         </main>
       </div>
     );

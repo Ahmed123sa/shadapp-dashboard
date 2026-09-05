@@ -68,10 +68,16 @@ async function fetchClient(id: number | string): Promise<Client> {
   return data.client;
 }
 
-export function useClient(id: number | string) {
+// `enabled` defaults to true (existing callers all pass a route-param id
+// that's never falsy). client-dashboard/page.tsx (REALTIME_PLAN.md Stage 3)
+// is the first caller that may not have an id yet — the client session is
+// read from localStorage after mount, so this needs to stay off until then
+// instead of firing a request against `/clients/undefined`.
+export function useClient(id: number | string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: clientKeys.detail(id),
     queryFn: () => fetchClient(id),
+    enabled: options?.enabled ?? true,
   });
 }
 
