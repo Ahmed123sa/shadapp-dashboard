@@ -22,9 +22,11 @@ import { getUser } from '@/lib/auth';
 vi.mock('@/lib/auth', () => ({ getUser: vi.fn() }));
 
 let searchParams = new URLSearchParams();
+const routerReplace = vi.fn();
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: '5' }),
   useSearchParams: () => searchParams,
+  useRouter: () => ({ replace: routerReplace }),
 }));
 
 let mock: MockAdapter;
@@ -57,6 +59,7 @@ function mockFallback() {
 beforeEach(() => {
   mock = new MockAdapter(api);
   searchParams = new URLSearchParams();
+  routerReplace.mockClear();
 });
 
 afterEach(() => {
@@ -74,6 +77,37 @@ describe('ClientWorkspace (characterization)', () => {
     await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
     expect(screen.getByText('John Doe • john@acme.com • Egypt • Tech', { exact: false })).toBeInTheDocument();
     expect(mock.history.get.some((r) => r.url === '/clients/5')).toBe(true);
+  });
+
+  it('redirects the URL to the client uuid once the client loads', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    mockClient({ uuid: '8f3a2b1c-0000-4000-8000-000000000009' });
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/dashboard/clients/8f3a2b1c-0000-4000-8000-000000000009'));
+  });
+
+  it('preserves the ?tab= query param when redirecting to the client uuid', async () => {
+    searchParams = new URLSearchParams('tab=meetings');
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    mockClient({ uuid: '8f3a2b1c-0000-4000-8000-000000000009' });
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/dashboard/clients/8f3a2b1c-0000-4000-8000-000000000009?tab=meetings'));
+  });
+
+  it('does not redirect when the client has no uuid (older/partial data)', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    mockClient();
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+    expect(routerReplace).not.toHaveBeenCalled();
   });
 
   it('shows the not-found state when the client fails to load', async () => {

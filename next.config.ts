@@ -70,6 +70,23 @@ const nextConfig: NextConfig = {
   headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },
+  webpack(config, { dev }) {
+    if (dev) {
+      // On low-RAM dev machines, webpack's default persistent filesystem
+      // cache periodically gzips large "pack" files to disk in the
+      // background. That gzip step needs a big contiguous Buffer
+      // (Buffer.allocUnsafe inside node:zlib) — exactly what's crashing here
+      // ("RangeError: Array buffer allocation failed" / "JavaScript heap out
+      // of memory", stack: Gzip -> ZlibBase -> Buffer.allocUnsafe ->
+      // writeFile -> serialize, inside webpack's PackFileCacheStrategy).
+      // In-memory cache skips writing/gzipping pack files to disk entirely,
+      // trading "warm cache survives a dev-server restart" for "dev server
+      // doesn't OOM-crash mid-session". Dev-only — production builds
+      // (`next build`) are unaffected and keep the default filesystem cache.
+      config.cache = { type: 'memory' };
+    }
+    return config;
+  },
 };
 
 export default withSentryConfig(withNextIntl(nextConfig), {

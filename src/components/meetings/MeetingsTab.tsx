@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
@@ -36,16 +36,27 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
       ? t('meetings_contracts_error')
       : '';
 
+  // createMutation.isPending alone isn't enough to block a second click that
+  // lands in the same tick as the first: it only flips true once React
+  // commits the mutation's state update, which happens a tick after
+  // .mutate() is called. Two fireEvent-style (or genuinely simultaneous)
+  // clicks can both read the stale `false` value before either render
+  // commits. isSubmittingRef is set synchronously the instant the first
+  // click is accepted, so the second click's guard check sees it
+  // immediately — closing that race instead of just narrowing it.
+  const isSubmittingRef = useRef(false);
+
   const create = () => {
-    if (!form.title || !form.date) return;
+    if (!form.title || !form.date || isSubmittingRef.current || createMutation.isPending) return;
+    isSubmittingRef.current = true;
     const localDate = new Date(`${form.date}T${form.time || '00:00'}`);
     const payload: { title: string; scheduled_at: string; duration_minutes: number; notes: string; contract_id?: string; approval_id?: string } =
       { title: form.title, scheduled_at: localDate.toISOString(), duration_minutes: form.duration, notes: form.notes };
     if (form.contract_id) payload.contract_id = form.contract_id;
     if (form.approval_id) payload.approval_id = form.approval_id;
     createMutation.mutate(payload, {
-      onSuccess: () => { setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); },
-      onError: (err) => notifyWriteError(tc, 'MeetingsTab.create', err),
+      onSuccess: () => { isSubmittingRef.current = false; setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); },
+      onError: (err) => { isSubmittingRef.current = false; notifyWriteError(tc, 'MeetingsTab.create', err); },
     });
   };
 
@@ -90,7 +101,9 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
             {contracts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
           <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t('meeting_notes_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" rows={2} />
-          <button onClick={create} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{tc('save')}</button>
+          <button onClick={create} disabled={createMutation.isPending} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
+            {createMutation.isPending ? t('creating_meeting_label') : tc('save')}
+          </button>
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Settings, Trash2, CheckCircle2 } from 'lucide-react';
@@ -42,6 +42,7 @@ const TAB_LABELS: Record<Tab, string> = {
 export default function ClientWorkspace() {
   const t = useTranslations('dashboard');
   const { id } = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
 
@@ -65,6 +66,21 @@ export default function ClientWorkspace() {
   const clientQuery = useClient(id as string);
   const client = clientQuery.data ?? null;
   const deleteMutation = useDeleteClient();
+
+  // The URL should show the client's uuid, not the numeric id — a
+  // sequential integer in the address bar lets anyone glance at it and guess
+  // how many clients exist or which id maps to which company. Plenty of
+  // existing links (notifications, the SA/AM dashboard views, older
+  // bookmarks) still point at the numeric id; rather than updating every one
+  // of those call sites, the backend accepts both (Client::resolveRouteBinding)
+  // and this redirect corrects the visible URL the moment the client loads,
+  // no matter which id form was used to get here.
+  useEffect(() => {
+    if (client?.uuid && id !== client.uuid) {
+      const qs = searchParams.toString();
+      router.replace(`/dashboard/clients/${client.uuid}${qs ? `?${qs}` : ''}`);
+    }
+  }, [client?.uuid, id, searchParams, router]);
 
   const deleteClient = async () => {
     try {
@@ -108,7 +124,7 @@ export default function ClientWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isSA && <Link href={`/dashboard/clients/${id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+            {!isSA && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
             {!isSA && <button onClick={() => { setDeleteError(''); setDeleteConfirm(true); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')} aria-label={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             <span className={`px-2.5 py-1 rounded-full text-xs ${client.signed_at ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>

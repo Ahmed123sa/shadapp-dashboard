@@ -1,5 +1,11 @@
 export interface Client {
   id: number;
+  // Random per-client identifier the dashboard shows in the browser URL
+  // instead of the numeric id (see the backend's 2026_09_07 migration) — a
+  // sequential id in the address bar lets anyone glance at it and guess how
+  // many clients exist. Every client has one; optional here only because
+  // older cached/partial client objects in tests may omit it.
+  uuid?: string;
   company_name: string;
   contact_person: string;
   // Computed accessor (Client::getNameAttribute, in $appends) that aliases
