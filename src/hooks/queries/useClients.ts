@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Client } from '@/types';
 
@@ -34,6 +34,16 @@ export function useClients(page: number, query: string) {
   return useQuery({
     queryKey: clientKeys.list(page, query),
     queryFn: () => fetchClients(page, query),
+    // Without this, every keystroke in the search box (once the 400ms
+    // debounce fires) changes the query key and briefly clears `data`,
+    // which made ClientsPage fall into its isFetching branch and swap the
+    // whole page - search input included - for a loading skeleton. The
+    // input's DOM node got unmounted mid-search, so it lost focus and the
+    // user had to click back in after every character. Keeping the
+    // previous page's data visible during a refetch avoids that: only the
+    // very first load (no data at all yet) should show a full-page
+    // skeleton, not every subsequent search/pagination fetch.
+    placeholderData: keepPreviousData,
   });
 }
 

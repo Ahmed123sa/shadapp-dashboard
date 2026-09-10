@@ -121,7 +121,12 @@ export default function ClientsPage() {
     }
   };
 
-  if (clientsQuery.isFetching) return <div className="p-4"><TableSkeleton rows={6} /></div>;
+  // isLoading (not isFetching) - isFetching also fires on every
+  // background refetch (each debounced search keystroke, every page
+  // change), which used to replace this entire page - search input
+  // included - with a skeleton and unmount it mid-search. isLoading is
+  // only true for the genuine first load with no data yet.
+  if (clientsQuery.isLoading) return <div className="p-4"><TableSkeleton rows={6} /></div>;
   if (clientsQuery.isError) return <ErrorState onRetry={() => clientsQuery.refetch()} />;
 
   const isSA = getUser()?.role === 'super_admin';
@@ -137,16 +142,21 @@ export default function ClientsPage() {
         </button>}
       </div>
 
-      <div className="mb-4 relative">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder={t('client_search')}
-          className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none"
-        />
-        <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
-      </div>
+      {/* Hidden while the create-client form is open below - showing a
+          "search clients" box above an "add a new client" form made no
+          sense and confused users into thinking it was part of the form. */}
+      {!showCreate && (
+        <div className="mb-4 relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={t('client_search')}
+            className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none"
+          />
+          <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+        </div>
+      )}
 
       {newCreds && (
         <div className="bg-green-900/30 border border-green-900/30 rounded-xl p-4 mb-4">

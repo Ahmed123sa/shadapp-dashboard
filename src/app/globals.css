@@ -118,6 +118,17 @@ body {
   margin: 0;
 }
 
+/* PasswordField (src/components/ui/PasswordField.tsx) draws its own
+   show/hide eye icon inside every password input. Edge/Chromium browsers
+   also draw their own native "reveal password" eye icon inside any
+   type="password" input by default, so users saw two overlapping eye
+   icons. These are the standard pseudo-elements to disable the
+   browser-native one; our custom toggle is unaffected. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 /* دليل الهوية بيحدد Archivo كخط نص إنجليزي أساسي (مش Tajawal). بيتفعّل بس
    في النسخة الإنجليزية (html[lang="en"]) — العربي فاضل Tajawal زي ما هو. */
 html[lang="en"] body {
