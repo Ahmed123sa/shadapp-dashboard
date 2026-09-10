@@ -6,6 +6,7 @@ import { getUser } from '@/lib/auth';
 import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 import PasswordField from '@/components/ui/PasswordField';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { User } from '@/types';
 
 export default function AccountManagersPage() {
@@ -22,6 +23,13 @@ export default function AccountManagersPage() {
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Manager deletion used to fire straight off a native window.confirm(),
+  // which is far easier to blow through by accident (muscle-memory OK,
+  // Enter key) than the app's own ConfirmDialog - the same one client
+  // deletion already uses. deleteTarget holds the manager pending
+  // confirmation so the styled dialog can render it.
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const user = getUser();
 
   const load = () => {
@@ -89,10 +97,19 @@ export default function AccountManagersPage() {
     }
   };
 
-  const deleteManager = async (id: number) => {
-    if (!confirm(t('manager_delete_confirm'))) return;
-    await api.delete(`/account-managers/${id}`);
-    load();
+  const confirmDeleteManager = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/account-managers/${deleteTarget.id}`);
+      load();
+      setDeleteTarget(null);
+    } catch (err) {
+      reportError('AccountManagersPage.deleteManager', err);
+      setError(t('manager_delete_failed'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const startEdit = (m: User) => {
@@ -125,6 +142,13 @@ export default function AccountManagersPage() {
           <p className="text-sm text-green-400">{t('manager_password')}: {newCreds.password}</p>
           <button onClick={() => setNewCreds(null)} className="text-xs text-green-400 mt-1 hover:underline">{t('manager_ok')}</button>
         </div>
+      )}
+
+      {/* Delete errors need their own banner - the create/edit form (which
+          owns the other `error` display below) is closed while deleting
+          from the table, so that block never renders at that point. */}
+      {error && !showCreate && !editId && (
+        <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg mb-4">{error}</div>
       )}
 
       {(showCreate || editId) && (
@@ -197,7 +221,7 @@ export default function AccountManagersPage() {
                 <td className="p-4 text-center">
                   <div className="flex gap-2 justify-center">
                     <button onClick={() => startEdit(m)} className="text-xs text-[var(--color-gold-text)] hover:underline border border-blue-200 rounded px-2 py-1">{t('manager_edit')}</button>
-                    <button onClick={() => deleteManager(m.id)} className="text-xs text-red-400 hover:underline border border-red-200 rounded px-2 py-1">{t('manager_delete')}</button>
+                    <button onClick={() => setDeleteTarget(m)} className="text-xs text-red-400 hover:underline border border-red-200 rounded px-2 py-1">{t('manager_delete')}</button>
                   </div>
                 </td>
               </tr>
@@ -205,6 +229,17 @@ export default function AccountManagersPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('manager_delete_title')}
+        message={t('manager_delete_confirm')}
+        confirmLabel={deleting ? t('manager_saving') : t('manager_delete')}
+        cancelLabel={t('cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteManager}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

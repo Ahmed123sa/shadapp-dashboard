@@ -11,6 +11,12 @@ export type Client = {
   status: string; contract_value: string; payment_status: string; signed_at: string | null;
   client_type?: string;
   avatar_url?: string | null;
+  // Present on every /clients and /account-managers/{id} response (the
+  // column is backfilled for existing rows and auto-generated for new
+  // ones - see Client::resolveRouteBinding()) - lets client links use the
+  // uuid instead of the numeric id, skipping the redirect ClientWorkspace
+  // otherwise does on load.
+  uuid?: string;
   workspace: { id: number; status: string } | null;
   latest_contract?: { id: number; status: string; value: string } | null;
   updated_at: string;
@@ -53,7 +59,7 @@ export type Manager = {
 
 export type Approval = {
   id: number; title: string; description: string; status: string;
-  workspace?: { id: number; client?: { company_name: string; id: number } };
+  workspace?: { id: number; client?: { company_name: string; id: number; uuid?: string } };
   created_at: string;
 };
 

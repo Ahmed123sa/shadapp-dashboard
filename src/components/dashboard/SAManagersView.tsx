@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { Users, FileText, DollarSign, Clock } from 'lucide-react';
 import api from '@/lib/api';
@@ -93,52 +93,67 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
+                  {/* text-start, not text-end: same fix as AMView.tsx's client table -
+                      ManagerTableRow's cells (avatar+name flex, clients count, pending
+                      badge) all render at the reading-direction start, so an "end"
+                      aligned header drifts off its own column in both languages. */}
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_manager')}</th>
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_clients')}</th>
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_pending')}</th>
                 </tr>
               </thead>
               <tbody>
                 {managers.map((m, i) => (
-                  <ManagerTableRow
-                    key={m.id} manager={m} index={i}
-                    expanded={expandedManager === m.id}
-                    onToggle={() => toggleManager(m.id)}
-                  />
+                  // Fragment (not a bare array) so the expanded-clients row can sit
+                  // as a real sibling <tr> right after its own manager's row inside
+                  // tbody. This used to be one block rendered after the whole
+                  // </table> - correct for whichever manager was expanded, but always
+                  // pinned to the bottom of the card instead of appearing under the
+                  // row the admin actually clicked.
+                  <Fragment key={m.id}>
+                    <ManagerTableRow
+                      manager={m} index={i}
+                      expanded={expandedManager === m.id}
+                      onToggle={() => toggleManager(m.id)}
+                    />
+                    {expandedManager === m.id && (
+                      <tr>
+                        <td colSpan={3} className="p-0 border-b border-white/[0.04] bg-white/[0.015]">
+                          {managerClientsLoading ? (
+                            <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('loading_clients')}</div>
+                          ) : managerClients.length === 0 ? (
+                            <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('no_clients')}</div>
+                          ) : (
+                            <div className="divide-y divide-white/[0.04]">
+                              {managerClients.map((c) => (
+                                <Link
+                                  key={c.id}
+                                  // uuid || id: see the matching comment in AMView.tsx.
+                                  href={c.workspace ? `/dashboard/clients/${c.uuid || c.id}` : '#'}
+                                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.03] transition-colors"
+                                >
+                                  <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
+                                    {c.company_name?.slice(0, 2) || '?'}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[length:var(--fs-2)] font-bold truncate">{c.company_name}</div>
+                                    <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
+                                      {c.contact_person}
+                                      <ClientTypeBadge clientType={c.client_type} compact />
+                                    </div>
+                                  </div>
+                                  <StatusBadge status={c.workspace?.status || c.status} />
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
-            {expandedManager && (
-              <div className="border-t border-[var(--border)] bg-white/[0.015]">
-                {managerClientsLoading ? (
-                  <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('loading_clients')}</div>
-                ) : managerClients.length === 0 ? (
-                  <div className="p-4 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('no_clients')}</div>
-                ) : (
-                  <div className="divide-y divide-white/[0.04]">
-                    {managerClients.map((c) => (
-                      <Link
-                        key={c.id}
-                        href={c.workspace ? `/dashboard/clients/${c.id}` : '#'}
-                        className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.03] transition-colors"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[9px] font-bold text-[var(--color-gold-text)] flex-shrink-0">
-                          {c.company_name?.slice(0, 2) || '?'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[length:var(--fs-2)] font-bold truncate">{c.company_name}</div>
-                          <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
-                            {c.contact_person}
-                            <ClientTypeBadge clientType={c.client_type} compact />
-                          </div>
-                        </div>
-                        <StatusBadge status={c.workspace?.status || c.status} />
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex flex-col gap-3.5">
@@ -151,7 +166,8 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
                 {pendingApprovals.slice(0, 4).map((a) => (
                   <Link
                     key={a.id}
-                    href={a.workspace ? `/dashboard/clients/${a.workspace.client?.id}?tab=الموافقات` : '#'}
+                    // uuid || id: see the matching comment in AMView.tsx.
+                    href={a.workspace ? `/dashboard/clients/${a.workspace.client?.uuid || a.workspace.client?.id}?tab=الموافقات` : '#'}
                     className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.025] transition-colors"
                   >
                     <div className="w-[3px] h-9 rounded-sm bg-[var(--color-gold)] flex-shrink-0" />

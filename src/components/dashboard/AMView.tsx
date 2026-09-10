@@ -66,17 +66,27 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
-                  <th className="text-end text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
+                  {/* text-start, not text-end: the row cells below (avatar+name flex,
+                      StatusBadge, timestamp) all render at the reading-direction start
+                      with no explicit alignment override, so a header aligned to "end"
+                      drifts away from its own column's data in both languages (mirrored
+                      left/right depending on dir) instead of sitting above it. */}
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_client')}</th>
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_status')}</th>
+                  <th className="text-start text-[length:var(--fs-1)] text-[var(--color-text-secondary)] uppercase tracking-[0.5px] px-3.5 py-2 border-b border-[var(--border)]">{t('col_last_contact')}</th>
                 </tr>
               </thead>
               <tbody>
                 {clients.slice(0, 5).map((c, i) => (
                   <tr key={c.id} className="row-slide hover:bg-white/[0.025] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:-outline-offset-2" style={{ animationDelay: `${(i + 1) * 50}ms` }}
                     tabIndex={0} role="button" aria-label={c.company_name}
-                    onClick={() => router.push(`/dashboard/clients/${c.id}`)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/dashboard/clients/${c.id}`); } }}>
+                    // uuid || id: the client detail page already redirects a numeric id
+                    // to the uuid on load, but writing the uuid straight into the link
+                    // (when we have it) skips that transitional numeric-id URL entirely.
+                    // Falls back to id for the rare case uuid isn't present - the backend
+                    // accepts both, so nothing breaks either way.
+                    onClick={() => router.push(`/dashboard/clients/${c.uuid || c.id}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/dashboard/clients/${c.uuid || c.id}`); } }}>
                     <td className="px-3.5 py-2.5 border-b border-white/[0.04]">
                       <div className="flex items-center gap-2">
                         {c.avatar_url ? (

@@ -50,7 +50,16 @@ export default function PasswordField({
   return (
     <div className="space-y-1">
       {label && <label htmlFor={inputId} className="block text-xs text-[var(--color-text-secondary)]">{label}</label>}
-      <div className="relative">
+      {/* dir="ltr" here (not just on the input) so the input's pe-10 and
+          the button's end-0 below resolve against the same direction. The
+          input itself is forced ltr (password characters read left to
+          right regardless of page language) - but this wrapper used to
+          stay rtl on Arabic pages, so "end" meant the right side for the
+          input's padding but the left side for the button's position.
+          The padding and the button ended up on opposite sides, so the
+          eye icon sat on top of the typed characters instead of past
+          them. */}
+      <div className="relative" dir="ltr">
         <input
           id={inputId}
           type={visible ? 'text' : 'password'}
