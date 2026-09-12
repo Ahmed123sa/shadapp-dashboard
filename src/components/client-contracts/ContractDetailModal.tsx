@@ -74,8 +74,9 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         {contract.clauses?.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('contract_clauses_heading')}</h4>
+            {/* dir="auto" below: see the matching note in ContractsTab. */}
             {contract.clauses.map((cl) => (
-              <div key={cl.id} className="text-sm text-[var(--color-text-secondary)] pr-3 border-r-2 border-[var(--color-card-border)] py-1">
+              <div key={cl.id} dir="auto" className="text-sm text-[var(--color-text-secondary)] pr-3 border-r-2 border-[var(--color-card-border)] py-1">
                 {cl.content}
                 <span className="text-xs text-[var(--color-text-disabled)] mr-2">
                   ({cl.type === 'fixed' ? t('doc_type_fixed') : cl.type === 'optional' ? t('doc_type_optional') : t('doc_type_custom')})

@@ -46,8 +46,9 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
         )}
         {contract.clauses?.length > 0 && (
           <div className="mt-2 space-y-1 border-t border-[var(--color-card-border)] pt-2">
+            {/* dir="auto" below: see the matching note in ContractsTab. */}
             {contract.clauses.map((cl) => (
-              <p key={cl.id} className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
+              <p key={cl.id} dir="auto" className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
             ))}
           </div>
         )}

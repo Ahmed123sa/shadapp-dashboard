@@ -72,7 +72,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
           {fixedTemplates.map((t) => (
             <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
               <input type="checkbox" checked disabled className="mt-0.5" />
-              <span>{t.content}</span>
+              <span dir="auto">{t.content}</span>
             </label>
           ))}
         </div>
@@ -84,7 +84,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
           {optionalTemplates.map((t) => (
             <label key={t.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold-text)]">
               <input type="checkbox" checked={!!selectedOptional[t.id]} onChange={() => toggleOptional(t.id)} className="mt-0.5" />
-              <span>{t.content}</span>
+              <span dir="auto">{t.content}</span>
             </label>
           ))}
         </div>

@@ -145,6 +145,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/clients')) return t('my_clients');
     if (pathname.startsWith('/dashboard/account-managers')) return t('account_managers');
     if (pathname.startsWith('/dashboard/reports')) return t('reports');
+    // /dashboard/finance was missing from this list, so the header fell
+    // through to the default and showed "Home" while the page itself said
+    // "Finance & Payments".
+    if (pathname.startsWith('/dashboard/finance')) return locale === 'ar' ? 'المالية' : 'Finance';
     if (pathname.startsWith('/dashboard/audit-log')) return t('audit_log');
     if (pathname.startsWith('/dashboard/settings')) return t('settings');
     return t('title');

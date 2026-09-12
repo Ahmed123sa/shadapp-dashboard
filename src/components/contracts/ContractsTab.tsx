@@ -155,7 +155,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               {fixedTemplates.map((tpl) => (
                 <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                   <input type="checkbox" checked disabled className="mt-0.5" />
-                  <span>{tpl.content}</span>
+                  <span dir="auto">{tpl.content}</span>
                 </label>
               ))}
             </div>
@@ -166,7 +166,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               {optionalTemplates.map((tpl) => (
                 <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold-text)]">
                   <input type="checkbox" checked={!!selectedOptional[tpl.id]} onChange={() => toggleOptional(tpl.id)} className="mt-0.5" />
-                  <span>{tpl.content}</span>
+                  <span dir="auto">{tpl.content}</span>
                 </label>
               ))}
             </div>
@@ -223,10 +223,15 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           </div>
           <ContractStatusStepper status={c.status} compact />
+          {/* dir="auto" on each clause below: a clause takes its direction from
+              its own text, not from the UI language. Clauses are written by the
+              company and are usually Arabic; on an English-locale page the
+              container is ltr, so they rendered left-aligned with the full stop
+              landing at the start of the line. */}
           {c.clauses?.length > 0 && (
             <div className="mt-2 space-y-1">
               {c.clauses.map((cl) => (
-                <p key={cl.id} className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
+                <p key={cl.id} dir="auto" className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
               ))}
             </div>
           )}

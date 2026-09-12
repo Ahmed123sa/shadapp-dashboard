@@ -591,7 +591,9 @@ export default function SettingsPage() {
                         {cl.category && <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]">{cl.category}</span>}
                         {cl.is_active ? <span className="text-[length:var(--fs-1)] text-emerald-500">{t('active')}</span> : <span className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)]">{t('inactive')}</span>}
                       </div>
-                      <p className="text-sm mt-1">{cl.content}</p>
+                      {/* dir="auto": clause templates are authored content and
+                          are usually Arabic even on an English-locale page. */}
+                      <p dir="auto" className="text-sm mt-1">{cl.content}</p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button onClick={() => moveClause(idx, -1)} disabled={idx === 0} aria-label={t('move_clause_up')}
