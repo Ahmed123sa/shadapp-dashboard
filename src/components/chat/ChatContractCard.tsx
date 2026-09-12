@@ -28,7 +28,12 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
       </div>
       <div className="p-4 space-y-2">
         <h4 className="font-bold text-[var(--color-foreground)]">{contract.title}</h4>
-        {contract.value && <p className="text-sm text-[var(--color-text-secondary)]">{contract.value} SAR</p>}
+        {/* The currency used to be the literal string "SAR" here, so a contract
+            priced in any other currency (EGP, USD...) was displayed as riyals
+            while the generated PDF - which reads contract.currency - showed the
+            real one. Same `currency || 'SAR'` fallback the other contract views
+            already use. */}
+        {contract.value && <p className="text-sm text-[var(--color-text-secondary)]">{contract.value} {contract.currency || 'SAR'}</p>}
         {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_card_excl_vat')}</p>}
         {(contract.start_date || contract.end_date) && (
           <p className="text-xs text-[var(--color-text-disabled)]">
