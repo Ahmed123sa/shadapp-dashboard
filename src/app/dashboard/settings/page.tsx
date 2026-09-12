@@ -128,33 +128,71 @@ export default function SettingsPage() {
     }
   };
 
-  const drawSignature = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // The canvas is stretched to the container's full width via the `w-full`
+  // class, but its internal pixel buffer used to stay fixed at 400x150.
+  // getBoundingClientRect() reports the *rendered* (CSS) size, so on any
+  // screen wider than 400px the pointer coordinates were computed against
+  // the wrong scale and the stroke landed in the wrong place. This effect
+  // keeps the buffer's actual size matched to how it's displayed (times
+  // devicePixelRatio for crispness), so rect-relative coordinates line up
+  // 1:1 with drawing coordinates.
+  useEffect(() => {
+    if (signatureType !== 'draw') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.scale(dpr, dpr);
+  }, [signatureType]);
+
+  const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const drawSignature = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
+    const { x, y } = getPos(e);
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000';
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(x, y);
   };
 
-  const startDraw = () => {
+  // Pointer Events (rather than separate mouse/touch handlers) unify
+  // mouse, touch, and pen input in one code path, and combined with
+  // touch-action: none on the canvas (below) they stop the browser from
+  // treating a finger-drag on the canvas as a page scroll.
+  const startDraw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     setIsDrawing(true);
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) ctx.beginPath();
+      if (ctx) {
+        const { x, y } = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
     }
   };
 
-  const stopDraw = () => {
+  const stopDraw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDrawing(false);
+    if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -430,7 +468,9 @@ export default function SettingsPage() {
         {signatureType === 'draw' && (
           <div className="space-y-2">
             <canvas ref={canvasRef} width={400} height={150}
-              onMouseDown={startDraw} onMouseMove={drawSignature} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+              onPointerDown={startDraw} onPointerMove={drawSignature} onPointerUp={stopDraw}
+              onPointerLeave={stopDraw} onPointerCancel={stopDraw}
+              style={{ touchAction: 'none' }}
               className="border border-[var(--color-card-border)] rounded-lg w-full cursor-crosshair bg-[var(--color-card)]" />
             <button onClick={clearCanvas} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500">{t('clear')}</button>
           </div>
