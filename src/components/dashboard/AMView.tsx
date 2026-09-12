@@ -51,7 +51,9 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
     <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
       <div className="p-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" subtitle={`+2 ${t('subtitle_this_month')}`} />
+          {/* "+2" here was a literal, not a computed delta — same note as
+              SAManagersView. */}
+          <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" subtitle={t('subtitle_this_month')} />
           <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('awaiting_response', { count: pendingContractsCount })} />
           <DashboardStatCard label={t('pending_payments')} value={pendingPaymentsCount} icon={CreditCard} color="gold" subtitle={t('subtitle_needs_action')} />
           <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon={MessageCircle} color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />

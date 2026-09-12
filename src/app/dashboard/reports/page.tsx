@@ -32,10 +32,23 @@ export default function ReportsPage() {
   const KPI_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; accent: string; subtitle: string; deltaUp?: boolean }> = {
     total_clients: { label: t('kpi_total_clients'), icon: Users, accent: 'green', subtitle: t('kpi_this_month_up'), deltaUp: true },
     revenue: { label: t('kpi_revenue'), icon: DollarSign, accent: 'gold', subtitle: t('kpi_vs_previous'), deltaUp: true },
-    active_workspaces: { label: t('kpi_active_workspaces'), icon: FileText, accent: 'blue', subtitle: t('kpi_this_week_up'), deltaUp: true },
+    // Labelled "total contracts", not "active": the value below is
+    // `totalContracts`, the sum of the by-status breakdown, i.e. every
+    // contract regardless of status. The home dashboard has its own
+    // "active contracts" card that counts only company_approved/completed,
+    // so the two screens were showing different numbers under the same
+    // label. Nothing about the calculation changed here - only the label,
+    // which now says what the number actually is.
+    active_workspaces: { label: t('kpi_total_contracts'), icon: FileText, accent: 'blue', subtitle: t('kpi_this_week_up'), deltaUp: true },
     pending_approvals: { label: t('kpi_pending_approvals'), icon: Clock, accent: 'red', subtitle: t('kpi_needs_action'), deltaUp: false },
     spaces_active: { label: t('kpi_spaces_active'), icon: Building2, accent: 'purple', subtitle: t('kpi_new_up'), deltaUp: true },
-    conversion: { label: t('kpi_conversion'), icon: BarChart3, accent: 'orange', subtitle: t('kpi_from_leads'), deltaUp: true },
+    // The conversion-rate KPI was removed rather than fixed. It displayed
+    // `reports?.conversion_rate ?? 73` and the backend never sends that field,
+    // so every install showed a hardcoded 73%. It can't be computed from what
+    // we store either: a conversion rate needs leads that did *not* convert,
+    // and clients only exist in this system after the deal is already won —
+    // every row is a success by construction. Reinstate it if/when leads are
+    // actually tracked.
   };
 
   const PERIOD_OPTIONS = [t('period_today'), t('period_30_days'), t('period_3_months'), t('period_6_months'), t('period_this_year'), t('period_custom')];
@@ -176,7 +189,6 @@ export default function ReportsPage() {
     active_workspaces: { value: String(totalContracts) },
     pending_approvals: { value: String(reports?.pending_approvals ?? 0), valueColor: 'var(--color-error)' },
     spaces_active: { value: String(reports?.active_workspaces ?? 0) },
-    conversion: { value: `${reports?.conversion_rate ?? 73}%` },
   };
 
   // Manager stats from API or derived

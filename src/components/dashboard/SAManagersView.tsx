@@ -78,8 +78,13 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
     <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
       <div className="p-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} subtitle={`+6 ${t('subtitle_this_month')}`} />
-          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={`+3 ${t('subtitle_this_week')}`} />
+          {/* The "+6" / "+3" that used to be here were literal strings, not a
+              computed delta — they showed the same growth figures no matter
+              what the data was. Dropped rather than faked; a real
+              period-over-period delta needs backend aggregation we don't
+              have yet. */}
+          <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} subtitle={t('subtitle_this_month')} />
+          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('subtitle_this_week')} />
           <DashboardStatCard label={t('monthly_revenue')} value={`${(monthlyRevenue / 1000).toFixed(0)}K`} icon={DollarSign} color="gold" subtitle={t('vs_last_month')} />
           <DashboardStatCard label={t('pending_approvals')} value={pendingApprovals.length} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
         </div>
