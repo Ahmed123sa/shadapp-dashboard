@@ -67,6 +67,22 @@ describe('FinancePage', () => {
     expect(screen.getAllByText('Manager Mike').length).toBe(2);
   });
 
+  it('renders an extra card for a currency beyond SAR/USD from approved_by_currency', async () => {
+    mock.onGet(/\/all-payments/).reply(200, {
+      ...mockPaymentsData,
+      stats: {
+        ...mockPaymentsData.stats,
+        approved_by_currency: { SAR: 5000, EGP: 1200 },
+      },
+    });
+
+    renderWithIntl(<FinancePage />);
+
+    expect(await screen.findByText('Annual Retainer')).toBeInTheDocument();
+    expect(screen.getByText(/1,200\.00/)).toBeInTheDocument();
+    expect(screen.getAllByText('EGP').length).toBeGreaterThan(0);
+  });
+
   it('triggers reload when searching or filtering', async () => {
     const user = userEvent.setup();
     renderWithIntl(<FinancePage />);

@@ -190,6 +190,28 @@ export default function FinancePage() {
             <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالدولار' : 'Total USD revenue'}</p>
           </div>
 
+          {/* Extra currency cards: any currency beyond SAR/USD that has an
+              approved payment gets its own card here, driven by
+              approved_by_currency from the backend. SAR/USD stay on their
+              existing cards above (untouched) to avoid duplicating them. */}
+          {Object.entries(stats.approved_by_currency || {})
+            .filter(([cur]) => cur !== 'SAR' && cur !== 'USD')
+            .map(([cur, total]) => (
+              <div key={cur} className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? `المدفوعات المعتمدة (${cur})` : `Approved ${cur}`}</span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                    <DollarSign size={16} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold mt-2 text-blue-400 font-display">
+                  {Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <span className="text-xs font-normal text-blue-400/70 ms-1">{cur}</span>
+                </p>
+                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? `إجمالي الإيرادات بعملة ${cur}` : `Total ${cur} revenue`}</p>
+              </div>
+            ))}
+
           <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'مدفوعات معلقة للتدقيق' : 'Pending Review'}</span>

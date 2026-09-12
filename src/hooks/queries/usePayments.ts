@@ -164,6 +164,11 @@ type FinanceStats = {
   pending_count?: number;
   approved_total_sar?: number | string;
   approved_total_usd?: number | string;
+  // Every currency an approved payment was made in (SAR/USD included),
+  // e.g. { SAR: 1000, USD: 500, EGP: 300 }. Additive alongside the two
+  // scalar fields above — used to render a card for any currency beyond
+  // SAR/USD without touching the existing ones.
+  approved_by_currency?: Record<string, number | string>;
 };
 
 type AllPaymentsData = {
