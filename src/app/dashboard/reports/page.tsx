@@ -107,7 +107,11 @@ export default function ReportsPage() {
       }).catch((err) => reportError('ReportsPage.loadClientList', err));
     }
     if (managerList.length === 0) {
-      api.get('/account-managers').then(({ data }) => {
+      // include_inactive=1: reports must stay filterable by a manager even
+      // after they're deactivated — past data shouldn't become unreachable
+      // just because the account was later deactivated. See
+      // DATA_SAFETY_PLAN.md §2.2.5.
+      api.get('/account-managers?include_inactive=1').then(({ data }) => {
         setManagerList(data.managers || []);
       }).catch((err) => reportError('ReportsPage.loadManagerList', err));
     }

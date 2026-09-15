@@ -164,7 +164,7 @@ describe('ClientWorkspace (characterization)', () => {
     expect(chatBtn.className).not.toContain('border-[var(--color-primary)]');
   });
 
-  it('hides the settings link and delete button for a super admin', async () => {
+  it('hides the settings link for a super admin, and never renders a delete control for anyone', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
     mockClient();
     mockFallback();
@@ -175,62 +175,21 @@ describe('ClientWorkspace (characterization)', () => {
     expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
 
-  it('shows settings/delete controls for a non-super-admin and opens the confirm dialog', async () => {
+  // Client deletion was removed from the dashboard entirely (DATA_SAFETY_PLAN.md
+  // §2.1 — clients are never hard-deleted, only archived per §2.3). The three
+  // characterization tests that used to live here ("shows settings/delete
+  // controls...", "deletes the client after confirming...", "shows an error
+  // and closes the dialog...") pinned down a Delete button/ConfirmDialog flow
+  // that no longer exists in ClientWorkspace and were removed along with it
+  // rather than left failing against a feature that's intentionally gone.
+  it('shows the settings link for a non-super-admin, with no delete control next to it', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
     mockClient();
     mockFallback();
-    const user = userEvent.setup();
     renderWithIntl(<ClientWorkspace />);
 
     await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
     expect(screen.getByTitle('Settings').closest('a')).toHaveAttribute('href', '/dashboard/clients/5/settings');
-
-    await user.click(screen.getByTitle('Delete'));
-    expect(screen.getByText('Delete Client')).toBeInTheDocument();
-    expect(screen.getByText('Delete client permanently? This action cannot be undone.')).toBeInTheDocument();
-
-    await user.click(screen.getByText('Cancel'));
-    expect(screen.queryByText('Delete Client')).not.toBeInTheDocument();
-    expect(mock.history.delete.length).toBe(0);
-  });
-
-  it('deletes the client after confirming and redirects to the clients list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
-    mockClient();
-    mock.onDelete('/clients/5').reply(200, { success: true });
-    mockFallback();
-
-    delete (window as any).location;
-    (window as any).location = { href: '' };
-
-    const user = userEvent.setup();
-    renderWithIntl(<ClientWorkspace />);
-
-    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
-    await user.click(screen.getByTitle('Delete'));
-    // The icon-only trigger button has title="Delete" but no text content
-    // (just an SVG), so getByText only matches the ConfirmDialog's own
-    // confirm button, not the trigger.
-    await user.click(screen.getByText('Delete'));
-
-    await waitFor(() => expect(mock.history.delete.some((r) => r.url === '/clients/5')).toBe(true));
-    await waitFor(() => expect(window.location.href).toBe('/dashboard/clients'));
-  });
-
-  it('shows an error and closes the dialog without redirecting when delete fails', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
-    mockClient();
-    mock.onDelete('/clients/5').reply(500);
-    mockFallback();
-
-    const user = userEvent.setup();
-    renderWithIntl(<ClientWorkspace />);
-
-    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
-    await user.click(screen.getByTitle('Delete'));
-    await user.click(screen.getByText('Delete'));
-
-    await waitFor(() => expect(screen.getByText('Failed to delete client. Please try again.')).toBeInTheDocument());
-    expect(screen.queryByText('Delete Client')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
 });

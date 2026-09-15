@@ -5,10 +5,9 @@ import { getUser } from '@/lib/auth';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Settings, Trash2, CheckCircle2 } from 'lucide-react';
+import { Settings, CheckCircle2 } from 'lucide-react';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import ChatTab from '@/components/chat/ChatTab';
@@ -20,9 +19,8 @@ import MeetingsTab from '@/components/meetings/MeetingsTab';
 import CalendarTab from '@/components/calendar/CalendarTab';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
-import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
-import { useClient, useDeleteClient } from '@/hooks/queries/useClients';
+import { useClient } from '@/hooks/queries/useClients';
 import type { Client } from '@/types';
 
 const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
@@ -55,8 +53,6 @@ export default function ClientWorkspace() {
       }
     }
   }, [searchParams, t]);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
 
   useEffect(() => {
@@ -65,7 +61,6 @@ export default function ClientWorkspace() {
 
   const clientQuery = useClient(id as string);
   const client = clientQuery.data ?? null;
-  const deleteMutation = useDeleteClient();
 
   // The URL should show the client's uuid, not the numeric id — a
   // sequential integer in the address bar lets anyone glance at it and guess
@@ -82,17 +77,6 @@ export default function ClientWorkspace() {
     }
   }, [client?.uuid, id, searchParams, router]);
 
-  const deleteClient = async () => {
-    try {
-      await deleteMutation.mutateAsync(Number(id));
-      window.location.href = '/dashboard/clients';
-    } catch (err) {
-      reportError('ClientWorkspace.deleteClient', err);
-      setDeleteConfirm(false);
-      setDeleteError(t('delete_client_failed'));
-    }
-  };
-
   if (clientQuery.isLoading) return <div className="py-20"><LoadingSkeleton message={t('loading_workspace')} /></div>;
   if (!client) return <EmptyState message={t('not_found')} />;
 
@@ -101,8 +85,6 @@ export default function ClientWorkspace() {
 
   return (
     <div className="space-y-6">
-      {deleteError && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-300 text-sm">{deleteError}</div>}
-
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -125,7 +107,6 @@ export default function ClientWorkspace() {
           </div>
           <div className="flex items-center gap-2">
             {!isSA && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
-            {!isSA && <button onClick={() => { setDeleteError(''); setDeleteConfirm(true); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')} aria-label={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             <span className={`px-2.5 py-1 rounded-full text-xs ${client.signed_at ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {client.signed_at ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('signed')}</> : t('not_signed')}
@@ -148,17 +129,6 @@ export default function ClientWorkspace() {
             <NoWorkspace client={client} />}
         </div>
       </div>
-
-      <ConfirmDialog
-        open={deleteConfirm}
-        title={t('delete_title')}
-        message={t('delete_message')}
-        confirmLabel={t('delete')}
-        cancelLabel={t('cancel')}
-        variant="danger"
-        onConfirm={deleteClient}
-        onCancel={() => setDeleteConfirm(false)}
-      />
     </div>
   );
 }

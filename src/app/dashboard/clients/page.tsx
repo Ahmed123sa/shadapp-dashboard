@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Building2, User, Settings, Trash2, CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { Search, Building2, User, Settings, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useEffect, useState, useId } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,9 +11,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
-import { notifyWriteError } from '@/lib/utils';
 import ErrorState from '@/components/ErrorState';
-import { clientKeys, useClients, useCreateClient, useDeleteClient, useUploadClientAvatar, type ClientsListData } from '@/hooks/queries/useClients';
+import { clientKeys, useClients, useCreateClient, useUploadClientAvatar, type ClientsListData } from '@/hooks/queries/useClients';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{children}</p>;
@@ -62,7 +61,6 @@ export default function ClientsPage() {
   const clientsQuery = useClients(page, fetchQuery);
   const createMutation = useCreateClient();
   const uploadAvatarMutation = useUploadClientAvatar();
-  const deleteMutation = useDeleteClient();
 
   const clients = clientsQuery.data?.clients || [];
   const totalPages = clientsQuery.data?.totalPages || 1;
@@ -106,18 +104,6 @@ export default function ClientsPage() {
       setAvatarPreview('');
     } catch (err: any) {
       setCreateError(err?.response?.data?.message || t('create_failed'));
-    }
-  };
-
-  const deleteClient = async (id: number) => {
-    if (!confirm(t('delete_confirm'))) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-      queryClient.setQueryData<ClientsListData | undefined>(clientKeys.list(page, fetchQuery), (old) =>
-        old ? { ...old, clients: old.clients.filter((c) => c.id !== id) } : old
-      );
-    } catch (err) {
-      notifyWriteError(tc, 'ClientsPage.deleteClient', err);
     }
   };
 
@@ -305,7 +291,6 @@ export default function ClientsPage() {
                 <td className="p-4 text-center">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
                 <td className="p-4 text-end whitespace-nowrap">
                   {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
-                  {!isSA && <button onClick={() => deleteClient(client.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-900/30 transition-colors text-[var(--color-text-secondary)] hover:text-red-400" title={t('delete')}><Trash2 size={16} strokeWidth={1.5} /></button>}
                 </td>
               </tr>
             ))}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
@@ -170,40 +170,19 @@ describe('ClientsPage (characterization)', () => {
     delete (URL as unknown as { createObjectURL?: unknown }).createObjectURL;
   });
 
-  it('deletes a client after confirming via the native confirm() dialog', async () => {
+  // Client deletion was removed from the dashboard entirely (DATA_SAFETY_PLAN.md
+  // §2.1 — clients are never hard-deleted, only archived per §2.3). The two
+  // characterization tests that used to live here ("deletes a client after
+  // confirming...", "does not delete when the confirm() dialog is
+  // dismissed") pinned down a Delete button/confirm() flow that no longer
+  // exists in ClientsPage and were removed along with it rather than left
+  // failing against a feature that's intentionally gone.
+  it('does not render a delete control anywhere in the clients table', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
     mockList();
-    mock.onDelete('/clients/1').reply(200, { success: true });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    const user = userEvent.setup();
     renderWithIntl(<ClientsPage />);
+
     await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
-
-    const row = screen.getByText('Acme Corp').closest('tr') as HTMLElement;
-    const deleteBtn = within(row).getByTitle('Delete');
-    await user.click(deleteBtn);
-
-    expect(window.confirm).toHaveBeenCalledWith('Delete client?');
-    await waitFor(() => expect(mock.history.delete.some((r) => r.url === '/clients/1')).toBe(true));
-    await waitFor(() => expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument());
-    expect(screen.getByText('Beta LLC')).toBeInTheDocument();
-  });
-
-  it('does not delete when the confirm() dialog is dismissed', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
-    mockList();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
-    const user = userEvent.setup();
-    renderWithIntl(<ClientsPage />);
-    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
-
-    const row = screen.getByText('Acme Corp').closest('tr') as HTMLElement;
-    await user.click(within(row).getByTitle('Delete'));
-
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mock.history.delete.length).toBe(0);
-    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
 });

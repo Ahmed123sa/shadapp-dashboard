@@ -264,6 +264,10 @@ export interface User {
   // Present on account-manager list rows (AccountManagersPage), a computed
   // count from the managers index endpoint — not on every User payload.
   managed_clients_count?: number;
+  // Present on account managers only — super admins never go through the
+  // deactivate/activate flow. See DATA_SAFETY_PLAN.md §2.2.
+  is_active?: boolean;
+  deactivated_at?: string | null;
 }
 
 // A Laravel database notification row (Notifications::index). `data` is the

@@ -53,12 +53,6 @@ export function useCreateClient() {
   });
 }
 
-export function useDeleteClient() {
-  return useMutation({
-    mutationFn: (id: number) => api.delete(`/clients/${id}`).then((r) => r.data),
-  });
-}
-
 // Shared by ClientsPage's create form and ClientSettingsPage's photo
 // change — both POST the same `/clients/:id/profile` endpoint, just with
 // different extra FormData fields alongside `avatar`.
