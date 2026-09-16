@@ -6,6 +6,7 @@ import { getUser, logout } from '@/lib/auth';
 import { asSettingFlag, resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import ErrorState from '@/components/ErrorState';
+import DataExportSection from '@/components/settings/DataExportSection';
 import { useTranslations } from 'next-intl';
 import type { ContractClauseTemplate } from '@/types';
 
@@ -653,6 +654,8 @@ export default function SettingsPage() {
           </div>
         )}
       </div>}
+
+      {user?.id && <DataExportSection isAM={isAM} currentUserId={user.id} />}
 
       <button onClick={saveProfile} disabled={saving}
         className="bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">

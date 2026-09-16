@@ -270,6 +270,23 @@ export interface User {
   deactivated_at?: string | null;
 }
 
+// A scoped, whitelisted data-export request — DATA_SAFETY_PLAN.md §3. See
+// App\Models\DataExport (backend) for the source of truth; `download_url`
+// only appears here because DataExportController::index() explicitly
+// appends it per row (it's a fresh 15-minute signed URL, never cached on
+// the model's own $appends — see that controller's docblock).
+export interface DataExport {
+  id: number;
+  scope: 'system' | 'manager' | 'client';
+  scope_id: number | null;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
+  file_size: number | null;
+  error: string | null;
+  expires_at: string | null;
+  created_at: string;
+  download_url: string | null;
+}
+
 // A Laravel database notification row (Notifications::index). `data` is the
 // notification's payload JSON and varies by notification type — only the
 // keys NotificationBell actually reads are declared here.
