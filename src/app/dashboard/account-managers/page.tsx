@@ -27,6 +27,14 @@ export default function AccountManagersPage() {
   const [statusError, setStatusError] = useState('');
   const [statusBusyId, setStatusBusyId] = useState<number | null>(null);
   const user = getUser();
+  // getUser() parses localStorage fresh on every call, so it returns a new
+  // object each render — using `user` itself as an effect dependency below
+  // never settles (Object.is always sees it as "changed"), which fired
+  // load() on every render: setManagers → re-render → new user object →
+  // effect fires again, forever. Depending on the primitive role string
+  // instead breaks the loop, since it's referentially stable unless the
+  // actual role changes.
+  const userRole = user?.role;
 
   const load = () => {
     // Deactivated managers are hidden from the default list on the backend
@@ -36,9 +44,9 @@ export default function AccountManagersPage() {
   };
 
   useEffect(() => {
-    if (user?.role === 'super_admin') load();
+    if (userRole === 'super_admin') load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, showInactive]);
+  }, [userRole, showInactive]);
 
   if (user?.role !== 'super_admin') {
     return <div className="text-center py-20 text-[var(--color-text-secondary)]">{t('managers_unauthorized')}</div>;
