@@ -102,7 +102,10 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (clientList.length === 0) {
-      api.get('/clients?per_page=200').then(({ data }) => {
+      // include_archived=1: same reasoning as include_inactive=1 below —
+      // reports must stay filterable by a client even after they're
+      // archived. See DATA_SAFETY_PLAN.md §2.3.3.
+      api.get('/clients?per_page=200&include_archived=1').then(({ data }) => {
         setClientList(data.clients?.data || data.clients || []);
       }).catch((err) => reportError('ReportsPage.loadClientList', err));
     }

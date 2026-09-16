@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import type { Client } from '@/types';
 
 export const clientKeys = {
-  list: (page: number, query: string) => ['clients', 'list', page, query] as const,
+  list: (page: number, query: string, includeArchived: boolean) => ['clients', 'list', page, query, includeArchived] as const,
   detail: (id: number | string) => ['clients', 'detail', id] as const,
   profile: (id: number | string) => ['clients', 'profile', id] as const,
   activity: (id: number | string) => ['clients', 'activity', id] as const,
@@ -15,9 +15,13 @@ export const clientKeys = {
 
 export type ClientsListData = { clients: Client[]; totalPages: number };
 
-async function fetchClients(page: number, query: string): Promise<ClientsListData> {
+async function fetchClients(page: number, query: string, includeArchived: boolean): Promise<ClientsListData> {
   const params = new URLSearchParams({ page: String(page), per_page: '30' });
   if (query) params.set('q', query);
+  // Archived clients are hidden from the default list on the backend too —
+  // include_archived=1 is what lets this page show/manage them. See
+  // DATA_SAFETY_PLAN.md §2.3.3.
+  if (includeArchived) params.set('include_archived', '1');
   const { data } = await api.get(`/clients?${params}`);
   return {
     clients: data.clients?.data || data.clients || [],
@@ -30,10 +34,10 @@ async function fetchClients(page: number, query: string): Promise<ClientsListDat
 // (a pre-existing quirk being preserved as-is, not fixed here: paginating
 // silently drops the current search term, see the original fetchClients(p)
 // call with no second argument).
-export function useClients(page: number, query: string) {
+export function useClients(page: number, query: string, includeArchived: boolean = false) {
   return useQuery({
-    queryKey: clientKeys.list(page, query),
-    queryFn: () => fetchClients(page, query),
+    queryKey: clientKeys.list(page, query, includeArchived),
+    queryFn: () => fetchClients(page, query, includeArchived),
     // Without this, every keystroke in the search box (once the 400ms
     // debounce fires) changes the query key and briefly clears `data`,
     // which made ClientsPage fall into its isFetching branch and swap the
@@ -91,6 +95,47 @@ export function useUpdateClient(id: number | string) {
     mutationFn: (payload: Record<string, unknown>) => api.put(`/clients/${id}`, payload).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clientKeys.detail(id) });
+    },
+  });
+}
+
+// ─── Archive / unarchive — the client-delete replacement, see
+// DATA_SAFETY_PLAN.md §2.3. Both invalidate every 'clients' query (list +
+// detail) with a partial key match, since archiving changes what shows up
+// in the list and the client's own status on its detail page at once.
+export function useArchiveClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) => api.post(`/clients/${id}/archive`).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+export function useUnarchiveClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) => api.post(`/clients/${id}/unarchive`).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+// Reassign a client to a different account manager — super-admin only
+// (ClientPolicy::transfer), see ClientController::transfer(). Broad
+// invalidation for the same reason as archive/unarchive: this changes both
+// the client's own manager_id and its workspace's manager_id, which affects
+// the list, this client's detail page, and (indirectly) whichever manager's
+// dashboard the client used to/now shows up under.
+export function useTransferClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, newManagerId }: { id: number | string; newManagerId: number | string }) =>
+      api.post(`/clients/${id}/transfer`, { new_manager_id: newManagerId }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
   });
 }

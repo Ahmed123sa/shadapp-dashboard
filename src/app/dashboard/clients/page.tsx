@@ -12,7 +12,8 @@ import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import PasswordField from '@/components/ui/PasswordField';
 import { reportError } from '@/lib/error-reporting';
 import ErrorState from '@/components/ErrorState';
-import { clientKeys, useClients, useCreateClient, useUploadClientAvatar, type ClientsListData } from '@/hooks/queries/useClients';
+import { clientKeys, useArchiveClient, useClients, useCreateClient, useUnarchiveClient, useUploadClientAvatar, type ClientsListData } from '@/hooks/queries/useClients';
+import type { Client } from '@/types';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{children}</p>;
@@ -45,6 +46,9 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveError, setArchiveError] = useState('');
+  const [archiveBusyId, setArchiveBusyId] = useState<number | null>(null);
   // The query actually fetched for the current page — kept separate from
   // debouncedQuery because pagination (below) intentionally fetches with an
   // empty query regardless of what's currently typed in the search box, a
@@ -58,9 +62,14 @@ export default function ClientsPage() {
 
   useEffect(() => { setPage(1); setFetchQuery(debouncedQuery); }, [debouncedQuery]);
 
-  const clientsQuery = useClients(page, fetchQuery);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); }, [showArchived]);
+
+  const clientsQuery = useClients(page, fetchQuery, showArchived);
   const createMutation = useCreateClient();
   const uploadAvatarMutation = useUploadClientAvatar();
+  const archiveMutation = useArchiveClient();
+  const unarchiveMutation = useUnarchiveClient();
 
   const clients = clientsQuery.data?.clients || [];
   const totalPages = clientsQuery.data?.totalPages || 1;
@@ -93,7 +102,7 @@ export default function ClientsPage() {
           reportError('ClientsPage.createClient.uploadAvatar', err);
         }
       }
-      queryClient.setQueryData<ClientsListData | undefined>(clientKeys.list(page, fetchQuery), (old) =>
+      queryClient.setQueryData<ClientsListData | undefined>(clientKeys.list(page, fetchQuery, showArchived), (old) =>
         old ? { ...old, clients: [data.client, ...old.clients] } : old
       );
       setNewCreds(data.credentials);
@@ -104,6 +113,36 @@ export default function ClientsPage() {
       setAvatarPreview('');
     } catch (err: any) {
       setCreateError(err?.response?.data?.message || t('create_failed'));
+    }
+  };
+
+  // Archive/unarchive — the client-delete replacement, mirrors
+  // account-managers/page.tsx's deactivateManager/activateManager. Both SA
+  // and account managers can archive (ClientPolicy::archive authorizes
+  // both, unlike the settings link below which is SA-only).
+  const archiveClient = async (client: Client) => {
+    if (!confirm(t('client_archive_confirm'))) return;
+    setArchiveError('');
+    setArchiveBusyId(client.id);
+    try {
+      await archiveMutation.mutateAsync(client.id);
+    } catch (err: any) {
+      setArchiveError(err?.response?.data?.message || t('client_archive_failed'));
+    } finally {
+      setArchiveBusyId(null);
+    }
+  };
+
+  const unarchiveClient = async (client: Client) => {
+    if (!confirm(t('client_unarchive_confirm'))) return;
+    setArchiveError('');
+    setArchiveBusyId(client.id);
+    try {
+      await unarchiveMutation.mutateAsync(client.id);
+    } catch (err: any) {
+      setArchiveError(err?.response?.data?.message || t('client_unarchive_failed'));
+    } finally {
+      setArchiveBusyId(null);
     }
   };
 
@@ -123,10 +162,20 @@ export default function ClientsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">{t('clients')}</h2>
-        {!isSA && <button onClick={() => setShowCreate(true)} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)]">
-          + {t('new_client')}
-        </button>}
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+            <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            {t('client_show_archived')}
+          </label>
+          {!isSA && <button onClick={() => setShowCreate(true)} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)]">
+            + {t('new_client')}
+          </button>}
+        </div>
       </div>
+
+      {archiveError && (
+        <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg mb-4">{archiveError}</div>
+      )}
 
       {/* Hidden while the create-client form is open below - showing a
           "search clients" box above an "add a new client" form made no
@@ -286,11 +335,30 @@ export default function ClientsPage() {
                 <td className="p-4 text-center"><ClientTypeBadge clientType={client.client_type} /></td>
                 <td className="p-4 text-center text-[var(--color-text-secondary)]">{client.contact_person}</td>
                 <td className="p-4 text-center">
-                  <span className={`px-2 py-1 rounded-full text-xs ${client.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-zinc-700/30 text-zinc-400'}`}>{client.status}</span>
+                  <StatusBadge status={client.status} />
                 </td>
                 <td className="p-4 text-center">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
                 <td className="p-4 text-end whitespace-nowrap">
-                  {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+                  <div className="flex items-center justify-end gap-2">
+                    {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+                    {client.status === 'archived' ? (
+                      <button
+                        onClick={() => unarchiveClient(client)}
+                        disabled={archiveBusyId === client.id}
+                        className="text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
+                      >
+                        {t('client_unarchive')}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => archiveClient(client)}
+                        disabled={archiveBusyId === client.id}
+                        className="text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
+                      >
+                        {t('client_archive')}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
