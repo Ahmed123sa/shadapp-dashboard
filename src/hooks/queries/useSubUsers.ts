@@ -31,3 +31,26 @@ export function useSubUserPermissions(id: number | string | undefined, options?:
     enabled: (options?.enabled ?? true) && id !== undefined,
   });
 }
+
+export const permissionKeyKeys = {
+  all: ['sub-user-permission-keys'] as const,
+};
+
+async function fetchPermissionKeys(): Promise<string[]> {
+  const { data } = await api.get('/sub-user-permissions');
+  return data.permissions || [];
+}
+
+// SUBUSER_PLAN.md §6.1 — the 11 permission keys used to be typed out by hand
+// here (well, in ClientSubUsers.tsx) and again in SubUser::PERMISSION_KEYS on
+// the backend and in subusers_page.dart on mobile, so adding or renaming one
+// meant remembering all three call sites. This now reads the list straight
+// from the backend's single source. The list is effectively static within a
+// deployed version of the app, so it's fetched once and never refetched.
+export function usePermissionKeys() {
+  return useQuery({
+    queryKey: permissionKeyKeys.all,
+    queryFn: fetchPermissionKeys,
+    staleTime: Infinity,
+  });
+}

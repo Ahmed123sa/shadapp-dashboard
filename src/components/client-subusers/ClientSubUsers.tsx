@@ -6,24 +6,14 @@ import api from '@/lib/api';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import PasswordField from '@/components/ui/PasswordField';
+import { usePermissionKeys } from '@/hooks/queries/useSubUsers';
 import type { SubUser } from '@/types';
-
-const PERMISSION_DEFS = [
-  { key: 'can_chat' },
-  { key: 'can_view_contracts' },
-  { key: 'can_approve_contracts' },
-  { key: 'can_view_payments' },
-  { key: 'can_upload_payment_proof' },
-  { key: 'can_view_approvals' },
-  { key: 'can_respond_approvals' },
-  { key: 'can_view_files' },
-  { key: 'can_upload_files' },
-  { key: 'can_view_meetings' },
-  { key: 'can_join_meetings' },
-];
 
 export default function ClientSubUsers({ clientId }: { clientId: number }) {
   const t = useTranslations('dashboard');
+  // SUBUSER_PLAN.md §6.1 — permission keys come from the backend's single
+  // source (SubUser::PERMISSION_KEYS) instead of a hardcoded copy here.
+  const { data: permissionKeys = [] } = usePermissionKeys();
   const [subUsers, setSubUsers] = useState<SubUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -161,19 +151,19 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
               )}
               {isExpanded && (
                 <div className="border-t border-[var(--color-card-border)] p-3 space-y-1">
-                  {PERMISSION_DEFS.map((def) => (
-                    <label key={def.key} className="flex items-center justify-between py-1 cursor-pointer">
-                      <span className="text-xs text-[var(--color-foreground)]">{t('perm_' + def.key)}</span>
+                  {permissionKeys.map((key) => (
+                    <label key={key} className="flex items-center justify-between py-1 cursor-pointer">
+                      <span className="text-xs text-[var(--color-foreground)]">{t('perm_' + key)}</span>
                       <button
-                        onClick={() => togglePermission(u.id, def.key, !!perms[def.key])}
-                        aria-pressed={!!perms[def.key]}
-                        aria-label={t('perm_' + def.key)}
+                        onClick={() => togglePermission(u.id, key, !!perms[key])}
+                        aria-pressed={!!perms[key]}
+                        aria-label={t('perm_' + key)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                          perms[def.key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300'
+                          perms[key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300'
                         }`}
                       >
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                          perms[def.key] ? 'translate-x-0.5' : 'translate-x-4'
+                          perms[key] ? 'translate-x-0.5' : 'translate-x-4'
                         }`} />
                       </button>
                     </label>
