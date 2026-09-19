@@ -222,4 +222,55 @@ describe('ClientDashboardPage (characterization)', () => {
 
     vi.useRealTimers();
   });
+
+  // SUBUSER_PLAN.md §5.3 — the tab list used to trust whatever permissions
+  // were cached in localStorage at login (`hasSubUserPermission`), which
+  // meant a permission the client granted mid-session stayed hidden until
+  // the sub-user logged out and back in. The page now refetches
+  // GET /sub-users/{id} on load and filters tabs from that instead.
+  it('refreshes a sub-users tab visibility from the server instead of the stale cached permissions', async () => {
+    vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
+    vi.mocked(clientAuth.getSubUser).mockReturnValue({
+      id: 5,
+      name: 'Employee',
+      email: 'employee@acme.com',
+      permissions: { can_view_contracts: true }, // stale cache: no can_view_payments yet
+    } as any);
+    // Stand in for the real (unmocked) hasSubUserPermission so the fallback
+    // path used before the server response arrives reflects the stale cache.
+    vi.mocked(clientAuth.hasSubUserPermission).mockImplementation((key: string) => key === 'can_view_contracts');
+    mock.onGet('/sub-users/5').reply(200, {
+      sub_user: { id: 5, name: 'Employee', permissions: { can_view_contracts: true, can_view_payments: true } },
+    });
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
+    // Server just granted can_view_payments — the tab must show up without
+    // requiring a fresh login.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Payments' })).toBeInTheDocument());
+    expect(mock.history.get.some((r) => r.url === '/sub-users/5')).toBe(true);
+  });
+
+  it('hides the Users (colleagues) tab for a sub-user even though it has no permission gate', async () => {
+    vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
+    vi.mocked(clientAuth.getSubUser).mockReturnValue({
+      id: 5,
+      name: 'Employee',
+      email: 'employee@acme.com',
+      permissions: {},
+    } as any);
+    mock.onGet('/sub-users/5').reply(200, { sub_user: { id: 5, name: 'Employee', permissions: {} } });
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText(/Employee/)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Users' })).not.toBeInTheDocument();
+  });
 });

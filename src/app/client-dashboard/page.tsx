@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { isClientAuthenticated, getClient, clientLogout, isSubUser, hasSubUserPermission, getSubUser } from '@/lib/client-auth';
+import { isClientAuthenticated, getClient, clientLogout, isSubUser, hasSubUserPermission, getSubUser, syncSubUserPermissions } from '@/lib/client-auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import ClientContracts from '@/components/client-contracts/ClientContracts';
 import ClientPayments from '@/components/client-payments/ClientPayments';
@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl';
 import { useClient } from '@/hooks/queries/useClients';
 import { useWorkspace } from '@/hooks/queries/useWorkspace';
 import { useWorkspaceRealtime } from '@/hooks/queries/useWorkspaceRealtime';
+import { useSubUserPermissions } from '@/hooks/queries/useSubUsers';
 import type { Client } from '@/types';
 
 const ALL_TABS = [
@@ -80,6 +81,25 @@ export default function ClientDashboardPage() {
   const clientWorkspaceId = client?.workspace?.id;
   const { data: workspace } = useWorkspace(clientWorkspaceId);
   useWorkspaceRealtime(clientWorkspaceId);
+
+  // SUBUSER_PLAN.md §5.3 — refetches this sub-user's permissions from the
+  // server on every load instead of trusting whatever was cached in
+  // localStorage at login, then writes the result back so getSubUser()
+  // elsewhere on the page also sees it. `data` is undefined until this
+  // resolves, so hasFreshSubUserPermission() below falls back to the
+  // (possibly stale) cached value only for that first render.
+  const subUserId = getSubUser()?.id;
+  const { data: freshSubUserPermissions } = useSubUserPermissions(subUserId, { enabled: isSubUser() });
+  useEffect(() => {
+    if (freshSubUserPermissions) {
+      syncSubUserPermissions(freshSubUserPermissions);
+    }
+  }, [freshSubUserPermissions]);
+  const hasFreshSubUserPermission = (key: string): boolean => {
+    if (!isSubUser()) return true;
+    if (freshSubUserPermissions) return freshSubUserPermissions[key] === true;
+    return hasSubUserPermission(key);
+  };
 
   if (!mounted) return <div className="min-h-screen flex items-center justify-center text-[var(--color-text-secondary)]">{t('client_loading')}</div>;
   if (clientLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
@@ -207,7 +227,16 @@ export default function ClientDashboardPage() {
 
         <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
           <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
-            {ALL_TABS.filter((t) => t.perm === null || hasSubUserPermission(t.perm)).map((t) => (
+            {ALL_TABS.filter((t) => {
+              // SUBUSER_PLAN.md §5.2 — the colleague list (name, email,
+              // every permission) is for the primary client only, never a
+              // sub-user, regardless of that sub-user's own permissions
+              // (the tab had `perm: null` — "always visible" — which never
+              // accounted for this). The backend now rejects a SubUser here
+              // too; this just keeps the tab from appearing at all.
+              if (t.key === 'المستخدمين') return !isSubUser();
+              return t.perm === null || hasFreshSubUserPermission(t.perm);
+            }).map((t) => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === t.key ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
                 {TAB_LABELS[t.key] || t.key}

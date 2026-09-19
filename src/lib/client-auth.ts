@@ -108,3 +108,20 @@ export function hasSubUserPermission(key: string): boolean {
   const sub = getSubUser();
   return sub?.permissions?.[key] === true;
 }
+
+// SUBUSER_PLAN.md §5.3: the `sub_user` record above is written once at
+// login and never touched again, so a permission the client revokes mid-
+// session stays visible to the sub-user (as a tab they can still click,
+// even though every action behind it now 403s per Phase 2) until they log
+// out and back in. useSubUserPermissions() (hooks/queries/useSubUsers.ts)
+// fetches GET /sub-users/{id} on every dashboard load and calls this to
+// overwrite the cached copy with what the server has right now —
+// hasSubUserPermission() then reads the refreshed value on the next
+// render. Only `permissions` is replaced; the rest of the cached `sub_user`
+// record (name, email, avatar) is left as-is.
+export function syncSubUserPermissions(permissions: Record<string, boolean>): void {
+  if (typeof window === 'undefined') return;
+  const sub = getSubUser();
+  if (!sub) return;
+  localStorage.setItem('sub_user', JSON.stringify({ ...sub, permissions }));
+}
