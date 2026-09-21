@@ -471,14 +471,29 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="flex flex-col gap-0 mt-1">
-            {(managerStats.length > 0 ? managerStats : []).slice(0, 3).map((m, i: number) => {
+            {managerStats.slice(0, 3).map((m, i: number) => {
               const rankClass = i === 0 ? 'r1' : i === 1 ? 'r2' : 'r3';
-              const revenue = m.revenue ?? (totalRevenue / (i + 2));
+              // Used to be `m.revenue ?? (totalRevenue / (i + 2))` — the
+              // backend never sent manager_stats, so this ran on every
+              // request and every install showed a fraction of the
+              // currency-summed total as if it were rank i's real revenue.
+              // clients/contracts on the same row already fell back to "—"
+              // instead of guessing; revenue now does the same. Now that the
+              // backend sends real manager_stats, m.revenue is only missing
+              // if a manager genuinely has none.
+              const revenue = m.revenue ?? '—';
               const clients = m.clients ?? '—';
               const contracts = m.contracts ?? '—';
               const name = m.name ?? `${t('lb_manager_fallback')} ${i + 1}`;
               const initials = name.slice(0, 2);
-              const pct = i === 0 ? 90 : i === 1 ? 65 : 72;
+              // Was a hardcoded 90/65/72 regardless of the actual numbers —
+              // rank 1 always "looked" biggest by construction, never by
+              // measurement. Now scaled against the top manager's real
+              // revenue, with a floor so a nonzero bar stays visible.
+              const topRevenue = Number(managerStats[0]?.revenue) || 0;
+              const pct = topRevenue > 0 && typeof revenue === 'number'
+                ? Math.max(10, Math.min(100, (revenue / topRevenue) * 100))
+                : 10;
               const barColor = i === 0 ? 'var(--color-primary)' : i === 1 ? 'var(--color-purple)' : 'var(--color-blue-text)';
 
               return (
