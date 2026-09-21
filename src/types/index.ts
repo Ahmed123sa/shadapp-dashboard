@@ -317,8 +317,11 @@ export interface ReportsData {
   conversion_rate?: number;
   manager_stats?: { name?: string; revenue?: number; clients?: number | string; contracts?: number | string }[];
   recent_logins?: number;
-  total_logins?: number;
-  avg_logins?: number;
+  // total_logins / avg_logins were declared here but never sent by the
+  // backend, which is what let ReportsPage quietly render invented numbers
+  // (recent_logins * 7 and * 0.7) as if they were real data. Removed so the
+  // type says what the endpoint actually returns; add them back only
+  // alongside a backend that sends them.
 }
 
 export interface SubUser {

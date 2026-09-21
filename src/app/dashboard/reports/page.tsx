@@ -431,18 +431,33 @@ export default function ReportsPage() {
               <div className="chart-sub">{t('chart_login_sub')}</div>
             </div>
           </div>
+          {/* This card used to show two more rows, "Total Visitors" and
+              "Daily Average", computed as recent_logins * 7 and
+              recent_logins * 0.7. The backend has never sent total_logins
+              or avg_logins, so those fallbacks were not fallbacks — they
+              were the values, every time, on every install: two invented
+              numbers sitting next to a real one, which is worse than
+              showing nothing because it makes the real one look
+              corroborated. Same class of bug as the conversion-rate KPI
+              removed above (see the note near the top of this file), and
+              removed the same way rather than faked more convincingly.
+
+              recent_logins itself is a real count now — it counts
+              audit_logs rows with action='login', which nothing wrote
+              until AuthController started recording successful logins
+              (backend commit "Record successful logins in the audit log").
+              Before that this card read 0 forever.
+
+              Both removed rows are genuinely computable now that login
+              rows exist (a total over the filter's date range, and that
+              total over its day count) — but "Total Visitors" is not the
+              same thing as "total logins", and nothing here tracks
+              visitors, so reinstating them needs a product decision about
+              what the card should actually say, not just a query. */}
           <div className="flex flex-col gap-2 mt-2">
-            <div className="flex items-center justify-between py-1.5 border-b border-[var(--color-card-border)]">
+            <div className="flex items-center justify-between py-1.5">
               <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_today')}</span>
               <span className="font-bold text-sm font-display">{reports?.recent_logins ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between py-1.5 border-b border-[var(--color-card-border)]">
-              <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_total_visitors')}</span>
-              <span className="font-bold text-sm font-display">{reports?.total_logins ?? (Number(reports?.recent_logins ?? 0) * 7)}</span>
-            </div>
-            <div className="flex items-center justify-between py-1.5">
-              <span className="text-[length:var(--fs-1)] flex items-center gap-1.5"><BarChart3 size={14} strokeWidth={1.5} /> {t('logins_daily_avg')}</span>
-              <span className="font-bold text-sm font-display">{reports?.avg_logins ?? Math.round(Number(reports?.recent_logins ?? 0) * 0.7)}</span>
             </div>
           </div>
         </div>
