@@ -334,11 +334,14 @@ export default function ReportsPage() {
                 <div className="chart-title">{t('chart_revenue_title')}</div>
                 <div className="chart-sub">{t('chart_revenue_sub')}</div>
               </div>
-              <div className="chart-filter">
-                <button className="cf-btn">{t('chart_6months')}</button>
-                <button className="cf-btn on">{t('chart_1year')}</button>
-                <button className="cf-btn">{t('chart_alltime')}</button>
-              </div>
+              {/* 21 Sept 2026 — this used to be three period buttons
+                  ("6 months / 1 year / all time") with no onClick at all,
+                  one of them permanently styled as if it were the active
+                  selection. Same shape of bug as the audit log's dead
+                  "View" link: a control that looks interactive and isn't.
+                  Removed rather than wired up — a currency toggle (below)
+                  takes this slot instead, now that the chart actually has
+                  more than one thing to switch between. */}
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={paymentsData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
