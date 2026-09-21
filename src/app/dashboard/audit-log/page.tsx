@@ -92,7 +92,13 @@ function resolveEntityName(log: AuditLog, t: (key: string) => string): string {
   if (!auditable) return '—';
   const type = log.auditable_type || '';
   if (type.includes('Contract')) return `${t('contract_hash')}${auditable.id}`;
-  if (type.includes('Payment')) return `${t('payment_hash')}${auditable.id} — ${auditable.amount ? `${Number(auditable.amount).toLocaleString()} ${t('currency_egp')}` : ''}`;
+  // The currency comes off the payment itself. This used to be a hardcoded
+  // t('currency_egp'), so a payment made in SAR or USD was displayed as
+  // "1,000 EGP" — not a formatting nit but a wrong figure, in an audit log,
+  // where being able to trust what is written is the entire point. The
+  // default matches the backend's own (PaymentController writes
+  // `$request->currency ?? 'SAR'`).
+  if (type.includes('Payment')) return `${t('payment_hash')}${auditable.id} — ${auditable.amount ? `${Number(auditable.amount).toLocaleString()} ${auditable.currency || 'SAR'}` : ''}`;
   if (type.includes('Client')) return auditable.company_name || auditable.name || '—';
   if (type.includes('Meeting')) return auditable.title || t('meeting_label');
   if (type.includes('Approval')) return `${t('request_hash')}${auditable.id}`;
