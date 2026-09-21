@@ -7,6 +7,7 @@ import { getUser } from '@/lib/auth';
 import { Search } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
+import LoginAttemptsPanel from '@/components/audit/LoginAttemptsPanel';
 import { reportError } from '@/lib/error-reporting';
 import type { AuditLog, User } from '@/types';
 
@@ -156,6 +157,12 @@ export default function AuditLogPage() {
   const [filters, setFilters] = useState({ search: '', action: '', user_id: '', date_from: '', date_to: '' });
   const [users, setUsers] = useState<User[]>([]);
   const isSA = getUser()?.role === 'super_admin';
+  // Failed sign-ins live in their own table (see the backend's
+  // create_login_attempts_table migration) and are surfaced here rather
+  // than on a page of their own: "who did what" and "who tried to get in"
+  // are the same question asked twice, and this is where someone already
+  // comes to ask it.
+  const [tab, setTab] = useState<'activity' | 'attempts'>('activity');
 
   const fetchLogs = (p: number) => {
     setLoading(true);
@@ -201,10 +208,33 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold font-display">{t('audit_title')}</h2>
-          <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('audit_total_events', { count: total })}</span>
+          {tab === 'activity' && (
+            <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('audit_total_events', { count: total })}</span>
+          )}
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-[var(--color-card-border)]">
+        {([['activity', t('audit_tab_activity')], ['attempts', t('audit_tab_attempts')]] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-4 py-2 text-[length:var(--fs-1)] font-medium cursor-pointer border-b-2 -mb-px transition-colors ${
+              tab === key
+                ? 'border-[var(--color-gold)] text-[var(--color-foreground)]'
+                : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'attempts' && <LoginAttemptsPanel />}
+
+      {tab === 'activity' && (
+      <>
       {/* Filters */}
       <div className="flex gap-2 items-center flex-wrap">
         <div className="relative">
@@ -348,6 +378,8 @@ export default function AuditLogPage() {
           </>
         )}
       </div>
+      </>
+      )}
 
       <style>{`
         .audit-card {

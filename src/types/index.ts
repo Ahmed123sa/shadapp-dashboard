@@ -304,6 +304,22 @@ export interface AuditLog {
   auditable?: Record<string, any> | null;
 }
 
+// A rejected sign-in (GET /login-attempts). Separate from AuditLog because
+// it is a separate table on the backend: a failed attempt has no actor to
+// reference, so it carries the submitted email rather than a user/client
+// relation. Every field is required — unlike an audit row there are no
+// optional relations to resolve.
+export interface LoginAttempt {
+  id: number;
+  email: string;
+  ip_address: string | null;
+  /** 'staff' (/auth/login) or 'client' (/auth/client/login). */
+  endpoint: string;
+  /** unknown_email | wrong_password | account_inactive | client_archived */
+  reason: string;
+  created_at: string;
+}
+
 // The /reports payload (ReportsController::index) — a dashboard aggregate
 // with fields that vary by which filters were applied. All optional since
 // ReportsPage reads every field defensively (`reports?.x ?? default`).
