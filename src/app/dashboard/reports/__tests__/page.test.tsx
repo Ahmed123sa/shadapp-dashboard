@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import ReportsPage from '../page';
@@ -88,5 +88,88 @@ describe('ReportsPage manager leaderboard', () => {
     expect(bars).toHaveLength(2);
     expect((bars[0] as HTMLElement).style.width).toBe('100%');
     expect((bars[1] as HTMLElement).style.width).toBe('50%');
+  });
+});
+
+// 21 Sept 2026 — the revenue KPI card and the chart tooltip both used to sum
+// every currency into one number and label it with a hardcoded "EGP". These
+// cover the replacement: the KPI card shows the biggest currency as the
+// headline and the rest smaller, and the chart shows one currency at a time
+// via a toggle instead of one line per currency (currencies are different
+// scales, not different colors of the same series).
+describe('ReportsPage revenue currency handling', () => {
+  it('shows the biggest currency as the headline and the rest on a smaller line, with no delta arrow', async () => {
+    mockReports({
+      payments_by_month_by_currency: {
+        '2026-09': { SAR: 85000, USD: 6000, EGP: 310000 },
+      },
+    });
+
+    renderWithIntl(<ReportsPage />);
+
+    const kpiTitles = await screen.findAllByText('Monthly Revenue');
+    const kpiCard = kpiTitles.map((el) => el.closest('.kpi')).find(Boolean) as HTMLElement;
+    expect(kpiCard).toBeTruthy();
+
+    // EGP has the largest total (310000), so it's the headline, not SAR.
+    expect(kpiCard.textContent).toContain('310K');
+    expect(kpiCard.textContent).toContain('EGP');
+    expect(kpiCard.textContent).toContain('85K SAR');
+    expect(kpiCard.textContent).toContain('6K USD');
+    // The delta arrow/subtitle every other KPI card shows is gone here —
+    // it implied a trend nothing on this card computes.
+    expect(kpiCard.textContent).not.toContain('vs previous');
+  });
+
+  it('shows just the headline figure with no secondary line when there is only one currency', async () => {
+    mockReports({
+      payments_by_month_by_currency: { '2026-09': { SAR: 12000 } },
+    });
+
+    renderWithIntl(<ReportsPage />);
+
+    const kpiTitles = await screen.findAllByText('Monthly Revenue');
+    const kpiCard = kpiTitles.map((el) => el.closest('.kpi')).find(Boolean) as HTMLElement;
+
+    expect(kpiCard.textContent).toContain('12K');
+    expect(kpiCard.textContent).toContain('SAR');
+    expect(kpiCard.textContent).not.toContain('·');
+  });
+
+  it('does not show currency toggle buttons when there is only one currency', async () => {
+    mockReports({
+      payments_by_month_by_currency: { '2026-09': { SAR: 12000 } },
+    });
+
+    renderWithIntl(<ReportsPage />);
+
+    await screen.findAllByText('Monthly Revenue');
+    expect(document.querySelectorAll('.cf-btn')).toHaveLength(0);
+  });
+
+  it('defaults the chart to the currency with the largest total and switches on click', async () => {
+    mockReports({
+      payments_by_month_by_currency: {
+        '2026-08': { SAR: 1000, USD: 9000 },
+        '2026-09': { SAR: 2000, USD: 1000 },
+      },
+    });
+
+    renderWithIntl(<ReportsPage />);
+
+    await screen.findAllByText('Monthly Revenue');
+    const buttons = Array.from(document.querySelectorAll('.cf-btn')) as HTMLButtonElement[];
+    expect(buttons.map((b) => b.textContent)).toEqual(expect.arrayContaining(['SAR', 'USD']));
+
+    // USD totals 10000 vs SAR's 3000, so USD starts selected.
+    const usdBtn = buttons.find((b) => b.textContent === 'USD')!;
+    const sarBtn = buttons.find((b) => b.textContent === 'SAR')!;
+    expect(usdBtn.className).toContain('on');
+    expect(sarBtn.className).not.toContain('on');
+
+    fireEvent.click(sarBtn);
+
+    expect(sarBtn.className).toContain('on');
+    expect(usdBtn.className).not.toContain('on');
   });
 });

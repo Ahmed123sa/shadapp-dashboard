@@ -327,6 +327,12 @@ export interface ReportsData {
   total_clients?: number;
   contracts_by_status?: Record<string, number | string>;
   payments_by_month?: Record<string, number | string>;
+  // 21 Sept 2026 — payments_by_month sums every currency together; this is
+  // the same approved-only figures grouped by currency too, e.g.
+  // { "2026-09": { "SAR": 5000, "USD": 3000 } }. Lets ReportsPage show a
+  // real currency code and a real per-currency figure instead of a
+  // cross-currency sum labelled with whichever currency was hardcoded.
+  payments_by_month_by_currency?: Record<string, Record<string, number | string>>;
   approval_stats?: { approved?: number | string; rejected?: number | string; pending?: number | string };
   pending_approvals?: number;
   active_workspaces?: number;

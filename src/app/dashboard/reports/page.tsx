@@ -20,6 +20,19 @@ const STATUS_COLORS: Record<string, string> = {
   company_approved: '#A78BFA', completed: '#22C55E', archived: '#FB923C', edit_requested: '#EAB308',
 };
 
+// SAR/USD first (matches the Finance page's card order), rest alphabetical —
+// applied to whatever currencies actually show up in the data, not a fixed
+// list, so a currency this company has never been paid in never appears.
+const CURRENCY_ORDER = ['SAR', 'USD'];
+function sortCurrencies(currencies: string[]): string[] {
+  return [...currencies].sort((a, b) => {
+    const ai = CURRENCY_ORDER.indexOf(a);
+    const bi = CURRENCY_ORDER.indexOf(b);
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    return a.localeCompare(b);
+  });
+}
+
 export default function ReportsPage() {
   const t = useTranslations('dashboard');
 
@@ -76,6 +89,13 @@ export default function ReportsPage() {
   const [managerList, setManagerList] = useState<User[]>([]);
   const [loadError, setLoadError] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  // 21 Sept 2026 — null, not a currency code: the actual set of currencies
+  // isn't known until the /reports response arrives, and it can change
+  // between fetches (a filter change, a new currency showing up). null
+  // means "no explicit pick yet" and the render below falls back to
+  // whichever currency has the largest total — see revenueCurrencies.
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
 
   const buildQuery = () => {
     const params = new URLSearchParams();
@@ -169,8 +189,29 @@ export default function ReportsPage() {
       fill: STATUS_COLORS[status] || '#606060',
     }));
 
-  const paymentsData = reports?.payments_by_month
-    ? Object.entries(reports.payments_by_month).map(([month, amount]) => ({ month, amount: Number(amount) }))
+  // 21 Sept 2026 — this used to sum every currency into one `amount` per
+  // month and label the result "EGP" unconditionally (a SAR-only payment
+  // still displayed as EGP). payments_by_month_by_currency keeps the same
+  // approved-only figures split by currency instead, so each currency gets
+  // its own true scale rather than being crushed onto one axis next to
+  // currencies worth 10-100x more or less.
+  const revenueByCurrency = reports?.payments_by_month_by_currency || {};
+  const revenueCurrencies = sortCurrencies(
+    Array.from(new Set(Object.values(revenueByCurrency).flatMap((byCur) => Object.keys(byCur || {}))))
+  );
+  const revenueTotalsByCurrency = revenueCurrencies.reduce<Record<string, number>>((acc, cur) => {
+    acc[cur] = Object.values(revenueByCurrency).reduce((s, byCur) => s + Number(byCur?.[cur] ?? 0), 0);
+    return acc;
+  }, {});
+  const defaultCurrency = revenueCurrencies.length > 0
+    ? revenueCurrencies.reduce((best, cur) => (revenueTotalsByCurrency[cur] > revenueTotalsByCurrency[best] ? cur : best), revenueCurrencies[0])
+    : null;
+  const activeCurrency = selectedCurrency && revenueCurrencies.includes(selectedCurrency) ? selectedCurrency : defaultCurrency;
+
+  const paymentsData = activeCurrency
+    ? Object.entries(revenueByCurrency)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, byCur]) => ({ month, amount: Number(byCur?.[activeCurrency] ?? 0) }))
     : [];
 
   const approvalStats = reports?.approval_stats || { approved: 0, rejected: 0, pending: 0 };
@@ -186,13 +227,39 @@ export default function ReportsPage() {
     { name: tApprovalPending, value: Number(approvalStats.pending), fill: '#D4AF37' },
   ];
 
-  const totalRevenue = paymentsData.reduce((s, e) => s + e.amount, 0);
   const totalContracts = contractsData.reduce((s, e) => s + e.count, 0);
 
-  // KPI data
-  const kpiValues: Record<string, { value: string; valueColor?: string }> = {
+  // KPI data. value is ReactNode, not just string: the revenue card below
+  // needs to show a currency code next to its number (and a second, smaller
+  // line when there's more than one currency), which a plain string can't
+  // do without losing the different font sizes.
+  const kpiValues: Record<string, { value: React.ReactNode; valueColor?: string; hideDelta?: boolean }> = {
     total_clients: { value: String(reports?.total_clients ?? 0) },
-    revenue: { value: `${(totalRevenue / 1000).toFixed(0)}K ${t('currency_egp')}` },
+    // 21 Sept 2026 — this used to be `${(totalRevenue/1000).toFixed(0)}K
+    // EGP`, where totalRevenue summed every currency together and EGP was
+    // hardcoded regardless of what was actually paid. Now: the biggest
+    // currency by total gets the headline number with its real code, and
+    // the rest (if any) are listed small underneath instead of being
+    // erased into someone else's total. The "vs previous" delta arrow is
+    // dropped here specifically — it implied a trend nothing here computes,
+    // and there's no room left in this card now that currency codes take
+    // that line.
+    revenue: {
+      value: defaultCurrency === null ? '0' : (
+        <>
+          {(revenueTotalsByCurrency[defaultCurrency] / 1000).toFixed(0)}K
+          <span className="text-[length:var(--fs-1)] font-normal opacity-70 ms-1">{defaultCurrency}</span>
+          {revenueCurrencies.length > 1 && (
+            <div className="text-[length:var(--fs-1)] font-normal text-[var(--color-text-secondary)] mt-0.5">
+              {revenueCurrencies.filter((c) => c !== defaultCurrency)
+                .map((c) => `${(revenueTotalsByCurrency[c] / 1000).toFixed(0)}K ${c}`)
+                .join(' · ')}
+            </div>
+          )}
+        </>
+      ),
+      hideDelta: true,
+    },
     active_workspaces: { value: String(totalContracts) },
     pending_approvals: { value: String(reports?.pending_approvals ?? 0), valueColor: 'var(--color-error)' },
     spaces_active: { value: String(reports?.active_workspaces ?? 0) },
@@ -316,9 +383,11 @@ export default function ReportsPage() {
               <div className="text-[length:var(--fs-6)] font-bold leading-[1.1] font-display" style={{ color: kv.valueColor || 'var(--color-foreground)' }}>
                 {kv.value}
               </div>
-              <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green-text)]' : 'text-[var(--color-red-accent-text)]'}`}>
-                {cfg.deltaUp ? '↑' : '↓'} {cfg.subtitle}
-              </div>
+              {!kv.hideDelta && (
+                <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green-text)]' : 'text-[var(--color-red-accent-text)]'}`}>
+                  {cfg.deltaUp ? '↑' : '↓'} {cfg.subtitle}
+                </div>
+              )}
             </div>
           );
         })}
@@ -327,21 +396,32 @@ export default function ReportsPage() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-3.5">
         {/* Revenue Line */}
-        {paymentsData.length > 0 && (
+        {revenueCurrencies.length > 0 && (
           <div className="chart-card">
             <div className="chart-hdr">
               <div>
                 <div className="chart-title">{t('chart_revenue_title')}</div>
                 <div className="chart-sub">{t('chart_revenue_sub')}</div>
               </div>
-              {/* 21 Sept 2026 — this used to be three period buttons
-                  ("6 months / 1 year / all time") with no onClick at all,
-                  one of them permanently styled as if it were the active
-                  selection. Same shape of bug as the audit log's dead
-                  "View" link: a control that looks interactive and isn't.
-                  Removed rather than wired up — a currency toggle (below)
-                  takes this slot instead, now that the chart actually has
-                  more than one thing to switch between. */}
+              {/* 21 Sept 2026 — one currency at a time, picked here, rather
+                  than one line per currency on a shared axis: currencies
+                  are different scales, not different colors of the same
+                  thing, so a low-volume currency would render as a flat
+                  line pinned to the bottom next to a high-volume one. */}
+              {revenueCurrencies.length > 1 && (
+                <div className="chart-filter">
+                  {revenueCurrencies.map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      onClick={() => setSelectedCurrency(cur)}
+                      className={`cf-btn ${cur === activeCurrency ? 'on' : ''}`}
+                    >
+                      {cur}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={paymentsData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -355,7 +435,11 @@ export default function ReportsPage() {
                 <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={{ color: 'rgba(255,255,255,0.04)' }} tickLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
                   contentStyle={{ background: 'var(--color-background)', border: '1px solid var(--color-input-border)', borderRadius: 8, fontSize: 11 }}
-                  formatter={(value: any) => [`${Number(value).toLocaleString()} ${t('currency_egp')}`, t('chart_revenue_tooltip')]}
+                  // 21 Sept 2026 — was a hardcoded t('currency_egp'). Now the
+                  // real code of whichever currency is currently selected —
+                  // this is a single-series chart per the comment above, so
+                  // every point on it is already in activeCurrency.
+                  formatter={(value: any) => [`${Number(value).toLocaleString()} ${activeCurrency}`, t('chart_revenue_tooltip')]}
                 />
                 <Area type="monotone" dataKey="amount" stroke="var(--color-primary)" strokeWidth={2} fill="url(#revGrad)" dot={{ r: 3, fill: 'var(--color-gold)', strokeWidth: 0 }} />
               </AreaChart>
