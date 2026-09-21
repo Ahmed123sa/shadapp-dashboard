@@ -21,7 +21,32 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
 }) {
   const totalClients = managers.reduce((sum, m) => sum + (m.managed_clients_count || 0), 0);
   const activeContracts = allContracts.filter(c => c.status === 'company_approved' || c.status === 'completed').length;
-  const monthlyRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  // This used to be a single `allPayments.reduce(sum + amount)` rendered as
+  // one figure, which was wrong three separate ways:
+  //
+  //   1. It added different currencies together. 1000 SAR + 1000 USD came
+  //      out as "2000" — a number with no meaning, since nothing in this
+  //      system holds exchange rates. Totals are kept per currency instead,
+  //      the same way FinancePage already does it (approved_by_currency).
+  //   2. It had no date filter at all despite the "Monthly Revenue" label,
+  //      so it was really revenue-since-the-beginning-of-time. Expect the
+  //      displayed figure to drop sharply the first time this ships — the
+  //      old number was cumulative, not monthly.
+  //   3. It counted every payment regardless of status, so pending and even
+  //      rejected ones were reported as revenue.
+  const now = new Date();
+  const revenueByCurrency = allPayments.reduce<Record<string, number>>((acc, p) => {
+    if (p.status !== 'approved') return acc;
+    const paidAt = p.created_at ? new Date(p.created_at) : null;
+    if (!paidAt || isNaN(paidAt.getTime())) return acc;
+    if (paidAt.getFullYear() !== now.getFullYear() || paidAt.getMonth() !== now.getMonth()) return acc;
+
+    const currency = p.currency || 'SAR';
+    acc[currency] = (acc[currency] || 0) + Number(p.amount || 0);
+    return acc;
+  }, {});
+  const revenueEntries = Object.entries(revenueByCurrency).sort(([a], [b]) => a.localeCompare(b));
 
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
@@ -85,7 +110,25 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
               have yet. */}
           <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} subtitle={t('subtitle_this_month')} />
           <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('subtitle_this_week')} />
-          <DashboardStatCard label={t('monthly_revenue')} value={`${(monthlyRevenue / 1000).toFixed(0)}K`} icon={DollarSign} color="gold" subtitle={t('vs_last_month')} />
+          <DashboardStatCard
+            label={t('monthly_revenue')}
+            icon={DollarSign}
+            color="gold"
+            value={
+              revenueEntries.length === 0 ? (
+                '—'
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {revenueEntries.map(([currency, total]) => (
+                    <div key={currency} className="leading-tight">
+                      {total.toLocaleString()}
+                      <span className="text-[length:var(--fs-1)] font-normal opacity-70 ms-1">{currency}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          />
           <DashboardStatCard label={t('pending_approvals')} value={pendingApprovals.length} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
         </div>
 

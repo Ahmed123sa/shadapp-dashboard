@@ -667,7 +667,6 @@
     "mb_unit": "MB",
     "gb_unit": "GB",
     "awaiting_response": "{count} awaiting response",
-    "vs_last_month": "vs last month",
     "loading_clients": "Loading clients...",
     "no_clients": "No clients",
     "pending_status": "Pending",

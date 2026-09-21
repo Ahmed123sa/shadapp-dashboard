@@ -2,7 +2,11 @@
 
 interface DashboardStatCardProps {
   label: string;
-  value: number | string;
+  // ReactNode, not just number|string: the revenue card renders one line
+  // per currency (amounts in different currencies cannot be summed into a
+  // single figure, and this system has no exchange rates). Every other
+  // caller still passes a plain number or string.
+  value: React.ReactNode;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   color?: 'default' | 'gold' | 'crimson' | 'red';
   subtitle?: string;
