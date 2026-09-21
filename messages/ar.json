@@ -616,8 +616,6 @@
     "audit_col_entity": "الكيان",
     "audit_col_ip": "عنوان IP",
     "audit_col_datetime": "التاريخ والوقت",
-    "audit_col_details": "التفاصيل",
-    "audit_view": "عرض",
     "audit_page_info": "الصفحة {page} من {totalPages} \u2022 {total, number} نتيجة",
     "audit_previous": "السابق",
     "audit_next": "التالي",

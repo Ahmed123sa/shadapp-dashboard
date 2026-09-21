@@ -290,7 +290,24 @@ export default function AuditLogPage() {
                     <th>{t('audit_col_entity')}</th>
                     <th>{t('audit_col_ip')}</th>
                     <th>{t('audit_col_datetime')}</th>
-                    <th>{t('audit_col_details')}</th>
+                    {/* The "Details" column and its "View →" link were
+                        removed rather than wired up. The link was a bare
+                        <span> with no onClick, no <Link> and no modal
+                        anywhere in the file — styled blue with a pointer
+                        cursor and an arrow, so it read as clickable and
+                        then silently did nothing.
+
+                        Wiring it up was considered and rejected for now:
+                        the obvious thing to show is audit_logs.metadata,
+                        which the API already returns, but only about a
+                        third of the action types write anything into it
+                        (client transfers, sub-user permission/profile
+                        changes and contract signatures are the useful
+                        ones; sends, deletes, payments, meetings and files
+                        store nothing at all). A details modal today would
+                        open empty on most rows — trading a button that
+                        does nothing for a button that shows nothing.
+                        Worth revisiting once the backend records more. */}
                   </tr>
                 </thead>
                 <tbody>
@@ -328,9 +345,6 @@ export default function AuditLogPage() {
                         </td>
                         <td style={{ color: 'var(--color-text-secondary)', fontSize: 11, whiteSpace: 'nowrap' }}>
                           {date}, {time}
-                        </td>
-                        <td>
-                          <span style={{ color: 'var(--color-status-blue-text)', fontSize: 11, cursor: 'pointer' }}>{t('audit_view')} ←</span>
                         </td>
                       </tr>
                     );

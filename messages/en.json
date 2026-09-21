@@ -616,8 +616,6 @@
     "audit_col_entity": "Entity",
     "audit_col_ip": "IP Address",
     "audit_col_datetime": "Date & Time",
-    "audit_col_details": "Details",
-    "audit_view": "View",
     "audit_page_info": "Page {page} of {totalPages} \u2022 {total, number} results",
     "audit_previous": "Previous",
     "audit_next": "Next",
