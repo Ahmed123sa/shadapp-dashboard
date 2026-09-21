@@ -63,7 +63,7 @@ function mockLoad(overrides?: { messages?: unknown[]; contracts?: unknown[] }) {
 
 beforeEach(() => {
   mock = new MockAdapter(api);
-  vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+  vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
   vi.mocked(subscribeToWorkspace).mockReturnValue(vi.fn());
 });
 
@@ -185,7 +185,7 @@ describe('ChatTab (characterization)', () => {
   });
 
   it('shows the view-only chat (no composer) for a super admin', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad();
     renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
 

@@ -51,7 +51,7 @@ afterEach(() => {
 
 describe('FilesTab (characterization)', () => {
   it('loads files and definitions for the workspace on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     renderWithIntl(<FilesTab wsId={9} />);
 
@@ -61,7 +61,7 @@ describe('FilesTab (characterization)', () => {
   });
 
   it('shows Accept/Reject only for a super admin on a pending file', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad();
     renderWithIntl(<FilesTab wsId={9} />);
 
@@ -70,7 +70,7 @@ describe('FilesTab (characterization)', () => {
   });
 
   it('lets a super admin approve a pending file, updating it in place', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad();
     mock.onPost('/files/701/review').reply(200, { file: { ...pendingFile, status: 'approved' } });
 
@@ -89,7 +89,7 @@ describe('FilesTab (characterization)', () => {
   });
 
   it('lets a non-super-admin manager upload a file and adds it to the list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ files: [] });
     mock.onPost('/workspaces/9/files').reply(200, {
       file: { id: 900, workspace_id: 9, file_url: '/storage/files/b.pdf', name: 'passport.pdf', type: 'application/pdf', size: 1024, status: 'pending', uploaded_by_type: 'App\\Models\\Client', uploaded_by_id: 1 },
@@ -110,7 +110,7 @@ describe('FilesTab (characterization)', () => {
   });
 
   it('adds a new document definition and shows it in the tag list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ definitions: [] });
     mock.onPost('/workspaces/9/document-definitions').reply(200, {
       definition: { id: 2, workspace_id: 9, name: 'Passport', is_required: true, sort_order: 1 },

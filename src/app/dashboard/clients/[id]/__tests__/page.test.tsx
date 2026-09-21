@@ -69,7 +69,7 @@ afterEach(() => {
 
 describe('ClientWorkspace (characterization)', () => {
   it('loads the client on mount and renders the header', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -80,7 +80,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('redirects the URL to the client uuid once the client loads', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient({ uuid: '8f3a2b1c-0000-4000-8000-000000000009' });
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -91,7 +91,7 @@ describe('ClientWorkspace (characterization)', () => {
 
   it('preserves the ?tab= query param when redirecting to the client uuid', async () => {
     searchParams = new URLSearchParams('tab=meetings');
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient({ uuid: '8f3a2b1c-0000-4000-8000-000000000009' });
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -101,7 +101,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('does not redirect when the client has no uuid (older/partial data)', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -111,7 +111,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('shows the not-found state when the client fails to load', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mock.onGet('/clients/5').reply(500);
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -120,7 +120,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('shows the no-workspace state when the client has no workspace', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient({ workspace: null });
     // NoWorkspace auto-POSTs /workspaces on mount; fail it so it settles into
     // its own error state instead of calling window.location.reload(), which
@@ -134,7 +134,7 @@ describe('ClientWorkspace (characterization)', () => {
 
   it('syncs the active tab from the ?tab= query param on mount', async () => {
     searchParams = new URLSearchParams('tab=meetings');
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -147,7 +147,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('switches tabs when a tab button is clicked (defaults to chat)', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();
     mockFallback();
     const user = userEvent.setup();
@@ -165,7 +165,7 @@ describe('ClientWorkspace (characterization)', () => {
   });
 
   it('hides the settings link for a super admin, and never renders a delete control for anyone', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockClient();
     mockFallback();
     renderWithIntl(<ClientWorkspace />);
@@ -183,7 +183,7 @@ describe('ClientWorkspace (characterization)', () => {
   // that no longer exists in ClientWorkspace and were removed along with it
   // rather than left failing against a feature that's intentionally gone.
   it('shows the settings link for a non-super-admin, with no delete control next to it', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();
     mockFallback();
     renderWithIntl(<ClientWorkspace />);

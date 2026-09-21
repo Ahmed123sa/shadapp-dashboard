@@ -61,7 +61,7 @@ afterEach(() => {
 
 describe('ClientsPage (characterization)', () => {
   it('loads clients on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList();
     renderWithIntl(<ClientsPage />);
 
@@ -71,7 +71,7 @@ describe('ClientsPage (characterization)', () => {
   });
 
   it('debounces search input and refetches with the query', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList();
     const user = userEvent.setup();
     renderWithIntl(<ClientsPage />);
@@ -89,7 +89,7 @@ describe('ClientsPage (characterization)', () => {
   });
 
   it('paginates without carrying the search query along (existing behavior)', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList({ last_page: 2 });
     const user = userEvent.setup();
     renderWithIntl(<ClientsPage />);
@@ -104,14 +104,14 @@ describe('ClientsPage (characterization)', () => {
   });
 
   it('shows the create button for a non-super-admin and hides it for a super admin', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList();
     const { unmount } = renderWithIntl(<ClientsPage />);
     await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
     expect(screen.getByText('+ New Client')).toBeInTheDocument();
     unmount();
 
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockList();
     renderWithIntl(<ClientsPage />);
     await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
@@ -122,7 +122,7 @@ describe('ClientsPage (characterization)', () => {
     // jsdom doesn't implement createObjectURL; the component calls it
     // synchronously when a file is picked, so it needs a stub to not throw.
     (URL as unknown as { createObjectURL: (f: File) => string }).createObjectURL = vi.fn(() => 'blob:mock');
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList({ clients: [clientA] });
     const newClient = { ...clientB, id: 3, company_name: 'Gamma Inc' };
     mock.onPost('/clients').reply(200, {
@@ -178,7 +178,7 @@ describe('ClientsPage (characterization)', () => {
   // exists in ClientsPage and were removed along with it rather than left
   // failing against a feature that's intentionally gone.
   it('does not render a delete control anywhere in the clients table', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockList();
     renderWithIntl(<ClientsPage />);
 

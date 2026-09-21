@@ -70,7 +70,7 @@ afterEach(() => {
 
 describe('ClientProfileTab (characterization)', () => {
   it('loads the profile and activity on mount and renders the client card + stats', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity();
     renderWithIntl(<ClientProfileTab clientId={5} />);
@@ -88,7 +88,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('shows the not-found state when the profile fails to load', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mock.onGet('/clients/5/profile').reply(500);
     mockActivity();
     renderWithIntl(<ClientProfileTab clientId={5} />);
@@ -97,7 +97,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('shows the empty activity state when there is no activity', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity([]);
     renderWithIntl(<ClientProfileTab clientId={5} />);
@@ -106,7 +106,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('renders activity items and navigates to the mapped tab when one is clicked', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity([
       { id: '1', kind: 'contract_created', timestamp: '2026-01-01T10:00:00Z', ref_type: 'contract', ref_id: 9, title: 'New Contract' },
@@ -121,7 +121,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('hides the edit link and check-in button for a super admin', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockProfile();
     mockActivity();
     renderWithIntl(<ClientProfileTab clientId={5} />);
@@ -134,7 +134,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('shows the edit link and check-in button for an account manager', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity();
     renderWithIntl(<ClientProfileTab clientId={5} />);
@@ -147,7 +147,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('checks in a location: posts it, shows a success message, closes the picker, and reloads the profile', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity();
     mock.onPost('/clients/5/location').reply(200, {});
@@ -175,7 +175,7 @@ describe('ClientProfileTab (characterization)', () => {
   });
 
   it('shows a failure message and keeps the picker open when the check-in fails', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockProfile();
     mockActivity();
     mock.onPost('/clients/5/location').reply(500);

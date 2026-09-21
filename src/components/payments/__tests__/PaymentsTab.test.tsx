@@ -80,7 +80,7 @@ afterEach(() => {
 
 describe('PaymentsTab (characterization)', () => {
   it('loads payments and contracts for the workspace on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad();
 
     renderWithIntl(<PaymentsTab wsId={9} client={client} />);
@@ -91,7 +91,7 @@ describe('PaymentsTab (characterization)', () => {
   });
 
   it('shows Request/Schedule buttons for a non-super-admin manager but not review actions', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad();
 
     renderWithIntl(<PaymentsTab wsId={9} client={client} />);
@@ -102,7 +102,7 @@ describe('PaymentsTab (characterization)', () => {
   });
 
   it('lets a super admin approve a pending payment, updating it in place', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockInitialLoad();
     mock.onPost('/payments/501/review').reply(200, {
       payment: { ...pendingPayment, status: 'approved' },
@@ -124,7 +124,7 @@ describe('PaymentsTab (characterization)', () => {
   });
 
   it('submits a payment request and refetches the payments list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad([]);
     mock.onPost('/workspaces/9/payments/request').reply(200, {});
 
@@ -150,7 +150,7 @@ describe('PaymentsTab (characterization)', () => {
   });
 
   it('deletes a manager-scheduled payment after confirmation and removes it from the list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad([scheduledPayment]);
     mock.onDelete('/payments/502/schedule').reply(200, {});
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -169,7 +169,7 @@ describe('PaymentsTab (characterization)', () => {
   });
 
   it('polls the workspace payments/contracts every 30s', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad();
 
     renderWithIntl(<PaymentsTab wsId={9} client={client} />);

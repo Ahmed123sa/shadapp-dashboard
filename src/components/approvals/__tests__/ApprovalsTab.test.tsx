@@ -43,7 +43,7 @@ afterEach(() => {
 
 describe('ApprovalsTab (characterization)', () => {
   it('loads approvals for the workspace on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     renderWithIntl(<ApprovalsTab wsId={9} />);
 
@@ -53,14 +53,14 @@ describe('ApprovalsTab (characterization)', () => {
   });
 
   it('shows the new-approval form for a non-super-admin', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     renderWithIntl(<ApprovalsTab wsId={9} />);
     await waitFor(() => expect(screen.getByText('New Approval Request')).toBeInTheDocument());
   });
 
   it('hides the new-approval form for a super admin', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad();
     renderWithIntl(<ApprovalsTab wsId={9} />);
     await waitFor(() => expect(screen.getByText('Logo Approval')).toBeInTheDocument());
@@ -68,7 +68,7 @@ describe('ApprovalsTab (characterization)', () => {
   });
 
   it('shows the empty state when there are no approvals', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ approvals: [] });
     renderWithIntl(<ApprovalsTab wsId={9} />);
 
@@ -76,7 +76,7 @@ describe('ApprovalsTab (characterization)', () => {
   });
 
   it('sends a new approval request with a title and prepends it to the list', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ approvals: [] });
     mock.onPost('/workspaces/9/approvals').reply(200, {
       approval: { id: 900, workspace_id: 9, title: 'New Budget', description: '', reference_no: 'APR-900', status: 'pending', files: [] },

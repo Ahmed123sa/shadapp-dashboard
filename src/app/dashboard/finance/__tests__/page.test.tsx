@@ -47,7 +47,7 @@ const mockPaymentsData = {
 
 beforeEach(() => {
   mock = new MockAdapter(api);
-  vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Admin', role: 'super_admin' });
+  vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Admin', email: 'admin@example.com', role: 'super_admin' });
 
   mock.onGet(/\/clients/).reply(200, { clients: [{ id: 1, company_name: 'Acme Corp' }] });
   mock.onGet(/\/account-managers/).reply(200, { account_managers: [{ id: 2, name: 'Manager Mike' }] });

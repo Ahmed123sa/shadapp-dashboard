@@ -111,7 +111,7 @@ afterEach(() => {
 
 describe('DashboardHome', () => {
   it('AM grid view: shows stats and the client table', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', email: 'am@example.com', role: 'account_manager' });
     renderWithIntl(<DashboardHome />);
 
     expect(await screen.findByText('Acme Corp')).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('DashboardHome', () => {
 
   it('AM list view (contracts): renders the paginated table from static contracts', async () => {
     currentView = 'contracts';
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', email: 'am@example.com', role: 'account_manager' });
     renderWithIntl(<DashboardHome />);
 
     expect(await screen.findByText('Contract A')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('DashboardHome', () => {
   });
 
   it('SA grid view: shows the manager table and pending approvals', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     renderWithIntl(<DashboardHome />);
 
     expect(await screen.findByText('Manager Mike')).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('DashboardHome', () => {
 
   it('SA list view (meetings): delegates to the paginated meetings table', async () => {
     currentView = 'meetings';
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     renderWithIntl(<DashboardHome />);
 
     expect(await screen.findByText('Kickoff Meeting')).toBeInTheDocument();

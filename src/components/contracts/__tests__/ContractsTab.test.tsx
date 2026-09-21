@@ -44,7 +44,7 @@ afterEach(() => {
 
 describe('ContractsTab (characterization)', () => {
   it('loads contracts, templates and settings for the workspace on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     renderWithIntl(<ContractsTab wsId={9} />);
 
@@ -55,7 +55,7 @@ describe('ContractsTab (characterization)', () => {
   });
 
   it('shows the empty state for a super admin when there are no contracts', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad({ contracts: [] });
     renderWithIntl(<ContractsTab wsId={9} />);
 
@@ -63,7 +63,7 @@ describe('ContractsTab (characterization)', () => {
   });
 
   it('lets a non-super-admin create a new contract', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ contracts: [] });
     mock.onPost('/workspaces/9/contracts').reply(200, {
       contract: { id: 900, workspace_id: 9, title: 'New Deal', status: 'draft', contract_type: 'main', value: '', currency: 'SAR', clauses: [] },
@@ -88,7 +88,7 @@ describe('ContractsTab (characterization)', () => {
   });
 
   it('lets a non-super-admin send a draft contract', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     mock.onPost('/contracts/601/send').reply(200, {
       contract: { ...draftContract, status: 'sent' },
@@ -107,7 +107,7 @@ describe('ContractsTab (characterization)', () => {
   });
 
   it('lets a super admin company-approve a client-approved contract with a typed signature', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
     mockLoad({ contracts: [{ ...draftContract, status: 'client_approved' }] });
     mock.onGet('/auth/me').reply(200, { user: { id: 1, signature_data: null } });
     mock.onPost('/contracts/601/company-approve').reply(200, {

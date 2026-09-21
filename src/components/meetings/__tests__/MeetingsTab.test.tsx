@@ -46,7 +46,7 @@ afterEach(() => {
 
 describe('MeetingsTab (characterization)', () => {
   it('loads meetings and contracts for the workspace on mount', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     renderWithIntl(<MeetingsTab wsId={9} />);
 
@@ -57,7 +57,7 @@ describe('MeetingsTab (characterization)', () => {
   });
 
   it('shows the empty state when there are no meetings', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ meetings: [] });
     renderWithIntl(<MeetingsTab wsId={9} />);
 
@@ -65,7 +65,7 @@ describe('MeetingsTab (characterization)', () => {
   });
 
   it('lets a non-super-admin create a new meeting', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ meetings: [] });
     mock.onPost('/workspaces/9/meetings').reply(200, {
       meeting: { id: 900, workspace_id: 9, title: 'Follow-up', status: 'scheduled', scheduled_at: new Date(Date.now() + 86400000).toISOString(), duration_minutes: 30, notes: '' },
@@ -101,7 +101,7 @@ describe('MeetingsTab (characterization)', () => {
     // once React commits a render, which is a tick after .mutate() is
     // called, so two clicks landing in the same tick (as fired below) would
     // both slip past an isPending-only check. The ref is set synchronously.
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad({ meetings: [] });
     mock.onPost('/workspaces/9/meetings').reply(200, {
       meeting: { id: 901, workspace_id: 9, title: 'Double Click', status: 'scheduled', scheduled_at: new Date(Date.now() + 86400000).toISOString(), duration_minutes: 30, notes: '' },
@@ -130,7 +130,7 @@ describe('MeetingsTab (characterization)', () => {
   });
 
   it('lets a non-super-admin complete a scheduled meeting after confirming', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     mock.onPatch('/meetings/401/complete').reply(200, {
       meeting: { ...upcomingMeeting, status: 'completed' },
@@ -149,7 +149,7 @@ describe('MeetingsTab (characterization)', () => {
   });
 
   it('lets a non-super-admin cancel a scheduled meeting after confirming', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', role: 'account_manager' });
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockLoad();
     mock.onPatch('/meetings/401/cancel').reply(200, {
       meeting: { ...upcomingMeeting, status: 'cancelled' },

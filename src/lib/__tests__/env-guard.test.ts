@@ -9,7 +9,12 @@ describe('assertProductionEnv', () => {
   it('does nothing outside production, even with every var missing', () => {
     expect(() => assertProductionEnv({ NODE_ENV: 'development' })).not.toThrow();
     expect(() => assertProductionEnv({ NODE_ENV: 'test' })).not.toThrow();
-    expect(() => assertProductionEnv({})).not.toThrow();
+    // Cast, not a NODE_ENV added to the object: "every var missing" means
+    // NODE_ENV missing too, which is the case this line exists to cover.
+    // Next's global.d.ts declares NODE_ENV as a required property of
+    // ProcessEnv, so an empty object literal doesn't type-check even though
+    // it is a perfectly possible runtime value here.
+    expect(() => assertProductionEnv({} as NodeJS.ProcessEnv)).not.toThrow();
   });
 
   it('throws in production when required vars are missing', () => {
