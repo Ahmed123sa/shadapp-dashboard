@@ -878,6 +878,7 @@
     "meeting_chip_join_now": "Join Now",
     "meeting_chip_ended": "Ended",
     "meeting_chip_passcode": "Passcode: {code}",
+    "meeting_chip_rescheduled": "Rescheduled",
     "pw_default_placeholder": "Enter password",
     "pw_show": "Show password",
     "pw_hide": "Hide password",

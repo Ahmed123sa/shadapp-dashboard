@@ -86,4 +86,68 @@ describe('MeetingChip', () => {
     renderWithIntl(<MeetingChip metadata={{ passcode: '1234' }} />);
     expect(screen.getByText('Passcode: 1234')).toBeInTheDocument();
   });
+  // 23 Sept 2026 — a completed/cancelled meeting used to show the countdown
+  // or "Ended" span as if it were still upcoming. It now shows a StatusBadge.
+  it('shows a Cancelled badge, not a countdown, for a cancelled upcoming meeting', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          scheduled_at: new Date(NOW.getTime() + 120 * 60000).toISOString(),
+          link: 'https://meet.example.com/xyz',
+          status: 'cancelled',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+    expect(screen.queryByText(/left/)).not.toBeInTheDocument();
+  });
+
+  it('shows a Completed badge, not "Ended", for a completed meeting', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          scheduled_at: new Date(NOW.getTime() - 60 * 60000).toISOString(),
+          link: 'https://meet.example.com/xyz',
+          status: 'completed',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.queryByText('Ended')).not.toBeInTheDocument();
+  });
+
+  it('shows a Rescheduled pill on a reschedule card', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          scheduled_at: new Date(NOW.getTime() + 2 * 86400000).toISOString(),
+          status: 'scheduled',
+          rescheduled: true,
+        }}
+      />
+    );
+
+    expect(screen.getByText('Rescheduled')).toBeInTheDocument();
+  });
+
+  it('a completed reschedule card shows the status badge instead of the pill', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          scheduled_at: new Date(NOW.getTime() - 60 * 60000).toISOString(),
+          status: 'completed',
+          rescheduled: true,
+        }}
+      />
+    );
+
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.queryByText('Rescheduled')).not.toBeInTheDocument();
+  });
 });

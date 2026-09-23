@@ -878,6 +878,7 @@
     "meeting_chip_join_now": "انضم الآن",
     "meeting_chip_ended": "انتهى",
     "meeting_chip_passcode": "رمز الدخول: {code}",
+    "meeting_chip_rescheduled": "تم تغيير الميعاد",
     "pw_default_placeholder": "أدخل كلمة المرور",
     "pw_show": "إظهار كلمة المرور",
     "pw_hide": "إخفاء كلمة المرور",
