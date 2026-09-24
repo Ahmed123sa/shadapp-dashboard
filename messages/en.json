@@ -1072,7 +1072,9 @@
     "meeting": "Meeting",
     "deadline": "Deadline",
     "start": "Start",
-    "approval": "Approval"
+    "approval": "Approval",
+    "contract": "Contract",
+    "payment": "Payment"
   },
   "reports": {
     "title": "Reports & Audit Log",

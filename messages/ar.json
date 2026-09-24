@@ -1072,7 +1072,9 @@
     "meeting": "اجتماع",
     "deadline": "موعد نهائي",
     "start": "بداية",
-    "approval": "موافقة"
+    "approval": "موافقة",
+    "contract": "عقد",
+    "payment": "دفعة"
   },
   "reports": {
     "title": "التقارير وسجل التدقيق",
