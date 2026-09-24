@@ -54,6 +54,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   useEffect(() => {
     const unsub = subscribeToWorkspace(wsId, {
       onMessageSent: () => { reloadAll(); },
+      onMessageUpdated: () => { reloadAll(); },
       onContractStatusChanged: () => { reloadAll(); },
     });
     return () => { if (unsub) unsub(); };

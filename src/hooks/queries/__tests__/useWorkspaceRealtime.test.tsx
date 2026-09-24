@@ -61,6 +61,18 @@ describe('useWorkspaceRealtime', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: chatKeys.workspace(9) });
   });
 
+  // 23 Sept 2026 — an edited message, or a client answering an approval
+  // card, arrives as message.updated; the chat must refresh for it too.
+  it('invalidates the chat query cache when a message is updated', () => {
+    renderHook(() => useWorkspaceRealtime(9), { wrapper: wrapper(queryClient) });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { onMessageUpdated } = vi.mocked(subscribeToWorkspace).mock.calls[0][1];
+
+    onMessageUpdated!({});
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: chatKeys.workspace(9) });
+  });
+
   it('invalidates the contracts query cache when a contract status changes', () => {
     renderHook(() => useWorkspaceRealtime(9), { wrapper: wrapper(queryClient) });
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');

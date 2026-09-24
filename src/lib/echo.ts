@@ -122,6 +122,9 @@ export function subscribeToWorkspace(
   wsId: number,
   callbacks: {
     onMessageSent?: (payload: any) => void;
+    // An existing message changed - an edit, or a client answering an
+    // approval card. Added 23 Sept 2026; the backend already broadcast it.
+    onMessageUpdated?: (payload: any) => void;
     onContractStatusChanged?: () => void;
     onWorkspaceStatusChanged?: (payload: any) => void;
     onPaymentStatusChanged?: (payload: any) => void;
@@ -135,6 +138,12 @@ export function subscribeToWorkspace(
   if (callbacks.onMessageSent) {
     channel.listen('.message.sent', (e: any) => {
       callbacks.onMessageSent!(e);
+    });
+  }
+
+  if (callbacks.onMessageUpdated) {
+    channel.listen('.message.updated', (e: any) => {
+      callbacks.onMessageUpdated!(e);
     });
   }
 
@@ -159,6 +168,9 @@ export function subscribeToWorkspace(
   return () => {
     if (callbacks.onMessageSent) {
       channel.stopListening('.message.sent');
+    }
+    if (callbacks.onMessageUpdated) {
+      channel.stopListening('.message.updated');
     }
     if (callbacks.onContractStatusChanged) {
       channel.stopListening('.contract.status_changed');
