@@ -16,6 +16,11 @@ import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hoo
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
 import type { ChatMessage, Contract, User } from '@/types';
 
+// Messages box height: fills the viewport minus the page chrome above it
+// (header, client card, tabs) and the composer below, but never shorter than
+// the old fixed h-72. Written out in full so Tailwind can see the classes.
+const CHAT_BOX_HEIGHT = 'h-[calc(100vh-24rem)] min-h-72';
+
 export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; wsActive?: boolean; clientType?: string }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
@@ -118,12 +123,13 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
   if (!canChat) {
     return (
-      <div className="text-center py-10 space-y-3">
-        <span className="text-4xl block">{!wsActive ? '🔒' : '👁️'}</span>
-        <p className="text-[var(--color-text-secondary)] text-sm">
-          {!wsActive ? t('chat_unavailable') : t('chat_view_only')}
-        </p>
-        <div className="h-72 overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]">
+      <div className="space-y-2">
+        {/* 23 Sept 2026 — was a fixed h-72 (288px) box under a ~124px
+            eye-emoji banner, so on a large screen the messages got about a
+            third of the height and the rest sat empty. The box now grows with
+            the viewport (never smaller than before), and the notice is a slim
+            bar below it, where the composer would otherwise be. */}
+        <div className={`${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
           {contracts.length > 0 && contracts.map((c) => (
             <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={() => {}} />
           ))}
@@ -177,6 +183,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             );
           })}
         </div>
+        <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-[var(--color-card-border)] text-xs text-[var(--color-text-secondary)]">
+          <span aria-hidden="true">{!wsActive ? '🔒' : '👁️'}</span>
+          <span>{!wsActive ? t('chat_unavailable') : t('chat_view_only')}</span>
+        </div>
       </div>
     );
   }
@@ -196,7 +206,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         <ContractBuilder wsId={wsId} onCreated={onContractCreated} onCancel={() => setShowBuilder(false)} />
       )}
 
-      <div ref={chatRef} className="h-72 overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]">
+      <div ref={chatRef} className={`${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
         {contracts.length > 0 && contracts.map((c) => (
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />
         ))}
