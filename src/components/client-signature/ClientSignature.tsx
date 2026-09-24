@@ -17,9 +17,12 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const sigData = clientData?.signature_data;
+  // Signed URL for showing an uploaded image — /storage/... doesn't exist in
+  // production (23 Sept 2026). Falls back to the raw value for older APIs.
+  const sigImageSrc = clientData?.signature_url || sigData;
   const [mode, setMode] = useState<'text' | 'image'>(sigData && !isImageUrl(sigData) ? 'text' : 'image');
   const [signature, setSignature] = useState(!sigData || isImageUrl(sigData) ? '' : sigData);
-  const [preview, setPreview] = useState<string | null>(sigData && isImageUrl(sigData) ? sigData : null);
+  const [preview, setPreview] = useState<string | null>(sigData && isImageUrl(sigData) ? (sigImageSrc ?? null) : null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [done, setDone] = useState(!!clientData?.signed_at);
@@ -88,7 +91,7 @@ export default function ClientSignature({ clientId, clientData, onSigned }: { cl
     }
   };
 
-  const existingImage = isImageUrl(sigData) ? sigData : null;
+  const existingImage = isImageUrl(sigData) ? sigImageSrc : null;
 
   return (
     <div className="space-y-4">

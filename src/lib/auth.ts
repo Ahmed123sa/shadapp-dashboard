@@ -7,6 +7,7 @@ export interface User {
   role: 'super_admin' | 'account_manager';
   official_email?: string;
   signature_data?: string;
+  signature_url?: string | null;
   signed_at?: string;
   avatar_url?: string;
 }

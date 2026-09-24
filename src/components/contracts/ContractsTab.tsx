@@ -37,7 +37,9 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
   const [approveSig, setApproveSig] = useState<{ id: number; signature: string } | null>(null);
-  const [savedUserSig, setSavedUserSig] = useState<{ data: string; type: string } | null>(null);
+  // url: the backend's signed signature_url, for showing an uploaded image —
+  // /storage/... doesn't exist in production (23 Sept 2026).
+  const [savedUserSig, setSavedUserSig] = useState<{ data: string; type: string; url?: string } | null>(null);
   const [useSavedSig, setUseSavedSig] = useState(false);
   const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
   const [newReqDoc, setNewReqDoc] = useState('');
@@ -105,7 +107,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     try {
       const { data } = await api.get('/auth/me');
       if (data.user?.signature_data) {
-        setSavedUserSig({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text' });
+        setSavedUserSig({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text', url: data.user.signature_url });
       }
     } catch (err) {
       reportError('ContractsTab.openApproveSig', err);
@@ -276,7 +278,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
                 {savedUserSig.type === 'text' ? (
                   <p className="text-lg font-[cursive] border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] text-center">{savedUserSig.data}</p>
                 ) : (
-                  <img src={resolveFileUrl(savedUserSig.data)} alt={t('saved_signature_alt')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)] mx-auto" />
+                  <img src={savedUserSig.url || resolveFileUrl(savedUserSig.data)} alt={t('saved_signature_alt')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)] mx-auto" />
                 )}
                 <div className="flex gap-2">
                   <button onClick={() => setUseSavedSig(true)}
@@ -293,7 +295,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
                     savedUserSig.type === 'text' ? (
                       <p className="text-lg font-[cursive] mt-2 text-purple-900">{savedUserSig.data}</p>
                     ) : (
-                      <img src={resolveFileUrl(savedUserSig.data)} alt="" className="max-h-16 mx-auto mt-2" />
+                      <img src={savedUserSig.url || resolveFileUrl(savedUserSig.data)} alt="" className="max-h-16 mx-auto mt-2" />
                     )
                   )}
                 </div>

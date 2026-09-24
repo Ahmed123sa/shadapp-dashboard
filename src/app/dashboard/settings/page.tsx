@@ -36,7 +36,9 @@ export default function SettingsPage() {
   const [typedSignature, setTypedSignature] = useState('');
   const [uploadedSignatureFile, setUploadedSignatureFile] = useState<File | null>(null);
   const [uploadedSignaturePreview, setUploadedSignaturePreview] = useState('');
-  const [savedSignature, setSavedSignature] = useState<{ data: string; type: string } | null>(null);
+  // url: the backend's signed signature_url, for showing an uploaded image —
+  // /storage/... doesn't exist in production (23 Sept 2026).
+  const [savedSignature, setSavedSignature] = useState<{ data: string; type: string; url?: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [savingSig, setSavingSig] = useState(false);
   const [deletingSig, setDeletingSig] = useState(false);
@@ -81,7 +83,7 @@ export default function SettingsPage() {
       if (u.date_of_birth) setDateOfBirth(String(u.date_of_birth).substring(0, 10));
       if (u.avatar_url) setAvatarPreview(resolveFileUrl(u.avatar_url));
       if (u.signature_data) {
-        setSavedSignature({ data: u.signature_data, type: isImageSignature(u.signature_data) ? 'image' : 'text' });
+        setSavedSignature({ data: u.signature_data, type: isImageSignature(u.signature_data) ? 'image' : 'text', url: u.signature_url });
       }
       localStorage.setItem('user', JSON.stringify(u));
     }).catch((err) => reportError('SettingsPage.loadUser', err));
@@ -232,7 +234,7 @@ export default function SettingsPage() {
       }
       const { data } = await api.post('/auth/sign', form);
       if (data.user?.signature_data) {
-        setSavedSignature({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text' });
+        setSavedSignature({ data: data.user.signature_data, type: isImageSignature(data.user.signature_data) ? 'image' : 'text', url: data.user.signature_url });
         localStorage.setItem('user', JSON.stringify(data.user));
         setSigSuccess(true);
         setTimeout(() => setSigSuccess(false), 3000);
@@ -439,7 +441,7 @@ export default function SettingsPage() {
             {savedSignature.type === 'text' ? (
               <p className="text-lg font-[cursive] border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] text-center">{savedSignature.data}</p>
             ) : (
-              <img src={resolveFileUrl(savedSignature.data)} alt={t('saved_signature')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
+              <img src={savedSignature.url || resolveFileUrl(savedSignature.data)} alt={t('saved_signature')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
             )}
             <button onClick={deleteSignature} disabled={deletingSig}
               className="text-red-600 hover:text-red-700 text-xs underline disabled:opacity-50">
