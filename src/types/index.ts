@@ -352,6 +352,30 @@ export interface ReportsData {
   // alongside a backend that sends them.
 }
 
+// 24 Sept 2026 — GET /dashboard/stats (server-side-stats-plan.md). Every
+// number here is a full COUNT/SUM computed on the server, scoped to what the
+// signed-in user is allowed to see (an account manager gets their own
+// clients; a super admin gets everyone). Replaces the dashboard cards that
+// used to be computed in the browser from a paginated list capped at
+// 30-100 rows, which silently under-counted once real data grew past that
+// cap and let web and mobile disagree with each other.
+export interface DashboardStats {
+  clients: { total: number };
+  contracts: { active: number; awaiting_client: number };
+  payments: { pending: number };
+  approvals: {
+    pending_requests: number;
+    pending_contracts: number;
+    pending_payments: number;
+    total: number;
+  };
+  // Approved payments this month only, grouped by currency, e.g.
+  // { "SAR": 12500, "USD": 3000 }. "This month" is computed server-side in
+  // Egypt time (period.timezone below), not UTC or the browser's local time.
+  revenue_this_month: Record<string, number>;
+  period: { month: string; timezone: string };
+}
+
 export interface SubUser {
   id: number;
   client_id?: number;

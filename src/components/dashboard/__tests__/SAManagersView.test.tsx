@@ -1,143 +1,107 @@
-import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import MockAdapter from 'axios-mock-adapter';
 import { useTranslations, useLocale } from 'next-intl';
 import { renderWithIntl } from '@/test/render';
+import api from '@/lib/api';
 import SAManagersView from '../SAManagersView';
-import type { Payment } from '@/components/dashboard/types';
+import type { DashboardStats } from '@/types';
 
-// The revenue card had no coverage at all, which is how it stayed wrong for
-// so long. It summed every payment ever made, of any status, in any
-// currency, into a single figure labelled "Monthly Revenue".
-//
-// SAManagersView takes `t` as a prop rather than calling useTranslations
-// itself, so this harness supplies a real one (and a real locale) from the
-// same provider the app uses — a hand-rolled stub would let a renamed
-// translation key pass here and break in the app.
-function Harness({ payments }: { payments: Payment[] }) {
+// 24 Sept 2026 — this view's four summary cards (total clients, active
+// contracts, monthly revenue, pending approvals) used to be computed here
+// from managers/allContracts/allPayments/pendingApprovals props, each
+// capped at 30-100 rows the parent had already fetched — wrong once real
+// data grew past that cap. The revenue card specifically also summed every
+// currency into one meaningless figure with no date filter at all despite
+// its "Monthly Revenue" label, and the approvals card counted only approval
+// requests while the badge that opens the same screen also counts pending
+// contracts and payments. All four now come from GET /dashboard/stats,
+// mocked below instead of computed from prop arrays.
+
+function Harness() {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   return (
     <SAManagersView
-      t={t}
-      locale={locale}
-      managers={[]}
-      allContracts={[]}
-      allPayments={payments}
-      allMeetings={[]}
-      pendingApprovals={[]}
-      unreadCount={0}
+      t={t} locale={locale} managers={[]} allContracts={[]} allPayments={[]}
+      allMeetings={[]} pendingApprovals={[]} unreadCount={0}
     />
   );
 }
 
-const thisMonth = new Date().toISOString();
-const lastMonth = (() => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  // Guard against the 31st-of-a-month rollover landing back in this month.
-  d.setDate(1);
-  return d.toISOString();
-})();
-
-function payment(over: Partial<Payment>): Payment {
+function statsResponse(overrides: Partial<DashboardStats> = {}): DashboardStats {
   return {
-    id: 1,
-    amount: '1000',
-    currency: 'SAR',
-    method_type: 'bank_transfer',
-    status: 'approved',
-    created_at: thisMonth,
-    ...over,
+    clients: { total: 0 },
+    contracts: { active: 0, awaiting_client: 0 },
+    payments: { pending: 0 },
+    approvals: { pending_requests: 0, pending_contracts: 0, pending_payments: 0, total: 0 },
+    revenue_this_month: {},
+    period: { month: '2026-09', timezone: 'Africa/Cairo' },
+    ...overrides,
   };
 }
 
-/** The card's value, isolated from the rest of the dashboard. */
+let mock: MockAdapter;
+
+beforeEach(() => {
+  mock = new MockAdapter(api);
+});
+
+afterEach(() => {
+  mock.restore();
+});
+
+/** The revenue card's value, isolated from the rest of the dashboard. */
 function revenueCard() {
   return screen.getByText('Monthly Revenue').closest('div')!.parentElement!;
 }
 
-describe('SAManagersView revenue card', () => {
-  // The headline bug: different currencies are not addable, and this system
-  // holds no exchange rates, so there is no honest single figure to show.
-  it('keeps each currency on its own line instead of summing them', () => {
-    renderWithIntl(
-      <Harness
-        payments={[
-          payment({ id: 1, amount: '1000', currency: 'SAR' }),
-          payment({ id: 2, amount: '500', currency: 'USD' }),
-        ]}
-      />
-    );
+describe('SAManagersView', () => {
+  it('shows total clients, active contracts and the unified pending-approvals total from the server', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse({
+      clients: { total: 42 },
+      contracts: { active: 18, awaiting_client: 5 },
+      // Deliberately not 8 (3+5) — proves this reads approvals.total, the
+      // same figure the approvals badge uses, not a client-side re-count.
+      approvals: { pending_requests: 3, pending_contracts: 5, pending_payments: 7, total: 15 },
+    }));
+    renderWithIntl(<Harness />);
 
-    const card = within(revenueCard());
-    expect(card.getByText('SAR')).toBeInTheDocument();
-    expect(card.getByText('USD')).toBeInTheDocument();
-    expect(card.getByText('1,000')).toBeInTheDocument();
-    expect(card.getByText('500')).toBeInTheDocument();
-    // The old behaviour: 1000 + 500 rendered as a single "1,500" / "2K".
-    expect(card.queryByText('1,500')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument());
+    expect(screen.getByText('18')).toBeInTheDocument();
+    expect(screen.getByText('15')).toBeInTheDocument();
   });
 
-  it('adds up several payments in the same currency', () => {
-    renderWithIntl(
-      <Harness
-        payments={[
-          payment({ id: 1, amount: '1000', currency: 'SAR' }),
-          payment({ id: 2, amount: '250', currency: 'SAR' }),
-        ]}
-      />
-    );
+  it('shows 0 for a brand new company with nothing yet, not a stale number', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse());
+    renderWithIntl(<Harness />);
 
-    expect(within(revenueCard()).getByText('1,250')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('0').length).toBeGreaterThan(0));
   });
 
-  it('ignores payments that are not approved', () => {
-    renderWithIntl(
-      <Harness
-        payments={[
-          payment({ id: 1, amount: '1000', currency: 'SAR', status: 'approved' }),
-          payment({ id: 2, amount: '9999', currency: 'SAR', status: 'pending' }),
-          payment({ id: 3, amount: '8888', currency: 'SAR', status: 'rejected' }),
-        ]}
-      />
-    );
+  describe('revenue card', () => {
+    // The headline bug: different currencies are not addable, and this
+    // system holds no exchange rates, so there is no honest single figure.
+    it('keeps each currency on its own line instead of summing them', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse({
+        revenue_this_month: { SAR: 1000, USD: 500 },
+      }));
+      renderWithIntl(<Harness />);
 
-    const card = within(revenueCard());
-    expect(card.getByText('1,000')).toBeInTheDocument();
-    expect(card.queryByText('9,999')).not.toBeInTheDocument();
-    expect(card.queryByText('8,888')).not.toBeInTheDocument();
-  });
+      await waitFor(() => expect(screen.getByText('1,000')).toBeInTheDocument());
+      const card = within(revenueCard());
+      expect(card.getByText('SAR')).toBeInTheDocument();
+      expect(card.getByText('USD')).toBeInTheDocument();
+      expect(card.getByText('500')).toBeInTheDocument();
+      // The old behaviour: 1000 + 500 rendered as a single "1,500".
+      expect(card.queryByText('1,500')).not.toBeInTheDocument();
+    });
 
-  // The label says "Monthly Revenue"; before this it was revenue since the
-  // beginning of time.
-  it('ignores payments from other months', () => {
-    renderWithIntl(
-      <Harness
-        payments={[
-          payment({ id: 1, amount: '1000', currency: 'SAR', created_at: thisMonth }),
-          payment({ id: 2, amount: '7777', currency: 'SAR', created_at: lastMonth }),
-        ]}
-      />
-    );
+    it('shows a dash rather than a zero when there is nothing this month', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse({ revenue_this_month: {} }));
+      renderWithIntl(<Harness />);
 
-    const card = within(revenueCard());
-    expect(card.getByText('1,000')).toBeInTheDocument();
-    expect(card.queryByText('7,777')).not.toBeInTheDocument();
-  });
-
-  it('shows a dash rather than a zero when there is nothing this month', () => {
-    renderWithIntl(<Harness payments={[payment({ created_at: lastMonth })]} />);
-
-    expect(within(revenueCard()).getByText('—')).toBeInTheDocument();
-  });
-
-  it('falls back to SAR when a payment carries no currency', () => {
-    renderWithIntl(
-      <Harness payments={[{ ...payment({ amount: '300' }), currency: '' }]} />
-    );
-
-    const card = within(revenueCard());
-    expect(card.getByText('300')).toBeInTheDocument();
-    expect(card.getByText('SAR')).toBeInTheDocument();
+      await waitFor(() => expect(within(revenueCard()).getByText('—')).toBeInTheDocument());
+    });
   });
 });

@@ -70,7 +70,7 @@ export default function DashboardHome() {
 
   if (isSA) {
     if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {
-      return <SAListView t={t} locale={locale} view={view} clients={clients} allContracts={allContracts} allPayments={allPayments} managers={managers} />;
+      return <SAListView t={t} locale={locale} view={view} clients={clients} allPayments={allPayments} managers={managers} />;
     }
     return <SAManagersView
       t={t} locale={locale} managers={managers} allContracts={allContracts}
@@ -79,7 +79,7 @@ export default function DashboardHome() {
   }
 
   if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {
-    return <AMListView t={t} locale={locale} view={view} clients={clients} allContracts={allContracts} allPayments={allPayments} />;
+    return <AMListView t={t} locale={locale} view={view} clients={clients} allPayments={allPayments} />;
   }
 
   return <AMView

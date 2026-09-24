@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Users, FileText, CreditCard, MessageCircle } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
@@ -18,10 +19,17 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
   allPayments: Payment[]; allMeetings: Meeting[]; unreadCount: number; unreadClientsCount: number;
 }) {
   const router = useRouter();
-  const totalClients = clients.length;
-  const activeContracts = allContracts.filter(c => c.status === 'company_approved' || c.status === 'completed').length;
-  const pendingContractsCount = allContracts.filter(c => c.status === 'sent' || c.status === 'client_approved').length;
-  const pendingPaymentsCount = allPayments.filter(p => p.status === 'pending').length;
+  // 24 Sept 2026 — these four cards (server-side-stats-plan.md) used to be
+  // computed from clients/allContracts/allPayments, each capped at the
+  // first 30-100 rows the parent fetched — so an account manager with more
+  // clients or contracts than that saw an undercount. GET /dashboard/stats
+  // computes each as a full COUNT over the whole table, scoped to this
+  // manager's own clients. Falls back to 0 while the request is in flight.
+  const { data: stats } = useDashboardStats();
+  const totalClients = stats?.clients.total ?? 0;
+  const activeContracts = stats?.contracts.active ?? 0;
+  const pendingContractsCount = stats?.contracts.awaiting_client ?? 0;
+  const pendingPaymentsCount = stats?.payments.pending ?? 0;
 
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
@@ -53,7 +61,7 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           {/* "+2" here was a literal, not a computed delta — same note as
               SAManagersView. */}
-          <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" subtitle={t('subtitle_this_month')} />
+          <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" />
           <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('awaiting_response', { count: pendingContractsCount })} />
           <DashboardStatCard label={t('pending_payments')} value={pendingPaymentsCount} icon={CreditCard} color="gold" subtitle={t('subtitle_needs_action')} />
           <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon={MessageCircle} color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />

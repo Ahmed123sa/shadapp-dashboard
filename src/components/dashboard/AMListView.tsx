@@ -10,12 +10,15 @@ import type { Client, Contract, Payment, Meeting, FileFile, PaginatedResponse, T
 import { formatDate, formatTime, formatFileSize } from '@/components/dashboard/format';
 
 // The paginated table view (?view=contracts|meetings|payments|files) shown
-// to an account manager. 'contracts' renders straight from the already-
-// fetched allContracts prop (a static, non-paginated config); the other
-// three views page through their own dedicated API endpoints.
-export default function AMListView({ t, locale, view, clients, allContracts, allPayments }: {
-  t: TFunc; locale: string; view: string; clients: Client[];
-  allContracts: Contract[]; allPayments: Payment[];
+// to an account manager. All four page through their own dedicated API
+// endpoint now. 'contracts' used to render straight from an allContracts
+// prop the parent had already capped at 100 rows with no real pagination
+// (W9 in server-side-stats-plan.md: any contract past the 30th was
+// invisible in this list, not just undercounted, since the table never
+// linked to a next page). It now pages through /all-contracts the same way
+// meetings/payments/files already did, so the allContracts prop is gone.
+export default function AMListView({ t, locale, view, clients, allPayments }: {
+  t: TFunc; locale: string; view: string; clients: Client[]; allPayments: Payment[];
 }) {
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -31,13 +34,14 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
     setApiLoading(true);
     try {
       let endpoint = '';
-      if (viewType === 'meetings') endpoint = `/all-meetings?page=${pageNum}&per_page=10`;
+      if (viewType === 'contracts') endpoint = `/all-contracts?page=${pageNum}&per_page=10`;
+      else if (viewType === 'meetings') endpoint = `/all-meetings?page=${pageNum}&per_page=10`;
       else if (viewType === 'payments') endpoint = `/all-payments?page=${pageNum}&per_page=10`;
       else if (viewType === 'files') endpoint = `/all-files?page=${pageNum}&per_page=10`;
       if (!endpoint) { setApiLoading(false); return; }
 
       const res = await api.get(endpoint);
-      const key = viewType === 'meetings' ? 'meetings' : viewType === 'payments' ? 'payments' : 'files';
+      const key = viewType === 'contracts' ? 'contracts' : viewType === 'meetings' ? 'meetings' : viewType === 'payments' ? 'payments' : 'files';
       const paginated: PaginatedResponse<any> = res.data[key] || { data: [], last_page: 1, total: 0 };
       setApiItems(paginated.data || []);
       setApiMeta({ lastPage: paginated.last_page, total: paginated.total });
@@ -51,24 +55,23 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
 
   useEffect(() => {
     setPage(1);
-    if (view === 'meetings' || view === 'payments' || view === 'files') {
+    if (view === 'contracts' || view === 'meetings' || view === 'payments' || view === 'files') {
       fetchPaginated(view, 1);
     }
   }, [view, fetchPaginated]);
 
   useEffect(() => {
-    if (view === 'meetings' || view === 'payments' || view === 'files') {
+    if (view === 'contracts' || view === 'meetings' || view === 'payments' || view === 'files') {
       fetchPaginated(view, page);
     }
   }, [page, view, fetchPaginated]);
 
-  const isPaginated = view === 'meetings' || view === 'payments' || view === 'files';
+  const isPaginated = view === 'contracts' || view === 'meetings' || view === 'payments' || view === 'files';
 
-  const staticViewConfig: Record<string, { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; items: any[]; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode }> = {
-    contracts: {
+  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode } | null => {
+    if (viewType === 'contracts') return {
       title: t('contracts_nav'),
       icon: FileText,
-      items: allContracts,
       headers: [t('col_client'), t('col_title'), t('col_type'), t('col_value'), t('col_date'), t('col_status')],
       getLink: (c: Contract) => `/dashboard/clients/${c.workspace?.client?.id}?tab=العقود`,
       renderRow: (c: Contract, loc: string) => (
@@ -98,10 +101,7 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
           <td className="px-3.5 py-2.5 border-b border-white/[0.04]"><StatusBadge status={c.status} /></td>
         </>
       ),
-    },
-  };
-
-  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode } | null => {
+    };
     if (viewType === 'meetings') return {
       title: t('meetings_nav'), icon: Calendar,
       headers: [t('col_client'), t('col_title'), t('col_datetime'), t('col_duration'), t('col_status')],
@@ -190,14 +190,12 @@ export default function AMListView({ t, locale, view, clients, allContracts, all
     return null;
   };
 
-  const dynConfig = getDynamicConfig(view, apiItems);
-  const statConfig = staticViewConfig[view];
-
-  const items = isPaginated ? apiItems : (statConfig?.items || []);
-  const lastPage = isPaginated ? (apiMeta?.lastPage || 1) : 1;
-  const total = isPaginated ? (apiMeta?.total || 0) : (statConfig?.items.length || 0);
-  const config = dynConfig || statConfig;
+  const config = getDynamicConfig(view, apiItems);
   if (!config) return null;
+
+  const items = isPaginated ? apiItems : [];
+  const lastPage = isPaginated ? (apiMeta?.lastPage || 1) : 1;
+  const total = isPaginated ? (apiMeta?.total || 0) : 0;
 
   return (
     <PaginatedView

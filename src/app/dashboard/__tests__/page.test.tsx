@@ -96,12 +96,22 @@ beforeEach(() => {
   currentView = '';
   mock = new MockAdapter(api);
   mock.onGet(/\/clients/).reply(200, { clients: { data: [client] } });
-  mock.onGet(/\/all-contracts/).reply(200, { contracts: { data: [contract] } });
+  mock.onGet(/\/all-contracts/).reply(200, { contracts: { data: [contract], last_page: 1, total: 1 } });
   mock.onGet(/\/all-payments/).reply(200, { payments: { data: [payment], last_page: 1, total: 1 } });
   mock.onGet(/\/all-meetings/).reply(200, { meetings: { data: [meeting], last_page: 1, total: 1 } });
   mock.onGet(/\/notifications/).reply(200, { unread_count: 3, unread_clients_count: 2 });
   mock.onGet(/\/account-managers/).reply(200, { managers: [manager] });
   mock.onGet(/\/approvals\/pending/).reply(200, { approvals: [approval] });
+  // AMView/SAManagersView both read their summary cards from this now
+  // (server-side-stats-plan.md) instead of computing them from the lists
+  // above; the numbers themselves aren't what this characterization test
+  // checks, just that the page still renders its labels and lists.
+  mock.onGet(/\/dashboard\/stats/).reply(200, {
+    clients: { total: 1 }, contracts: { active: 1, awaiting_client: 0 },
+    payments: { pending: 0 },
+    approvals: { pending_requests: 1, pending_contracts: 0, pending_payments: 0, total: 1 },
+    revenue_this_month: { SAR: 2000 }, period: { month: '2026-08', timezone: 'Africa/Cairo' },
+  });
 });
 
 afterEach(() => {
@@ -124,7 +134,7 @@ describe('DashboardHome', () => {
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
   });
 
-  it('AM list view (contracts): renders the paginated table from static contracts', async () => {
+  it('AM list view (contracts): renders the paginated contracts table', async () => {
     currentView = 'contracts';
     vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', email: 'am@example.com', role: 'account_manager' });
     renderWithIntl(<DashboardHome />);

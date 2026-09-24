@@ -4,6 +4,7 @@ import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { Users, FileText, DollarSign, Clock } from 'lucide-react';
 import api from '@/lib/api';
+import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
 import ManagerTableRow from '@/components/dashboard/ManagerTableRow';
@@ -19,34 +20,21 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
   t: TFunc; locale: string; managers: Manager[]; allContracts: Contract[];
   allPayments: Payment[]; allMeetings: Meeting[]; pendingApprovals: Approval[]; unreadCount: number;
 }) {
-  const totalClients = managers.reduce((sum, m) => sum + (m.managed_clients_count || 0), 0);
-  const activeContracts = allContracts.filter(c => c.status === 'company_approved' || c.status === 'completed').length;
-
-  // This used to be a single `allPayments.reduce(sum + amount)` rendered as
-  // one figure, which was wrong three separate ways:
-  //
-  //   1. It added different currencies together. 1000 SAR + 1000 USD came
-  //      out as "2000" — a number with no meaning, since nothing in this
-  //      system holds exchange rates. Totals are kept per currency instead,
-  //      the same way FinancePage already does it (approved_by_currency).
-  //   2. It had no date filter at all despite the "Monthly Revenue" label,
-  //      so it was really revenue-since-the-beginning-of-time. Expect the
-  //      displayed figure to drop sharply the first time this ships — the
-  //      old number was cumulative, not monthly.
-  //   3. It counted every payment regardless of status, so pending and even
-  //      rejected ones were reported as revenue.
-  const now = new Date();
-  const revenueByCurrency = allPayments.reduce<Record<string, number>>((acc, p) => {
-    if (p.status !== 'approved') return acc;
-    const paidAt = p.created_at ? new Date(p.created_at) : null;
-    if (!paidAt || isNaN(paidAt.getTime())) return acc;
-    if (paidAt.getFullYear() !== now.getFullYear() || paidAt.getMonth() !== now.getMonth()) return acc;
-
-    const currency = p.currency || 'SAR';
-    acc[currency] = (acc[currency] || 0) + Number(p.amount || 0);
-    return acc;
-  }, {});
-  const revenueEntries = Object.entries(revenueByCurrency).sort(([a], [b]) => a.localeCompare(b));
+  // 24 Sept 2026 — total clients, active contracts, and monthly revenue
+  // (server-side-stats-plan.md) used to be computed here from managers'
+  // managed_clients_count (which counts archived clients too) and from
+  // allContracts/allPayments (capped at the first 100 rows the parent
+  // fetched, and — for revenue — summed across currencies with no date
+  // filter despite the "Monthly Revenue" label, so it was really revenue-
+  // since-the-beginning-of-time). GET /dashboard/stats now computes all
+  // three as full COUNT/SUMs over the whole table, so these track the same
+  // numbers /badge-counts and the mobile app show. Falls back to 0 / no
+  // breakdown while the request is in flight.
+  const { data: stats } = useDashboardStats();
+  const totalClients = stats?.clients.total ?? 0;
+  const activeContracts = stats?.contracts.active ?? 0;
+  const pendingApprovalsTotal = stats?.approvals.total ?? pendingApprovals.length;
+  const revenueEntries = Object.entries(stats?.revenue_this_month ?? {}).sort(([a], [b]) => a.localeCompare(b));
 
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
@@ -108,8 +96,8 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
               what the data was. Dropped rather than faked; a real
               period-over-period delta needs backend aggregation we don't
               have yet. */}
-          <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} subtitle={t('subtitle_this_month')} />
-          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('subtitle_this_week')} />
+          <DashboardStatCard label={t('total_clients')} value={totalClients} icon={Users} />
+          <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} />
           <DashboardStatCard
             label={t('monthly_revenue')}
             icon={DollarSign}
@@ -129,7 +117,7 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
               )
             }
           />
-          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovals.length} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
+          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovalsTotal} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
