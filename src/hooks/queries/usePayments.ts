@@ -83,7 +83,11 @@ export function useReviewPayment(wsId: number) {
 export function useSchedulePayments(wsId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (installments: Array<{ amount: string; currency: string; due_date: string; installment_label: string }>) =>
+    // contract_id is optional per installment — sent when the workspace's
+    // contracts span more than one currency, so the backend can resolve the
+    // right one (PaymentController::resolveCurrency() overrides `currency`
+    // to the linked contract's regardless, see payment-currency-plan.md).
+    mutationFn: (installments: Array<{ amount: string; currency: string; due_date: string; installment_label: string; contract_id?: number }>) =>
       api.post(`/workspaces/${wsId}/payments/schedule`, { installments }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.workspace(wsId) });
@@ -94,7 +98,7 @@ export function useSchedulePayments(wsId: number) {
 export function useRequestPayment(wsId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { amount: number; currency: string; notes?: string }) =>
+    mutationFn: (payload: { amount: number; currency: string; notes?: string; contract_id?: number }) =>
       api.post(`/workspaces/${wsId}/payments/request`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.workspace(wsId) });

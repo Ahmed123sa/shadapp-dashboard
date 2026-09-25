@@ -19,17 +19,25 @@ import {
   useWorkspacePayments,
 } from '@/hooks/queries/usePayments';
 
-type ScheduleForm = { amount: string; currency: string; due_date: string; installment_label: string };
-type RequestForm = { amount: string; currency: string; notes: string };
+// A payment's currency is derived from the contract it's linked to, never
+// chosen freely — PaymentController::resolveCurrency() enforces this
+// server-side regardless of what's sent here (see
+// plans/payment-currency-plan.md ح2). `contract_id` replaces the old free
+// `currency` dropdown; `currency` below is only pre-filled for display/
+// backward compatibility and is recomputed from the selected contract (or
+// the workspace's single shared currency) via resolvedCurrency().
+type ScheduleForm = { amount: string; contract_id: string; due_date: string; installment_label: string };
+type Installment = ScheduleForm & { currency: string };
+type RequestForm = { amount: string; contract_id: string; notes: string };
 
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: Workspace) => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
-  const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', currency: 'SAR', notes: '' });
-  const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ amount: '', currency: 'SAR', due_date: '', installment_label: '' });
-  const [installments, setInstallments] = useState<ScheduleForm[]>([]);
+  const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', contract_id: '', notes: '' });
+  const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ amount: '', contract_id: '', due_date: '', installment_label: '' });
+  const [installments, setInstallments] = useState<Installment[]>([]);
   const scheduleTitleId = useId();
   const requestTitleId = useId();
   const { dialogRef: scheduleDialogRef, dialogProps: scheduleDialogProps } = useModalA11y<HTMLDivElement>(showSchedule, () => setShowSchedule(false));
@@ -48,6 +56,22 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const payments = paymentsQuery.data?.payments ?? [];
   const taxSummary = paymentsQuery.data?.taxSummary ?? null;
   const contracts = contractsQuery.data ?? [];
+
+  // A payment's currency is server-enforced from its linked contract (see
+  // PaymentController::resolveCurrency(), plans/payment-currency-plan.md
+  // ح2) — this mirrors that logic on the client for display/pre-fill only.
+  // Uses ALL of the workspace's contracts (not just payable ones), matching
+  // the backend's ambiguity check.
+  const contractCurrencies = Array.from(new Set(contracts.map((c) => c.currency || 'SAR')));
+  const hasSingleCurrency = contractCurrencies.length <= 1;
+  const singleCurrency = contractCurrencies[0] || 'SAR';
+  const resolvedCurrency = (contractId: string) => {
+    if (contractId) {
+      const c = contracts.find((c) => c.id === Number(contractId));
+      if (c?.currency) return c.currency;
+    }
+    return singleCurrency;
+  };
 
   // Only the *first* fetch failing should replace the screen with a full
   // error state — once we've shown real data at least once (query.data is
@@ -76,15 +100,27 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   const addInstallment = () => {
     if (!scheduleForm.amount || !scheduleForm.due_date) return;
-    setInstallments((prev) => [...prev, { ...scheduleForm, installment_label: scheduleForm.installment_label || `Installment ${prev.length + 1}` }]);
-    setScheduleForm({ amount: '', currency: 'SAR', due_date: '', installment_label: '' });
+    if (!hasSingleCurrency && !scheduleForm.contract_id) return;
+    setInstallments((prev) => [...prev, {
+      ...scheduleForm,
+      installment_label: scheduleForm.installment_label || `Installment ${prev.length + 1}`,
+      currency: resolvedCurrency(scheduleForm.contract_id),
+    }]);
+    setScheduleForm({ amount: '', contract_id: '', due_date: '', installment_label: '' });
   };
 
   const removeInstallment = (idx: number) => setInstallments((prev) => prev.filter((_, i) => i !== idx));
 
   const submitSchedule = () => {
     if (installments.length === 0) return;
-    scheduleMutation.mutate(installments, {
+    const payload = installments.map(({ amount, due_date, installment_label, currency, contract_id }) => ({
+      amount,
+      due_date,
+      installment_label,
+      currency,
+      ...(contract_id ? { contract_id: Number(contract_id) } : {}),
+    }));
+    scheduleMutation.mutate(payload, {
       onSuccess: () => { setShowSchedule(false); setInstallments([]); },
       onError: (e: any) => {
         alert(t('schedule_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
@@ -94,12 +130,14 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   const submitRequest = () => {
     if (!requestForm.amount || Number(requestForm.amount) <= 0) return;
+    if (!hasSingleCurrency && !requestForm.contract_id) return;
     requestMutation.mutate({
       amount: Number(requestForm.amount),
-      currency: requestForm.currency,
+      currency: resolvedCurrency(requestForm.contract_id),
       notes: requestForm.notes || undefined,
+      ...(requestForm.contract_id ? { contract_id: Number(requestForm.contract_id) } : {}),
     }, {
-      onSuccess: () => { setShowRequest(false); setRequestForm({ amount: '', currency: 'SAR', notes: '' }); },
+      onSuccess: () => { setShowRequest(false); setRequestForm({ amount: '', contract_id: '', notes: '' }); },
       onError: (e: any) => {
         alert(t('request_failed') + (e?.response?.data?.message || e?.message || t('unknown_error')));
       },
@@ -269,15 +307,25 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               </div>
               <div>
                 <label htmlFor="pay-schedule-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select id="pay-schedule-currency" value={scheduleForm.currency} onChange={(e) => setScheduleForm({ ...scheduleForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
-                  {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                {hasSingleCurrency ? (
+                  <div id="pay-schedule-currency" className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-gold-text)] font-medium">
+                    {singleCurrency}
+                  </div>
+                ) : (
+                  <>
+                    <select id="pay-schedule-currency" value={scheduleForm.contract_id} onChange={(e) => setScheduleForm({ ...scheduleForm, contract_id: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
+                      <option value="">{t('select_contract_ph')}</option>
+                      {contracts.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.currency || 'SAR'})</option>)}
+                    </select>
+                    <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{t('multi_currency_contract_hint')}</p>
+                  </>
+                )}
               </div>
               <div>
                 <label htmlFor="pay-schedule-due-date" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('due_date_required')}</label>
                 <input id="pay-schedule-due-date" type="date" value={scheduleForm.due_date} onChange={(e) => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" />
               </div>
-              <button onClick={addInstallment} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold-text)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10">{t('add_installment')}</button>
+              <button onClick={addInstallment} disabled={!scheduleForm.amount || !scheduleForm.due_date || (!hasSingleCurrency && !scheduleForm.contract_id)} className="w-full text-sm border border-[var(--color-gold)] text-[var(--color-gold-text)] py-2 rounded-lg hover:bg-[var(--color-gold)]/10 disabled:opacity-40">{t('add_installment')}</button>
               {installments.length > 0 && (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {installments.map((inst, i) => (
@@ -319,15 +367,25 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               </div>
               <div>
                 <label htmlFor="pay-request-currency" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('currency_label')}</label>
-                <select id="pay-request-currency" value={requestForm.currency} onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
-                  {['SAR', 'USD', 'EUR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                {hasSingleCurrency ? (
+                  <div id="pay-request-currency" className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-gold-text)] font-medium">
+                    {singleCurrency}
+                  </div>
+                ) : (
+                  <>
+                    <select id="pay-request-currency" value={requestForm.contract_id} onChange={(e) => setRequestForm({ ...requestForm, contract_id: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]">
+                      <option value="">{t('select_contract_ph')}</option>
+                      {contracts.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.currency || 'SAR'})</option>)}
+                    </select>
+                    <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{t('multi_currency_contract_hint')}</p>
+                  </>
+                )}
               </div>
               <div>
                 <label htmlFor="pay-request-notes" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('notes_optional')}</label>
                 <input id="pay-request-notes" type="text" value={requestForm.notes} onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]" placeholder={t('payment_request_ph')} />
               </div>
-              <button onClick={submitRequest} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90">
+              <button onClick={submitRequest} disabled={!requestForm.amount || Number(requestForm.amount) <= 0 || (!hasSingleCurrency && !requestForm.contract_id)} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-40">
                 {t('send_request')}
               </button>
             </div>

@@ -376,6 +376,8 @@
     "schedule_failed": "Failed to schedule payments: ",
     "unknown_error": "Unknown error",
     "request_failed": "Failed to send request: ",
+    "select_contract_ph": "-- Select Contract --",
+    "multi_currency_contract_hint": "This client has contracts in multiple currencies — pick a contract to determine the payment currency",
 
     "approvals_load_error": "Failed to load approval requests",
     "new_approval_request": "New Approval Request",

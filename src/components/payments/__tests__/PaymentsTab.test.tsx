@@ -62,10 +62,20 @@ const scheduledPayment = {
   created_at: '2026-08-01T00:00:00Z',
 };
 
-function mockInitialLoad(payments: unknown[] = [pendingPayment]) {
+function mockInitialLoad(payments: unknown[] = [pendingPayment], contracts: unknown[] = []) {
   mock.onGet('/workspaces/9/payments').reply(200, { payments, tax_summary: null });
-  mock.onGet('/workspaces/9/contracts').reply(200, { contracts: [] });
+  mock.onGet('/workspaces/9/contracts').reply(200, { contracts });
 }
+
+const egpContract = {
+  id: 71, workspace_id: 9, title: 'EGP Contract', status: 'company_approved',
+  value: '5000', currency: 'EGP', created_by: 2,
+};
+
+const usdContract = {
+  id: 72, workspace_id: 9, title: 'USD Contract', status: 'draft',
+  value: '3000', currency: 'USD', created_by: 2,
+};
 
 beforeEach(() => {
   mock = new MockAdapter(api);
@@ -146,6 +156,103 @@ describe('PaymentsTab (characterization)', () => {
     // Component re-fetches the list after a successful request.
     await waitFor(() => {
       expect(mock.history.get.filter((r) => r.url === '/workspaces/9/payments').length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  // Regression coverage for plans/payment-currency-plan.md ح2: PaymentsTab
+  // used to show a free 9-currency dropdown defaulting to SAR regardless of
+  // the client's actual contracts. The backend now enforces payment
+  // currency = contract currency server-side either way, but the UI should
+  // stop offering a choice that's misleading (single currency) or
+  // ambiguous (multiple currencies) — see PaymentCurrencyTest.php for the
+  // backend side of this contract.
+
+  it('shows the workspace\'s single contract currency as static text and sends it with a payment request', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockInitialLoad([], [egpContract]);
+    mock.onPost('/workspaces/9/payments/request').reply(200, {});
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithIntl(<PaymentsTab wsId={9} client={client} />);
+
+    await waitFor(() => expect(screen.getByText('Request Payment')).toBeInTheDocument());
+    await user.click(screen.getByText('Request Payment'));
+
+    // Static text, not a dropdown — nothing to pick when there's only one
+    // possible currency.
+    await waitFor(() => expect(screen.getByText('EGP')).toBeInTheDocument());
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+    const amountInput = await screen.findByPlaceholderText('0.00');
+    await user.type(amountInput, '400');
+    await user.click(screen.getByText('Send Request'));
+
+    await waitFor(() => {
+      const reqCall = mock.history.post.find((r) => r.url === '/workspaces/9/payments/request');
+      expect(reqCall).toBeTruthy();
+      const body = JSON.parse(reqCall!.data);
+      expect(body).toMatchObject({ amount: 400, currency: 'EGP' });
+      expect(body.contract_id).toBeUndefined();
+    });
+  });
+
+  it('requires picking a contract before sending a request when the workspace has multiple contract currencies', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockInitialLoad([], [egpContract, usdContract]);
+    mock.onPost('/workspaces/9/payments/request').reply(200, {});
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithIntl(<PaymentsTab wsId={9} client={client} />);
+
+    await waitFor(() => expect(screen.getByText('Request Payment')).toBeInTheDocument());
+    await user.click(screen.getByText('Request Payment'));
+
+    const amountInput = await screen.findByPlaceholderText('0.00');
+    await user.type(amountInput, '400');
+
+    // No contract picked yet — sending would be ambiguous, so it's blocked
+    // client-side (the backend would also 422 this).
+    expect(screen.getByText('Send Request')).toBeDisabled();
+
+    await user.selectOptions(screen.getByRole('combobox'), String(usdContract.id));
+    expect(screen.getByText('Send Request')).not.toBeDisabled();
+    await user.click(screen.getByText('Send Request'));
+
+    await waitFor(() => {
+      const reqCall = mock.history.post.find((r) => r.url === '/workspaces/9/payments/request');
+      expect(reqCall).toBeTruthy();
+      const body = JSON.parse(reqCall!.data);
+      expect(body).toMatchObject({ amount: 400, currency: 'USD', contract_id: usdContract.id });
+    });
+  });
+
+  it('sends the picked contract when scheduling an installment for a multi-currency workspace', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockInitialLoad([], [egpContract, usdContract]);
+    mock.onPost('/workspaces/9/payments/schedule').reply(201, { payments: [] });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithIntl(<PaymentsTab wsId={9} client={client} />);
+
+    await waitFor(() => expect(screen.getByText('Schedule Payments')).toBeInTheDocument());
+    await user.click(screen.getByText('Schedule Payments'));
+
+    await user.type(await screen.findByPlaceholderText('0.00'), '200');
+    await user.type(screen.getByLabelText('Due Date *'), '2026-10-01');
+
+    expect(screen.getByText('+ Add Installment')).toBeDisabled();
+
+    await user.selectOptions(screen.getByRole('combobox'), String(egpContract.id));
+    expect(screen.getByText('+ Add Installment')).not.toBeDisabled();
+    await user.click(screen.getByText('+ Add Installment'));
+
+    await user.click(screen.getByText('Schedule (1 installments)'));
+
+    await waitFor(() => {
+      const schedCall = mock.history.post.find((r) => r.url === '/workspaces/9/payments/schedule');
+      expect(schedCall).toBeTruthy();
+      const body = JSON.parse(schedCall!.data);
+      expect(body.installments[0]).toMatchObject({ amount: '200', currency: 'EGP', contract_id: egpContract.id });
     });
   });
 

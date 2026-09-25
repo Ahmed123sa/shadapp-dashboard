@@ -376,6 +376,8 @@
     "schedule_failed": "فشل جدولة الدفعات: ",
     "unknown_error": "خطأ غير معروف",
     "request_failed": "فشل إرسال الطلب: ",
+    "select_contract_ph": "-- اختر العقد --",
+    "multi_currency_contract_hint": "العميل عنده عقود بأكتر من عملة، اختار العقد عشان نحدد العملة",
 
     "approvals_load_error": "فشل تحميل طلبات الموافقة",
     "new_approval_request": "طلب موافقة جديد",
