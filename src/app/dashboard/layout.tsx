@@ -7,6 +7,7 @@ import { isAuthenticated, getUser, logout } from '@/lib/auth';
 import { setLocaleCookie } from '@/lib/locale';
 import NotificationBell from '@/components/NotificationBell';
 import ToastNotification from '@/components/ToastNotification';
+import { useBadgeCounts } from '@/hooks/queries/useBadgeCounts';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
@@ -41,12 +42,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const currentView = searchParams.get('view') || '';
 
+  // plans/notifications-badges-toasts-plan.md ن8 — the sidebar has no
+  // dedicated "Approvals" or "Messages" links (approvals live per-client
+  // under ApprovalsTab, chat lives per-client too), so their unread counts
+  // ride on the two closest existing entry points instead: Home (where both
+  // AMView and SAManagersView already surface pending approvals) and My/All
+  // Clients (where every client's chat thread lives) — same mapping the
+  // mobile app's bottom nav uses (chat → Home tab, approvals → Approvals tab).
+  const { data: badgeCounts } = useBadgeCounts();
+
   const amNavGroups = [
     {
       label: t('nav_group_main'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
-        { href: '/dashboard/clients', label: t('my_clients'), icon: Users },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true, badge: badgeCounts?.approvals, badgeColor: 'gold' },
+        { href: '/dashboard/clients', label: t('my_clients'), icon: Users, badge: badgeCounts?.chat, badgeColor: 'crimson' },
       ],
     },
     {
@@ -76,8 +86,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_admin'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
-        { href: '/dashboard/clients', label: t('all_clients'), icon: Users },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true, badge: badgeCounts?.approvals, badgeColor: 'gold' },
+        { href: '/dashboard/clients', label: t('all_clients'), icon: Users, badge: badgeCounts?.chat, badgeColor: 'crimson' },
         { href: '/dashboard/finance', label: locale === 'ar' ? 'المالية' : 'Finance', icon: CreditCard },
         { href: '/dashboard/reports', label: t('reports'), icon: BarChart3 },
         { href: '/dashboard/audit-log', label: t('audit_log'), icon: ClipboardList },
@@ -229,6 +239,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <item.icon size={18} strokeWidth={1.5} />
                     <span>{item.label}</span>
+                    {!!item.badge && item.badge > 0 && (
+                      <span
+                        className={`ms-auto min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[length:var(--fs-1)] font-bold ${
+                          item.badgeColor === 'gold'
+                            ? 'bg-[var(--color-gold)] text-black'
+                            : 'bg-[var(--color-primary)] text-white'
+                        }`}
+                      >
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

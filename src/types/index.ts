@@ -380,6 +380,18 @@ export interface DashboardStats {
   period: { month: string; timezone: string };
 }
 
+// plans/notifications-badges-toasts-plan.md ن8 — GET /badge-counts, the same
+// endpoint the mobile app's home tab already polls for its chat/approvals
+// nav badges. Web never called this at all before ح6.
+export interface BadgeCounts {
+  chat: number;
+  contracts: number;
+  approvals: number;
+  payments: number;
+  files: number;
+  notifications: number;
+}
+
 export interface SubUser {
   id: number;
   client_id?: number;
