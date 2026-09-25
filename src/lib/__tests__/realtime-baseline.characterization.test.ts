@@ -22,6 +22,9 @@ import path from 'node:path';
  *   no 10s setInterval left in the page's own source).
  * - Stage 4 widens the 30s/60s refetchIntervals (usePayments/useChat) to a
  *   5-minute safety net — update those interval assertions then.
+ * - plans/notifications-badges-toasts-plan.md ح4/ن10 (done) narrowed
+ *   NotificationBell's poll from 5 minutes to 60s, matching useChat and the
+ *   mobile app — the assertion below now pins 60000 instead of 300000.
  */
 
 function readSource(relativePath: string): string {
@@ -39,9 +42,9 @@ describe('realtime baseline (pre-Stage-1)', () => {
     expect(src).toMatch(/POLL_INTERVAL_MS\s*=\s*60000/);
   });
 
-  it('NotificationBell polls every 300s (5 min)', () => {
+  it('NotificationBell polls every 60s', () => {
     const src = readSource('components/NotificationBell.tsx');
-    expect(src).toMatch(/setInterval\(\s*load\s*,\s*300000\s*\)/);
+    expect(src).toMatch(/setInterval\(\s*load\s*,\s*60000\s*\)/);
   });
 
   it('client-dashboard page subscribes to realtime events and no longer polls the workspace every 10s', () => {

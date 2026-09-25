@@ -285,6 +285,10 @@ export interface AppNotification {
     type?: string;
     title?: string;
     message?: string;
+    // plans/notifications-badges-toasts-plan.md ن4 — several backend
+    // notification types still only send 'body' (not 'message'); the UI
+    // reads `message ?? body` so those don't render an empty line.
+    body?: string;
     client_id?: number;
     workspace_id?: number;
     [key: string]: unknown;

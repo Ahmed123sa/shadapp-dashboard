@@ -13,6 +13,7 @@ import ClientMeetings from '@/components/client-meetings/ClientMeetings';
 import ClientSignature from '@/components/client-signature/ClientSignature';
 import ClientSubUsers from '@/components/client-subusers/ClientSubUsers';
 import StagesStepper from '@/components/client-dashboard/StagesStepper';
+import NotificationBell from '@/components/NotificationBell';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useClient } from '@/hooks/queries/useClients';
@@ -188,6 +189,12 @@ export default function ClientDashboardPage() {
             ) : (
               <span className="text-sm text-[var(--color-text-secondary)]">{session.company_name}</span>
             )}
+            {/* plans/notifications-badges-toasts-plan.md ن9 — the client
+                portal had no bell at all; NotificationBell already branches
+                on isClientPortal (window.location.pathname) for its own href
+                and empty-tab routing, so mounting it here needs no changes
+                to the component itself. */}
+            <NotificationBell />
             <Link href="/client-dashboard/settings" className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg transition-colors" aria-label={t('settings_title')}>⚙️</Link>
             <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg">
               {t('client_logout')}

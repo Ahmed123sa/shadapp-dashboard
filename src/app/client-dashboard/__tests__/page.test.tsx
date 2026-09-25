@@ -19,10 +19,14 @@ import { subscribeToWorkspace } from '@/lib/echo';
 
 // The real subscription touches Echo/Pusher (WebSocket), which isn't
 // available in jsdom — same mocking approach as useWorkspaceRealtime's own
-// test suite.
+// test suite. subscribeToNotifications/disconnectEcho are mocked too now
+// that this page mounts <NotificationBell /> (ن9) in its header, which
+// calls both on mount/unmount.
 vi.mock('@/lib/echo', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/echo')>()),
   subscribeToWorkspace: vi.fn(),
+  subscribeToNotifications: vi.fn(() => vi.fn()),
+  disconnectEcho: vi.fn(),
 }));
 
 vi.mock('@/lib/client-auth', async (importOriginal) => ({

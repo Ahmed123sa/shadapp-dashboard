@@ -60,7 +60,14 @@ export default function NotificationBell() {
       return tab ? `/client-dashboard?tab=${encodeURIComponent(tab)}` : '/client-dashboard';
     }
 
-    const clientId = d?.client_id || d?.workspace_id;
+    // plans/notifications-badges-toasts-plan.md ن5 — this used to fall back
+    // to workspace_id when client_id was missing, routing to
+    // /dashboard/clients/{workspace_id} — a workspace id used as a client
+    // id, landing on the wrong client (or a page that doesn't exist) more
+    // often than not. Every notification type now carries a real client_id
+    // (ح3), and there's no /dashboard/workspaces/{id} route to fall back to,
+    // so a missing client_id now just leaves the tap on the dashboard.
+    const clientId = d?.client_id;
     if (!clientId) return '/dashboard';
     return tab ? `/dashboard/clients/${clientId}?tab=${encodeURIComponent(tab)}` : `/dashboard/clients/${clientId}`;
   };
@@ -82,7 +89,9 @@ export default function NotificationBell() {
           showToast({
             id: newest.id,
             title: newest.data?.title || '',
-            message: newest.data?.message || '',
+            // ن4 — several backend notification types still only send
+            // 'body', not 'message'; older stored rows never got backfilled.
+            message: newest.data?.message || newest.data?.body || '',
             href,
           });
         });
@@ -98,7 +107,10 @@ export default function NotificationBell() {
   useEffect(() => {
     load();
     const unsubscribe = subscribeToNotifications(() => { load(); });
-    const interval = setInterval(load, 300000);
+    // ن10 — matches the mobile app's 60-second poll. At 5 minutes, a toast
+    // for a new notification could lag that far behind if Reverb dropped or
+    // never connected in the first place.
+    const interval = setInterval(load, 60000);
     const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', close);
     return () => { clearInterval(interval); if (unsubscribe) unsubscribe(); disconnectEcho(); document.removeEventListener('mousedown', close); };
@@ -106,6 +118,14 @@ export default function NotificationBell() {
 
   const markRead = (id: string) => {
     api.post(`/notifications/${id}/read`).then(() => { load(); }).catch((err) => reportError('NotificationBell.markRead', err));
+  };
+
+  // ن11 — this used to loop over every unread notification and POST
+  // /notifications/{id}/read one at a time (20 unread = 20 requests), when
+  // the backend already has a dedicated /notifications/read-all endpoint
+  // that does it in one query.
+  const markAllRead = () => {
+    api.post('/notifications/read-all').then(() => { load(); }).catch((err) => reportError('NotificationBell.markAllRead', err));
   };
 
   return (
@@ -121,7 +141,7 @@ export default function NotificationBell() {
         <div className="absolute end-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
           <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center">
             <h3 className="text-sm font-bold">{t('notif_title')}</h3>
-            <button onClick={() => { notifications.forEach((n) => { if (!n.read_at) markRead(n.id); }); }} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('notif_mark_all_read')}</button>
+            <button onClick={markAllRead} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('notif_mark_all_read')}</button>
           </div>
           {notifications.length === 0 ? (
             <p className="text-xs text-[var(--color-text-disabled)] p-4 text-center">{t('notif_empty')}</p>
@@ -130,7 +150,7 @@ export default function NotificationBell() {
               <a key={n.id} href={getHref(n)} onClick={(e) => { if (!n.read_at) markRead(n.id); const href = getHref(n); if (href !== '#') { e.preventDefault(); router.push(href); } }}
                 className={`block p-3 border-b border-[var(--color-card-border)] last:border-0 hover:bg-[var(--color-card-border)] transition ${n.read_at ? '' : 'bg-[var(--color-primary)]/10'}`}>
                 <p className="text-xs font-medium">{n.data?.title || ''}</p>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{n.data?.message || ''}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{n.data?.message || n.data?.body || ''}</p>
                 <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-SA')}</p>
               </a>
             ))
