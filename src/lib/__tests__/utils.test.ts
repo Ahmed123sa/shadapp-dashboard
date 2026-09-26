@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl, safeJsonParse, notifyWriteError, clientHasSignedContract } from '../utils';
+import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl, safeJsonParse, notifyWriteError, clientHasSignedContract, getErrorCode, getErrorMessage } from '../utils';
 import { reportError } from '../error-reporting';
 import { showToast } from '@/components/ToastNotification';
 
@@ -180,6 +180,34 @@ describe('notifyWriteError', () => {
   it('does not throw when called with a non-Error rejection value', () => {
     expect(() => notifyWriteError(t, 'ChatTab.send', 'some string rejection')).not.toThrow();
     expect(reportError).toHaveBeenCalledWith('ChatTab.send', 'some string rejection');
+  });
+});
+
+// client-signature-plan.md ن6 — mirrors the mobile app's
+// ValidationException.code (api_client.dart), duck-typed off an axios
+// error's shape without importing axios into utils.ts.
+describe('getErrorCode / getErrorMessage', () => {
+  it('reads code and message from an axios-shaped 422 error', () => {
+    const err = { response: { data: { code: 'signature_required', message: 'لازم توقيع' } } };
+    expect(getErrorCode(err)).toBe('signature_required');
+    expect(getErrorMessage(err)).toBe('لازم توقيع');
+  });
+
+  it('returns undefined when the error body has no code (a plain validation failure)', () => {
+    const err = { response: { data: { message: 'Invalid data' } } };
+    expect(getErrorCode(err)).toBeUndefined();
+    expect(getErrorMessage(err)).toBe('Invalid data');
+  });
+
+  it('returns undefined for a plain Error with no response', () => {
+    const err = new Error('network down');
+    expect(getErrorCode(err)).toBeUndefined();
+    expect(getErrorMessage(err)).toBeUndefined();
+  });
+
+  it('returns undefined for a non-object rejection', () => {
+    expect(getErrorCode('some string rejection')).toBeUndefined();
+    expect(getErrorMessage(null)).toBeUndefined();
   });
 });
 

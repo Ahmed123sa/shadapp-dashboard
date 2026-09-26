@@ -824,6 +824,8 @@
     "contract_approve_action": "Approve",
     "contract_edit_action": "Request Edit",
     "contract_load_failed": "Failed to load contracts",
+    "contract_signature_required_title": "Signature Required",
+    "contract_signature_required_message": "You need to save your signature before approving this contract.",
     "contract_docs_required": "{count} document(s) required",
     "approval_ref_prefix": "Ref: ",
     "approval_file_label": "File",

@@ -1,10 +1,17 @@
+import type { ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import ClientContracts from '../ClientContracts';
+import ToastNotification from '@/components/ToastNotification';
 import api from '@/lib/api';
+
+const routerPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: routerPush }),
+}));
 
 // Characterization suite written BEFORE migrating ClientContracts (and, via
 // its detail modal, ContractDetailModal) off manual useEffect+setState onto
@@ -38,6 +45,15 @@ afterEach(() => {
   mock.restore();
   vi.clearAllMocks();
 });
+
+function renderWithToasts(ui: ReactElement) {
+  return renderWithIntl(
+    <>
+      {ui}
+      <ToastNotification />
+    </>
+  );
+}
 
 describe('ClientContracts (characterization)', () => {
   it('loads contracts for the workspace on mount', async () => {
@@ -88,6 +104,31 @@ describe('ClientContracts (characterization)', () => {
       expect(call).toBeTruthy();
       expect(JSON.parse(call!.data)).toEqual({ action: 'approved' });
     });
+  });
+
+  // client-signature-plan.md ن6 — a 422 signature_required rejection (ك3)
+  // should surface a specific, actionable toast (title/message + a link to
+  // the signature tab) instead of the generic notifyWriteError failure.
+  it('shows the signature-required toast when the backend rejects an approval for a missing signature', async () => {
+    mockLoad();
+    mock.onPost('/contracts/701/client-action').reply(422, {
+      message: 'You need to save your signature before approving this contract.',
+      code: 'signature_required',
+    });
+
+    const user = userEvent.setup();
+    renderWithToasts(<ClientContracts wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).toBeInTheDocument());
+    await user.click(screen.getByText('Approve', { selector: 'button' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Approve' }));
+
+    expect(await screen.findByText('Signature Required')).toBeInTheDocument();
+    expect(screen.getByText('You need to save your signature before approving this contract.')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Signature Required'));
+    expect(routerPush).toHaveBeenCalledWith('/client-dashboard?tab=التوقيع');
   });
 
   it('uploads a required document from the detail modal and refetches the contract list', async () => {

@@ -824,6 +824,8 @@
     "contract_approve_action": "✔ موافقة",
     "contract_edit_action": "✎ طلب تعديل",
     "contract_load_failed": "فشل تحميل العقود",
+    "contract_signature_required_title": "التوقيع مطلوب",
+    "contract_signature_required_message": "لازم تحفظ توقيعك الأول قبل ما توافق على العقد.",
     "contract_docs_required": "📎 {count} مستند مطلوب",
     "approval_ref_prefix": "مرجع: ",
     "approval_file_label": "ملف",

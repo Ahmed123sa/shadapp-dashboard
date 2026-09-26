@@ -145,3 +145,30 @@ export function notifyWriteError(t: (key: string) => string, context: string, er
     message: t('write_error_message'),
   });
 }
+
+/**
+ * Reads the machine-readable `code` field from an axios error's 422 body
+ * (e.g. `code: 'signature_required'` from ContractController::clientAction /
+ * ChatController::respond, client-signature-plan.md ن6) without importing
+ * axios here — duck-typed on `.response.data`, since axios errors are the
+ * only rejection shape this app's api.ts ever produces that carries one.
+ * Undefined for a plain Laravel validation-rule failure (never sets `code`)
+ * or any non-axios rejection, so callers can safely check `=== 'signature_required'`.
+ * Mirrors the mobile app's `ValidationException.code`.
+ */
+export function getErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object' || !('response' in error)) return undefined;
+  const data = (error as { response?: { data?: unknown } }).response?.data;
+  if (!data || typeof data !== 'object') return undefined;
+  const code = (data as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+/** Same duck-typed read as getErrorCode(), for the human-readable `message` field. */
+export function getErrorMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object' || !('response' in error)) return undefined;
+  const data = (error as { response?: { data?: unknown } }).response?.data;
+  if (!data || typeof data !== 'object') return undefined;
+  const message = (data as { message?: unknown }).message;
+  return typeof message === 'string' ? message : undefined;
+}

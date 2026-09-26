@@ -8,7 +8,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
 import { useTranslations } from 'next-intl';
-import { notifyWriteError } from '@/lib/utils';
+import { notifyWriteError, getErrorCode, getErrorMessage } from '@/lib/utils';
+import { showToast } from '@/components/ToastNotification';
+import { reportError } from '@/lib/error-reporting';
 import { useWorkspaceContracts, useClientContractAction } from '@/hooks/queries/useContracts';
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
@@ -32,7 +34,24 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   const doAction = (id: number, action: string) => {
     clientActionMutation.mutate({ id, action }, {
       onSuccess: () => setViewContractId(null),
-      onError: (err) => notifyWriteError(tc, 'ClientContracts.doAction', err),
+      onError: (err) => {
+        // client-signature-plan.md ن6 — a 422 signature_required rejection
+        // (ك3) means the client reached the approve button without a saved
+        // profile signature (e.g. cleared it after this contract was sent).
+        // notifyWriteError's generic "فشلت العملية" gives no clue why, so
+        // surface the real reason and point them at the signature tab.
+        if (getErrorCode(err) === 'signature_required') {
+          reportError('ClientContracts.doAction', err);
+          showToast({
+            id: 'ClientContracts.signatureRequired',
+            title: t('contract_signature_required_title'),
+            message: getErrorMessage(err) || t('contract_signature_required_message'),
+            href: '/client-dashboard?tab=التوقيع',
+          });
+          return;
+        }
+        notifyWriteError(tc, 'ClientContracts.doAction', err);
+      },
       onSettled: () => setConfirmAction(null),
     });
   };
