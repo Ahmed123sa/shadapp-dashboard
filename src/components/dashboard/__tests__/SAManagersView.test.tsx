@@ -99,6 +99,21 @@ describe('SAManagersView', () => {
     await waitFor(() => expect(screen.getAllByText('0').length).toBeGreaterThan(0));
   });
 
+  // pending-approvals-plan.md ن6/ك4 — this card used to be a plain
+  // non-interactive div with no link at all. "Pending Approvals" also
+  // labels the PendingApprovalsPanel's own header (same translation key),
+  // so this looks specifically for the copy that sits inside an <a> — only
+  // the stat card is a link.
+  it('links the pending-approvals card to the full list', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse());
+    renderWithIntl(<Harness />);
+
+    await waitFor(() => {
+      const cardLabel = screen.getAllByText('Pending Approvals').find((el) => el.closest('a'));
+      expect(cardLabel?.closest('a')).toHaveAttribute('href', '/dashboard?view=approvals');
+    });
+  });
+
   describe('revenue card', () => {
     // The headline bug: different currencies are not addable, and this
     // system holds no exchange rates, so there is no honest single figure.

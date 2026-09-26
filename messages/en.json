@@ -50,6 +50,8 @@
     "pending_approvals_empty": "Nothing pending",
     "pending_approvals_view_all": "View all ({count})",
     "pending_approval_payment_title": "Payment from {client}",
+    "pending_approvals_filter_all": "All",
+    "pending_approvals_filter_approvals": "Approvals",
     "recent_activity": "Recent Activity",
     "managers": "Account Managers",
     "view_all": "View All",

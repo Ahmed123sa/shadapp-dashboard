@@ -14,8 +14,9 @@ import type { PendingApprovalItem, PendingApprovalsResponse } from '@/types';
 // the badge/card next to it always summed three item types. This panel
 // reads GET /dashboard/pending-approvals, the same list the badge's count
 // comes from, and shows an explicit empty state instead of hiding.
-interface Row {
+export interface PendingApprovalRow {
   key: string;
+  type: PendingApprovalItem['type'];
   href: string;
   title: string;
   subtitle: string;
@@ -29,8 +30,10 @@ function clientHref(item: PendingApprovalItem, tab: string): string {
   return id ? `/dashboard/clients/${id}?tab=${tab}` : '#';
 }
 
-function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Row[] {
-  const rows: Row[] = [];
+// Exported for PendingApprovalsListView (ك4, the full /dashboard?view=approvals
+// page) so both places build rows the same way instead of drifting apart.
+export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFunc, locale: string): PendingApprovalRow[] {
+  const rows: PendingApprovalRow[] = [];
   const onYou = t('pending_approvals_on_you');
   const onClient = t('pending_approvals_on_client');
   // gold = needs the staff member's own action; blue = blocked on the
@@ -45,6 +48,7 @@ function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Ro
     const time = timeAgo(c.updated_at || c.created_at || '', locale, t);
     rows.push({
       key: `contract-you-${c.id}`,
+      type: 'contract',
       href: clientHref(c, 'العقود'),
       title: c.title || '',
       subtitle: `${c.client?.company_name || ''} • ${Number(c.value || 0).toLocaleString()} ${c.currency || ''} — ${time}`,
@@ -57,6 +61,7 @@ function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Ro
     const time = timeAgo(p.created_at || '', locale, t);
     rows.push({
       key: `payment-you-${p.id}`,
+      type: 'payment',
       href: clientHref(p, 'المدفوعات'),
       title: t('pending_approval_payment_title', { client: p.client?.company_name || '' }),
       subtitle: `${Number(p.amount || 0).toLocaleString()} ${p.currency || ''} — ${time}`,
@@ -69,6 +74,7 @@ function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Ro
     const time = timeAgo(c.updated_at || c.created_at || '', locale, t);
     rows.push({
       key: `contract-client-${c.id}`,
+      type: 'contract',
       href: clientHref(c, 'العقود'),
       title: c.title || '',
       subtitle: `${c.client?.company_name || ''} • ${Number(c.value || 0).toLocaleString()} ${c.currency || ''} — ${time}`,
@@ -81,6 +87,7 @@ function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Ro
     const time = timeAgo(a.created_at || '', locale, t);
     rows.push({
       key: `approval-client-${a.id}`,
+      type: 'approval',
       href: clientHref(a, 'الموافقات'),
       title: a.title || '',
       subtitle: `${a.client?.company_name || ''} — ${time}`,
@@ -93,10 +100,30 @@ function buildRows(data: PendingApprovalsResponse, t: TFunc, locale: string): Ro
   return rows;
 }
 
+// Exported so PendingApprovalsListView (ك4) renders identical rows without
+// duplicating the markup.
+export function PendingApprovalRowLink({ row }: { row: PendingApprovalRow }) {
+  return (
+    <Link
+      href={row.href}
+      className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.025] transition-colors"
+    >
+      <div className={`w-[3px] h-9 rounded-sm flex-shrink-0 ${row.accentClass}`} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[length:var(--fs-2)] font-bold truncate">{row.title}</div>
+        <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">{row.subtitle}</div>
+      </div>
+      <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${row.badgeClass}`}>
+        {row.waitingLabel}
+      </span>
+    </Link>
+  );
+}
+
 export default function PendingApprovalsPanel({ t, locale, limit = 5 }: { t: TFunc; locale: string; limit?: number }) {
   const { data } = usePendingApprovals();
   const total = data?.counts.total ?? 0;
-  const rows = data ? buildRows(data, t, locale).slice(0, limit) : [];
+  const rows = data ? buildPendingApprovalRows(data, t, locale).slice(0, limit) : [];
 
   return (
     <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
@@ -113,22 +140,7 @@ export default function PendingApprovalsPanel({ t, locale, limit = 5 }: { t: TFu
           {t('pending_approvals_empty')}
         </div>
       ) : (
-        rows.map((row) => (
-          <Link
-            key={row.key}
-            href={row.href}
-            className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.025] transition-colors"
-          >
-            <div className={`w-[3px] h-9 rounded-sm flex-shrink-0 ${row.accentClass}`} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[length:var(--fs-2)] font-bold truncate">{row.title}</div>
-              <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">{row.subtitle}</div>
-            </div>
-            <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${row.badgeClass}`}>
-              {row.waitingLabel}
-            </span>
-          </Link>
-        ))
+        rows.map((row) => <PendingApprovalRowLink key={row.key} row={row} />)
       )}
     </div>
   );

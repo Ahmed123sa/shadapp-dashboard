@@ -16,12 +16,19 @@ export const pendingApprovalsKeys = {
   all: ['dashboard', 'pending-approvals'] as const,
 };
 
-async function fetchPendingApprovals(): Promise<PendingApprovalsResponse> {
-  const { data } = await api.get('/dashboard/pending-approvals');
+async function fetchPendingApprovals(limit?: number): Promise<PendingApprovalsResponse> {
+  const { data } = await api.get('/dashboard/pending-approvals', limit ? { params: { limit } } : undefined);
   return data;
 }
 
-export function usePendingApprovals() {
+// ك4 — the home panel calls this with no argument (backend default: 50,
+// oldest-first per group); the full /dashboard?view=approvals page (ك4)
+// passes a higher limit so its filter tabs have more than 5 rows to show.
+// Query-key only grows a third element when a limit is actually passed, so
+// the home panel's cache key is unchanged from ك2/ك3 and
+// invalidateQueries({ queryKey: pendingApprovalsKeys.all }) still matches
+// every variant (TanStack Query does prefix matching on query keys).
+export function usePendingApprovals(limit?: number) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -32,8 +39,8 @@ export function usePendingApprovals() {
   }, [queryClient]);
 
   return useQuery({
-    queryKey: pendingApprovalsKeys.all,
-    queryFn: fetchPendingApprovals,
+    queryKey: limit ? [...pendingApprovalsKeys.all, limit] : pendingApprovalsKeys.all,
+    queryFn: () => fetchPendingApprovals(limit),
     refetchInterval: 60000,
   });
 }

@@ -115,7 +115,7 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
               )
             }
           />
-          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovalsTotal} icon={Clock} color="red" subtitle={t('subtitle_urgent')} />
+          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovalsTotal} icon={Clock} color="red" subtitle={t('subtitle_urgent')} href="/dashboard?view=approvals" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">

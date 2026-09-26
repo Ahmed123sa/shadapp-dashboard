@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 interface DashboardStatCardProps {
   label: string;
   // ReactNode, not just number|string: the revenue card renders one line
@@ -10,6 +12,11 @@ interface DashboardStatCardProps {
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   color?: 'default' | 'gold' | 'crimson' | 'red';
   subtitle?: string;
+  // pending-approvals-plan.md ك4 — the "Pending Approvals" card links to
+  // the full ?view=approvals list (ن6: it used to be a plain non-interactive
+  // div with no href/onClick at all). Optional so every other card, which
+  // has nowhere sensible to link to, is unaffected.
+  href?: string;
 }
 
 // بند 1.2: `val` بيتلوّن نص كبير (24px bold) فوق --color-card-bg الغامق، فلازم
@@ -24,11 +31,12 @@ const colorMap = {
   red: { val: 'var(--color-red-accent)', bar: 'var(--color-red-accent)' },
 };
 
-export default function DashboardStatCard({ label, value, icon, color = 'default', subtitle }: DashboardStatCardProps) {
+export default function DashboardStatCard({ label, value, icon, color = 'default', subtitle, href }: DashboardStatCardProps) {
   const c = colorMap[color] || colorMap.default;
   const Icon = icon;
-  return (
-    <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl p-3.5 stat-card-hover">
+  const className = 'bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl p-3.5 stat-card-hover block';
+  const content = (
+    <>
       <div className="flex items-center justify-between mb-2">
         <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{label}</span>
         <div className="w-7 h-7 rounded-lg bg-[var(--color-gold-soft)] flex items-center justify-center"><Icon size={16} strokeWidth={1.5} /></div>
@@ -38,6 +46,11 @@ export default function DashboardStatCard({ label, value, icon, color = 'default
       </div>
       <div className="h-[2.5px] w-[45%] rounded-[3px] mt-2" style={{ background: c.bar }} />
       {subtitle && <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] mt-1">{subtitle}</div>}
-    </div>
+    </>
   );
+
+  if (href) {
+    return <Link href={href} className={className}>{content}</Link>;
+  }
+  return <div className={className}>{content}</div>;
 }

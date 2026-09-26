@@ -185,4 +185,17 @@ describe('DashboardHome', () => {
     expect(await screen.findByText('Kickoff Meeting')).toBeInTheDocument();
     expect(screen.getByText('Back to Dashboard')).toBeInTheDocument();
   });
+
+  // pending-approvals-plan.md ك4 — the full ?view=approvals page is
+  // role-agnostic (the endpoint itself scopes AM vs SA), so it's reachable
+  // for an account manager too, unlike the other list views above which
+  // branch on isSA before deciding what to render.
+  it('approvals list view: shows the full pending-approvals list for an account manager', async () => {
+    currentView = 'approvals';
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', email: 'am@example.com', role: 'account_manager' });
+    renderWithIntl(<DashboardHome />);
+
+    expect(await screen.findByText('Approval One')).toBeInTheDocument();
+    expect(screen.getByText('Back to Dashboard')).toBeInTheDocument();
+  });
 });

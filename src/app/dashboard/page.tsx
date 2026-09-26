@@ -11,6 +11,7 @@ import AMView from '@/components/dashboard/AMView';
 import SAManagersView from '@/components/dashboard/SAManagersView';
 import AMListView from '@/components/dashboard/AMListView';
 import SAListView from '@/components/dashboard/SAListView';
+import PendingApprovalsListView from '@/components/dashboard/PendingApprovalsListView';
 
 export default function DashboardHome() {
   const t = useTranslations('dashboard');
@@ -67,6 +68,13 @@ export default function DashboardHome() {
   }, [isSA]);
 
   if (loading) return <DashboardSkeleton />;
+
+  // pending-approvals-plan.md ك4 — role-agnostic: GET /dashboard/pending-approvals
+  // already scopes by the caller (AM to their own clients, SA to everyone),
+  // so one shared full-page view works for both, same as PendingApprovalsPanel.
+  if (view === 'approvals') {
+    return <PendingApprovalsListView t={t} locale={locale} />;
+  }
 
   if (isSA) {
     if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {
