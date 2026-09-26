@@ -162,7 +162,7 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
       {Object.entries(grouped).map(([date, entries]) => (
         <div key={date}>
           <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-            {new Date(date + 'T12:00:00').toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+            {new Date(date + 'T12:00:00').toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </h4>
           <div className="space-y-1 mr-4">
             {entries.map((i, idx) => (

@@ -396,7 +396,7 @@ export default function FinancePage() {
                         {getStatusBadge(p.status)}
                       </td>
                       <td className="py-3 px-4 text-[var(--color-text-disabled)] text-[length:var(--fs-1)] whitespace-nowrap">
-                        {new Date(p.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                        {new Date(p.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')}
                       </td>
                       <td className="py-3 px-4">
                         {proofUrl ? (

@@ -151,7 +151,7 @@ export default function NotificationBell() {
                 className={`block p-3 border-b border-[var(--color-card-border)] last:border-0 hover:bg-[var(--color-card-border)] transition ${n.read_at ? '' : 'bg-[var(--color-primary)]/10'}`}>
                 <p className="text-xs font-medium">{n.data?.title || ''}</p>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{n.data?.message || n.data?.body || ''}</p>
-                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-SA')}</p>
+                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-EG')}</p>
               </a>
             ))
           )}

@@ -14,14 +14,14 @@ export function timeAgo(dateStr: string, locale: string, t: TFunc): string {
 
 export function formatDate(dateStr: string, locale: string): string {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
     year: 'numeric', month: 'short', day: 'numeric',
   });
 }
 
 export function formatTime(dateStr: string, locale: string): string {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleTimeString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  return new Date(dateStr).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', {
     hour: '2-digit', minute: '2-digit',
   });
 }

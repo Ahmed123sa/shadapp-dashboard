@@ -68,7 +68,7 @@ export default function LoginAttemptsPanel() {
   const formatWhen = (value: string) => {
     const d = new Date(value);
     if (isNaN(d.getTime())) return '—';
-    const tag = locale === 'ar' ? 'ar-SA' : 'en-US';
+    const tag = locale === 'ar' ? 'ar-EG' : 'en-US';
     return `${d.toLocaleDateString(tag, { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString(tag, { hour: '2-digit', minute: '2-digit' })}`;
   };
 

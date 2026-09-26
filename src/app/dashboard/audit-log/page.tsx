@@ -131,9 +131,9 @@ function formatDateTime(dateStr: string, locale: string, t: (key: string) => str
   let date: string;
   if (diffDays === 0) date = t('today');
   else if (diffDays === 1) date = t('yesterday');
-  else date = d.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  else date = d.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  const time = d.toLocaleTimeString(locale === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const time = d.toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   return { date, time };
 }
 

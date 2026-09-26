@@ -69,7 +69,7 @@ export function getMeetingJoinStatus(scheduledAt: string, locale = 'en'): Meetin
 
 export function formatMeetingDate(d: string, locale = 'en'): string {
   try {
-    return new Date(d).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    return new Date(d).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch { return d; }

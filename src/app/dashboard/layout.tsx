@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return t('title');
   };
 
-  const currentDate = new Date().toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  const currentDate = new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
