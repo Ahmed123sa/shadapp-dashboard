@@ -121,8 +121,14 @@ export function PendingApprovalRowLink({ row }: { row: PendingApprovalRow }) {
 }
 
 export default function PendingApprovalsPanel({ t, locale, limit = 5 }: { t: TFunc; locale: string; limit?: number }) {
-  const { data } = usePendingApprovals();
+  const { data, isError, refetch } = usePendingApprovals();
   const total = data?.counts.total ?? 0;
+  // plans/pending-approvals-fixes-plan.md ح٣ — a failed request used to fall
+  // through to the "Nothing pending" empty state, telling staff there was
+  // nothing to act on when the list simply hadn't loaded. Only when there is
+  // no data at all, though: a failed background refetch keeps showing the
+  // last list it did get rather than replacing it with an error.
+  const loadFailed = isError && !data;
   const rows = data ? buildPendingApprovalRows(data, t, locale).slice(0, limit) : [];
 
   return (
@@ -135,7 +141,14 @@ export default function PendingApprovalsPanel({ t, locale, limit = 5 }: { t: TFu
           </Link>
         )}
       </div>
-      {rows.length === 0 ? (
+      {loadFailed ? (
+        <div className="p-6 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
+          {t('pending_approvals_load_failed')}
+          <button onClick={() => refetch()} className="ms-2 text-[var(--color-gold-text)] hover:underline">
+            {t('retry')}
+          </button>
+        </div>
+      ) : rows.length === 0 ? (
         <div className="p-6 text-center text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
           {t('pending_approvals_empty')}
         </div>

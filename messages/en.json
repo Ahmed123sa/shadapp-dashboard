@@ -48,6 +48,7 @@
     "pending_approvals_on_you": "Awaiting you",
     "pending_approvals_on_client": "Awaiting client",
     "pending_approvals_empty": "Nothing pending",
+    "pending_approvals_load_failed": "Couldn't load pending approvals",
     "pending_approvals_view_all": "View all ({count})",
     "pending_approval_payment_title": "Payment from {client}",
     "pending_approvals_filter_all": "All",

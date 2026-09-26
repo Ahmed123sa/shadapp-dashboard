@@ -110,4 +110,19 @@ describe('PendingApprovalsListView', () => {
 
     await waitFor(() => expect(screen.getByText('Nothing pending')).toBeInTheDocument());
   });
+
+  // plans/pending-approvals-fixes-plan.md ح٣ — same as the home panel: a
+  // failed load is an error with a retry, never "Nothing pending".
+  it('shows an error state with a retry instead of "Nothing pending" when the request fails', async () => {
+    mock.onGet('/dashboard/pending-approvals').replyOnce(500);
+    renderWithIntl(<Harness />);
+
+    const retry = await screen.findByRole('button', { name: /Try again|حاول تاني/ });
+    expect(screen.queryByText('Nothing pending')).not.toBeInTheDocument();
+
+    mock.onGet('/dashboard/pending-approvals').reply(200, responseWithItems());
+    fireEvent.click(retry);
+
+    await waitFor(() => expect(screen.getByText('Villa Deal')).toBeInTheDocument());
+  });
 });

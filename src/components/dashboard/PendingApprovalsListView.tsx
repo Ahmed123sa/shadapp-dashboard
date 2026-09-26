@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { usePendingApprovals } from '@/hooks/queries/usePendingApprovals';
+import ErrorState from '@/components/ErrorState';
 import { buildPendingApprovalRows, PendingApprovalRowLink } from '@/components/dashboard/PendingApprovalsPanel';
 import type { TFunc } from '@/components/dashboard/types';
 import type { PendingApprovalItem } from '@/types';
@@ -20,7 +21,7 @@ const FULL_LIST_LIMIT = 200;
 type FilterType = 'all' | PendingApprovalItem['type'];
 
 export default function PendingApprovalsListView({ t, locale }: { t: TFunc; locale: string }) {
-  const { data, isLoading } = usePendingApprovals(FULL_LIST_LIMIT);
+  const { data, isLoading, isError, refetch } = usePendingApprovals(FULL_LIST_LIMIT);
   const [filter, setFilter] = useState<FilterType>('all');
 
   const rows = data ? buildPendingApprovalRows(data, t, locale) : [];
@@ -63,7 +64,11 @@ export default function PendingApprovalsListView({ t, locale }: { t: TFunc; loca
             ))}
           </div>
 
-          {isLoading ? (
+          {/* plans/pending-approvals-fixes-plan.md ح٣ — same rule as the home
+              panel: a failed load is an error, not "Nothing pending". */}
+          {isError && !data ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : isLoading ? (
             <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('paginated_loading')}</div>
           ) : filteredRows.length === 0 ? (
             <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('pending_approvals_empty')}</div>

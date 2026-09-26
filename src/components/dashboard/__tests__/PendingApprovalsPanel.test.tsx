@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import { useTranslations, useLocale } from 'next-intl';
 import { renderWithIntl } from '@/test/render';
@@ -116,5 +116,21 @@ describe('PendingApprovalsPanel', () => {
     await waitFor(() => expect(screen.getByText('Design Sign-off')).toBeInTheDocument());
     expect(screen.getByText('Design Sign-off').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=approvals');
     expect(screen.getByText('Payment from Co-ops').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=payments');
+  });
+
+  // plans/pending-approvals-fixes-plan.md ح٣ — a failed request used to fall
+  // through to "Nothing pending", telling staff there was nothing to act on.
+  it('shows a load error with a retry instead of "Nothing pending" when the request fails', async () => {
+    mock.onGet('/dashboard/pending-approvals').replyOnce(500);
+    renderWithIntl(<Harness />);
+
+    await waitFor(() => expect(screen.getByText("Couldn't load pending approvals")).toBeInTheDocument());
+    expect(screen.queryByText('Nothing pending')).not.toBeInTheDocument();
+
+    mock.onGet('/dashboard/pending-approvals').reply(200, emptyResponse());
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(screen.getByText('Nothing pending')).toBeInTheDocument());
+    expect(mock.history.get.filter((r) => r.url === '/dashboard/pending-approvals').length).toBe(2);
   });
 });
