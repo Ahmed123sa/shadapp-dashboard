@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { useState } from 'react';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import DashboardHome from '../page';
@@ -189,5 +190,82 @@ describe('DashboardHome', () => {
 
     expect(await screen.findByText('Approval One')).toBeInTheDocument();
     expect(screen.getByText('Back to Dashboard')).toBeInTheDocument();
+  });
+
+  // plans/pending-approvals-fixes-plan.md ح٥ — the approvals page fetches its
+  // own data; it used to sit on the skeleton until every home list below
+  // (contracts/payments/meetings at per_page=100, ...) had loaded too.
+  describe('home data fetch on ?view=approvals', () => {
+    // The exact URLs DashboardHome's own fetch uses. The list views page
+    // through the same endpoints themselves (?page=N&per_page=10, plus
+    // SAListView's own /account-managers lookup), so matching on the path
+    // alone would count their requests too.
+    const HOME = {
+      contracts: '/all-contracts?per_page=100', payments: '/all-payments?per_page=100',
+      meetings: '/all-meetings?per_page=100', notifications: '/notifications',
+      managers: '/account-managers', clients: '/clients',
+    };
+    const requestsTo = (url: string) => mock.history.get.filter((r) => r.url === url).length;
+
+    // `view` comes from the mocked useSearchParams, so changing currentView
+    // and re-rendering the same DashboardHome instance is exactly what a
+    // sidebar click does in the app: a query-string change, no remount.
+    function Harness() {
+      const [, setTick] = useState(0);
+      return (
+        <>
+          <button onClick={() => setTick((n) => n + 1)}>navigate</button>
+          <DashboardHome />
+        </>
+      );
+    }
+    function navigateTo(view: string) {
+      currentView = view;
+      fireEvent.click(screen.getByText('navigate'));
+    }
+
+    it('does not wait on or request any home list when opened directly', async () => {
+      currentView = 'approvals';
+      vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+      renderWithIntl(<Harness />);
+
+      expect(await screen.findByText('Approval One')).toBeInTheDocument();
+      for (const url of Object.values(HOME)) expect(requestsTo(url)).toBe(0);
+    });
+
+    // The fetch is deferred, not dropped: leaving the approvals page must
+    // still load the home data — exactly once, and not again on later view
+    // switches (every list view shares the same fetched data).
+    it('fetches the home data exactly once after leaving the approvals page', async () => {
+      currentView = 'approvals';
+      vi.mocked(getUser).mockReturnValue({ id: 2, name: 'AM', email: 'am@example.com', role: 'account_manager' });
+      renderWithIntl(<Harness />);
+      expect(await screen.findByText('Approval One')).toBeInTheDocument();
+
+      navigateTo('contracts');
+      expect(await screen.findByText('Contract A')).toBeInTheDocument();
+
+      navigateTo('payments');
+      navigateTo('');
+      expect(await screen.findByText('Acme Corp')).toBeInTheDocument();
+
+      // AM set: clients instead of account managers.
+      for (const url of [HOME.contracts, HOME.payments, HOME.meetings, HOME.notifications, HOME.clients]) expect(requestsTo(url)).toBe(1);
+      expect(requestsTo(HOME.managers)).toBe(0);
+    });
+
+    it('does not refetch the home data when switching between the other views', async () => {
+      currentView = 'contracts';
+      vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+      renderWithIntl(<Harness />);
+      expect(await screen.findByText('Back to Dashboard')).toBeInTheDocument();
+
+      navigateTo('meetings');
+      expect(await screen.findByText('Kickoff Meeting')).toBeInTheDocument();
+      navigateTo('');
+      expect(await screen.findByText('Manager Mike')).toBeInTheDocument();
+
+      for (const url of [HOME.contracts, HOME.payments, HOME.meetings, HOME.notifications]) expect(requestsTo(url)).toBe(1);
+    });
   });
 });

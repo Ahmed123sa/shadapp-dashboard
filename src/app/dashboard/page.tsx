@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
@@ -30,7 +30,23 @@ export default function DashboardHome() {
   const [unreadClientsCount, setUnreadClientsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // plans/pending-approvals-fixes-plan.md ح٥ — ?view=approvals renders only
+  // PendingApprovalsListView, which fetches its own data, so it shouldn't
+  // wait on the lists below. The fetch is deferred, not dropped: it runs
+  // once, the first time view is anything other than approvals — on mount,
+  // or after the user leaves the approvals page (a query-string change, so
+  // no remount). hasFetched keeps it at exactly once across every other view
+  // switch (contracts/payments/meetings/files all share the same data), and
+  // is reset if isSA changes so the role-specific set gets fetched. This
+  // reset effect must stay above the fetch effect: effects run in order.
+  const hasFetched = useRef(false);
   useEffect(() => {
+    hasFetched.current = false;
+  }, [isSA]);
+
+  useEffect(() => {
+    if (hasFetched.current || view === 'approvals') return;
+    hasFetched.current = true;
     if (isSA) {
       Promise.all([
         api.get('/account-managers').catch(() => ({ data: { managers: [] } })),
@@ -62,16 +78,17 @@ export default function DashboardHome() {
         setUnreadClientsCount(notifRes.data.unread_clients_count || 0);
       }).finally(() => setLoading(false));
     }
-  }, [isSA]);
-
-  if (loading) return <DashboardSkeleton />;
+  }, [isSA, view]);
 
   // pending-approvals-plan.md ك4 — role-agnostic: GET /dashboard/pending-approvals
   // already scopes by the caller (AM to their own clients, SA to everyone),
   // so one shared full-page view works for both, same as PendingApprovalsPanel.
+  // Checked before `loading` (ح٥) — this view never waits on the lists above.
   if (view === 'approvals') {
     return <PendingApprovalsListView t={t} locale={locale} />;
   }
+
+  if (loading) return <DashboardSkeleton />;
 
   if (isSA) {
     if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {
