@@ -384,6 +384,42 @@ export interface DashboardStats {
   period: { month: string; timezone: string };
 }
 
+// pending-approvals-plan.md ك1 — GET /dashboard/pending-approvals, the list
+// behind the same "pending approvals" number DashboardStats.approvals.total
+// and BadgeCounts.approvals already show. `client` is deliberately a
+// trimmed-down shape (not the full Client type): the endpoint only selects
+// id/uuid/company_name, just enough for a deep link and a label.
+export interface PendingApprovalClientSummary {
+  id: number;
+  uuid: string;
+  company_name: string | null;
+}
+
+export interface PendingApprovalItem {
+  id: number;
+  type: 'contract' | 'payment' | 'approval';
+  title?: string;
+  value?: string | number | null;
+  amount?: string | number;
+  currency?: string;
+  status: string;
+  workspace_id: number;
+  updated_at?: string;
+  created_at?: string;
+  client: PendingApprovalClientSummary | null;
+}
+
+export interface PendingApprovalsResponse {
+  awaiting_you: { contracts: PendingApprovalItem[]; payments: PendingApprovalItem[] };
+  awaiting_client: { contracts: PendingApprovalItem[]; approvals: PendingApprovalItem[] };
+  counts: {
+    pending_requests: number;
+    pending_contracts: number;
+    pending_payments: number;
+    total: number;
+  };
+}
+
 // plans/notifications-badges-toasts-plan.md ن8 — GET /badge-counts, the same
 // endpoint the mobile app's home tab already polls for its chat/approvals
 // nav badges. Web never called this at all before ح6.

@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
+import PendingApprovalsPanel from '@/components/dashboard/PendingApprovalsPanel';
 import ManagerTableRow from '@/components/dashboard/ManagerTableRow';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -42,16 +43,13 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
     const name1 = c.workspace?.client?.company_name || '#' + c.id;
     activityItems.push({ color: 'green', text: t('activity_sa_contract_approved', { name: name1 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
-  const clientApprovedContracts = allContracts.filter(c => c.status === 'client_approved').slice(0, 2);
-  clientApprovedContracts.forEach(c => {
-    const name2 = c.workspace?.client?.company_name || '#' + c.id;
-    activityItems.push({ color: 'gold', text: t('activity_sa_client_approved', { name: name2 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
-  });
-  const sentContracts = allContracts.filter(c => c.status === 'sent').slice(0, 1);
-  sentContracts.forEach(c => {
-    const name3 = c.workspace?.client?.company_name || '#' + c.id;
-    activityItems.push({ color: 'blue', text: t('activity_sa_contract_sent', { name: name3 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
-  });
+  // 26 Sept 2026 — 'client_approved' and 'sent' contracts used to also show
+  // up here ("Client X approved the contract" / "Contract sent") on top of
+  // the "Pending Approvals" panel above, which lists the exact same
+  // contracts (awaiting_you / awaiting_client) — the same item duplicated in
+  // two places on one screen (pending-approvals-plan.md ن4/س4). Dropped from
+  // this feed; a contract only shows up here again once it's actually
+  // resolved (company_approved, below).
   const recentPayments = allPayments.slice(0, 2);
   recentPayments.forEach(p => {
     const amt4 = `${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}`;
@@ -193,33 +191,7 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
           </div>
 
           <div className="flex flex-col gap-3.5">
-            {pendingApprovals.length > 0 && (
-              <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-                  <span className="text-[length:var(--fs-2)] font-bold">{t('pending_approvals')}</span>
-                  <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{pendingApprovals.length}</span>
-                </div>
-                {pendingApprovals.slice(0, 4).map((a) => (
-                  <Link
-                    key={a.id}
-                    // uuid || id: see the matching comment in AMView.tsx.
-                    href={a.workspace ? `/dashboard/clients/${a.workspace.client?.uuid || a.workspace.client?.id}?tab=الموافقات` : '#'}
-                    className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.025] transition-colors"
-                  >
-                    <div className="w-[3px] h-9 rounded-sm bg-[var(--color-gold)] flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[length:var(--fs-2)] font-bold truncate">{a.title}</div>
-                      <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">
-                        {a.workspace?.client?.company_name || ''} — {timeAgo(a.created_at, locale, t)}
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] flex-shrink-0">
-                      {t('pending_status')}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <PendingApprovalsPanel t={t} locale={locale} />
 
             <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
               <div className="px-4 py-3 border-b border-[var(--border)]">

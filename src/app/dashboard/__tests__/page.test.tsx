@@ -16,6 +16,15 @@ vi.mock('@/lib/auth', () => ({
   isAuthenticated: vi.fn(() => true),
 }));
 
+// 26 Sept 2026 — SAManagersView now renders PendingApprovalsPanel
+// (pending-approvals-plan.md ك2), which calls subscribeToNotifications on
+// mount. Mocked for the same reason useBadgeCounts.test.tsx mocks it: no
+// real Echo/Pusher connection is available in jsdom.
+vi.mock('@/lib/echo', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/echo')>()),
+  subscribeToNotifications: vi.fn(() => null),
+}));
+
 // `view` is read from useSearchParams — mutable per-test via currentView so
 // each test can pick which of the four branches it exercises.
 let currentView = '';
@@ -112,6 +121,21 @@ beforeEach(() => {
     approvals: { pending_requests: 1, pending_contracts: 0, pending_payments: 0, total: 1 },
     revenue_this_month: { SAR: 2000 }, period: { month: '2026-08', timezone: 'Africa/Cairo' },
   });
+  // pending-approvals-plan.md ك2 — SAManagersView's "Pending Approvals"
+  // section now reads this endpoint via PendingApprovalsPanel instead of
+  // the pendingApprovals prop built from /approvals/pending above.
+  mock.onGet(/\/dashboard\/pending-approvals/).reply(200, {
+    awaiting_you: { contracts: [], payments: [] },
+    awaiting_client: {
+      contracts: [],
+      approvals: [{
+        id: 1, type: 'approval', title: 'Approval One', status: 'pending',
+        workspace_id: 5, created_at: '2026-08-30T10:00:00Z',
+        client: { id: 1, uuid: 'acme-uuid', company_name: 'Acme Corp' },
+      }],
+    },
+    counts: { pending_requests: 1, pending_contracts: 0, pending_payments: 0, total: 1 },
+  });
 });
 
 afterEach(() => {
@@ -150,7 +174,7 @@ describe('DashboardHome', () => {
     expect(await screen.findByText('Manager Mike')).toBeInTheDocument();
     expect(screen.getByText('Total Clients')).toBeInTheDocument();
     expect(screen.getByText('Monthly Revenue')).toBeInTheDocument();
-    expect(screen.getByText('Approval One')).toBeInTheDocument();
+    expect(await screen.findByText('Approval One')).toBeInTheDocument();
   });
 
   it('SA list view (meetings): delegates to the paginated meetings table', async () => {

@@ -1,11 +1,30 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import { useTranslations, useLocale } from 'next-intl';
 import { renderWithIntl } from '@/test/render';
 import api from '@/lib/api';
 import SAManagersView from '../SAManagersView';
-import type { DashboardStats } from '@/types';
+import type { DashboardStats, PendingApprovalsResponse } from '@/types';
+import type { Contract } from '@/components/dashboard/types';
+
+// 26 Sept 2026 — SAManagersView now renders PendingApprovalsPanel (ك2),
+// which calls GET /dashboard/pending-approvals on its own. Every test below
+// mocks it to an empty response by default so that request doesn't reject
+// unhandled; the panel's own behaviour is covered by
+// PendingApprovalsPanel.test.tsx.
+vi.mock('@/lib/echo', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/echo')>()),
+  subscribeToNotifications: vi.fn(() => null),
+}));
+
+function emptyPendingApprovals(): PendingApprovalsResponse {
+  return {
+    awaiting_you: { contracts: [], payments: [] },
+    awaiting_client: { contracts: [], approvals: [] },
+    counts: { pending_requests: 0, pending_contracts: 0, pending_payments: 0, total: 0 },
+  };
+}
 
 // 24 Sept 2026 — this view's four summary cards (total clients, active
 // contracts, monthly revenue, pending approvals) used to be computed here
@@ -18,12 +37,12 @@ import type { DashboardStats } from '@/types';
 // contracts and payments. All four now come from GET /dashboard/stats,
 // mocked below instead of computed from prop arrays.
 
-function Harness() {
+function Harness({ allContracts = [] }: { allContracts?: Contract[] } = {}) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   return (
     <SAManagersView
-      t={t} locale={locale} managers={[]} allContracts={[]} allPayments={[]}
+      t={t} locale={locale} managers={[]} allContracts={allContracts} allPayments={[]}
       allMeetings={[]} pendingApprovals={[]} unreadCount={0}
     />
   );
@@ -45,6 +64,7 @@ let mock: MockAdapter;
 
 beforeEach(() => {
   mock = new MockAdapter(api);
+  mock.onGet('/dashboard/pending-approvals').reply(200, emptyPendingApprovals());
 });
 
 afterEach(() => {
@@ -102,6 +122,37 @@ describe('SAManagersView', () => {
       renderWithIntl(<Harness />);
 
       await waitFor(() => expect(within(revenueCard()).getByText('—')).toBeInTheDocument());
+    });
+  });
+
+  // pending-approvals-plan.md ن4/س4 — 'sent' and 'client_approved' contracts
+  // used to appear a second time here ("Contract X sent" / "Client X
+  // approved the contract"), duplicating exactly what the new
+  // PendingApprovalsPanel above already lists (awaiting_client/awaiting_you).
+  // A contract now only shows up in this feed once it's actually resolved.
+  describe('recent activity feed', () => {
+    it('no longer duplicates pending contracts already shown in the approvals panel', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse());
+      const contracts: Contract[] = [
+        { id: 1, title: 'Sent Deal', status: 'sent', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 1, client: { id: 1, company_name: 'Sent Co' } } },
+        { id: 2, title: 'Client Approved Deal', status: 'client_approved', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 2, client: { id: 2, company_name: 'Approved Co' } } },
+      ];
+      renderWithIntl(<Harness allContracts={contracts} />);
+
+      await waitFor(() => expect(screen.getByText('Recent Activity')).toBeInTheDocument());
+      expect(screen.queryByText(/Sent Co/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Approved Co/)).not.toBeInTheDocument();
+      expect(screen.queryByText('No activities')).toBeInTheDocument();
+    });
+
+    it('still shows a contract once the company itself has approved it', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse());
+      const contracts: Contract[] = [
+        { id: 3, title: 'Done Deal', status: 'company_approved', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 3, client: { id: 3, company_name: 'Finished Co' } } },
+      ];
+      renderWithIntl(<Harness allContracts={contracts} />);
+
+      await waitFor(() => expect(screen.getByText(/Finished Co/)).toBeInTheDocument());
     });
   });
 });
