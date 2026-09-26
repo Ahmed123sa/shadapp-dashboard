@@ -43,7 +43,7 @@ function Harness({ allContracts = [] }: { allContracts?: Contract[] } = {}) {
   return (
     <SAManagersView
       t={t} locale={locale} managers={[]} allContracts={allContracts} allPayments={[]}
-      allMeetings={[]} pendingApprovals={[]} unreadCount={0}
+      allMeetings={[]} unreadCount={0}
     />
   );
 }
@@ -77,19 +77,36 @@ function revenueCard() {
 }
 
 describe('SAManagersView', () => {
-  it('shows total clients, active contracts and the unified pending-approvals total from the server', async () => {
+  it('shows total clients and active contracts from the server', async () => {
     mock.onGet('/dashboard/stats').reply(200, statsResponse({
       clients: { total: 42 },
       contracts: { active: 18, awaiting_client: 5 },
-      // Deliberately not 8 (3+5) — proves this reads approvals.total, the
-      // same figure the approvals badge uses, not a client-side re-count.
-      approvals: { pending_requests: 3, pending_contracts: 5, pending_payments: 7, total: 15 },
     }));
     renderWithIntl(<Harness />);
 
     await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument());
     expect(screen.getByText('18')).toBeInTheDocument();
-    expect(screen.getByText('15')).toBeInTheDocument();
+  });
+
+  // plans/pending-approvals-fixes-plan.md ح٢ — the card used to read
+  // stats.approvals.total, a separate request that never refreshed, so it
+  // could sit on a stale number while PendingApprovalsPanel (same page,
+  // refreshed every 60s + on realtime) already showed the new one. It now
+  // reads the panel's own query, so the two can't disagree.
+  it('shows the pending-approvals total from the same source as the panel, even when stats disagrees', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse({
+      approvals: { pending_requests: 0, pending_contracts: 0, pending_payments: 99, total: 99 },
+    }));
+    const pending = emptyPendingApprovals();
+    // Deliberately not 3+5+7 — proves this reads counts.total, not a
+    // client-side re-count.
+    pending.counts = { pending_requests: 3, pending_contracts: 5, pending_payments: 7, total: 15 };
+    mock.onGet('/dashboard/pending-approvals').reply(200, pending);
+    renderWithIntl(<Harness />);
+
+    const cardLabel = await screen.findByText('Pending Approvals', { selector: 'a span' });
+    await waitFor(() => expect(within(cardLabel.closest('a')!).getByText('15')).toBeInTheDocument());
+    expect(screen.queryByText('99')).not.toBeInTheDocument();
   });
 
   it('shows 0 for a brand new company with nothing yet, not a stale number', async () => {

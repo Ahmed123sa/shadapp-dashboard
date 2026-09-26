@@ -92,14 +92,6 @@ const manager = {
   pending_count: 1,
 };
 
-const approval = {
-  id: 1,
-  title: 'Approval One',
-  description: '',
-  status: 'pending',
-  workspace: { id: 5, client: { company_name: 'Acme Corp', id: 1 } },
-  created_at: '2026-08-30T10:00:00Z',
-};
 
 beforeEach(() => {
   currentView = '';
@@ -110,7 +102,6 @@ beforeEach(() => {
   mock.onGet(/\/all-meetings/).reply(200, { meetings: { data: [meeting], last_page: 1, total: 1 } });
   mock.onGet(/\/notifications/).reply(200, { unread_count: 3, unread_clients_count: 2 });
   mock.onGet(/\/account-managers/).reply(200, { managers: [manager] });
-  mock.onGet(/\/approvals\/pending/).reply(200, { approvals: [approval] });
   // AMView/SAManagersView both read their summary cards from this now
   // (server-side-stats-plan.md) instead of computing them from the lists
   // above; the numbers themselves aren't what this characterization test
@@ -122,8 +113,9 @@ beforeEach(() => {
     revenue_this_month: { SAR: 2000 }, period: { month: '2026-08', timezone: 'Africa/Cairo' },
   });
   // pending-approvals-plan.md ك2 — SAManagersView's "Pending Approvals"
-  // section now reads this endpoint via PendingApprovalsPanel instead of
-  // the pendingApprovals prop built from /approvals/pending above.
+  // section reads this endpoint via PendingApprovalsPanel. The old
+  // /approvals/pending request it replaced is gone entirely
+  // (plans/pending-approvals-fixes-plan.md ح٦).
   mock.onGet(/\/dashboard\/pending-approvals/).reply(200, {
     awaiting_you: { contracts: [], payments: [] },
     awaiting_client: {

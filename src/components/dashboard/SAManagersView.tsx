@@ -5,21 +5,22 @@ import Link from 'next/link';
 import { Users, FileText, DollarSign, Clock } from 'lucide-react';
 import api from '@/lib/api';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
+import { usePendingApprovals } from '@/hooks/queries/usePendingApprovals';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
 import PendingApprovalsPanel from '@/components/dashboard/PendingApprovalsPanel';
 import ManagerTableRow from '@/components/dashboard/ManagerTableRow';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import type { Client, Contract, Payment, Meeting, Manager, Approval, TFunc } from '@/components/dashboard/types';
+import type { Client, Contract, Payment, Meeting, Manager, TFunc } from '@/components/dashboard/types';
 import { timeAgo } from '@/components/dashboard/format';
 
 // The super admin's grid dashboard (default view when no ?view= is present
 // and the signed-in user is a super admin) — a manager table plus pending
 // approvals, instead of AMView's client table.
-export default function SAManagersView({ t, locale, managers, allContracts, allPayments, allMeetings, pendingApprovals, unreadCount }: {
+export default function SAManagersView({ t, locale, managers, allContracts, allPayments, allMeetings, unreadCount }: {
   t: TFunc; locale: string; managers: Manager[]; allContracts: Contract[];
-  allPayments: Payment[]; allMeetings: Meeting[]; pendingApprovals: Approval[]; unreadCount: number;
+  allPayments: Payment[]; allMeetings: Meeting[]; unreadCount: number;
 }) {
   // 24 Sept 2026 — total clients, active contracts, and monthly revenue
   // (server-side-stats-plan.md) used to be computed here from managers'
@@ -34,7 +35,13 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
   const { data: stats } = useDashboardStats();
   const totalClients = stats?.clients.total ?? 0;
   const activeContracts = stats?.contracts.active ?? 0;
-  const pendingApprovalsTotal = stats?.approvals.total ?? pendingApprovals.length;
+  // plans/pending-approvals-fixes-plan.md ح٢ — the Pending Approvals card
+  // reads the same query as PendingApprovalsPanel below it (shared cache
+  // key, so no extra request), so the two can never show different numbers.
+  // stats.approvals.total is only a placeholder until that query resolves;
+  // don't switch the card back to stats — that's how they drifted apart.
+  const { data: pendingApprovalsData } = usePendingApprovals();
+  const pendingApprovalsTotal = pendingApprovalsData?.counts.total ?? stats?.approvals.total ?? 0;
   const revenueEntries = Object.entries(stats?.revenue_this_month ?? {}).sort(([a], [b]) => a.localeCompare(b));
 
   const activityItems: ActivityItem[] = [];

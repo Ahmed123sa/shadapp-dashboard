@@ -1,7 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { subscribeToNotifications } from '@/lib/echo';
 import type { DashboardStats } from '@/types';
 
 // 24 Sept 2026 — GET /dashboard/stats (server-side-stats-plan.md). Both
@@ -21,9 +23,25 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   return data;
 }
 
+// plans/pending-approvals-fixes-plan.md ح٢ — this used to fetch once and
+// never refresh (no polling, no realtime, and the app-wide QueryClient has
+// refetchOnWindowFocus off), so the home cards sat stale while
+// PendingApprovalsPanel right next to them updated. Same refresh strategy as
+// useBadgeCounts / usePendingApprovals: 60s poll + refetch on any realtime
+// notification.
 export function useDashboardStats() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const unsubscribe = subscribeToNotifications(() => {
+      queryClient.invalidateQueries({ queryKey: dashboardStatsKeys.all });
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: dashboardStatsKeys.all,
     queryFn: fetchDashboardStats,
+    refetchInterval: 60000,
   });
 }
