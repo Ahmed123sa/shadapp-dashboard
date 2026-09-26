@@ -133,4 +133,21 @@ describe('PendingApprovalsPanel', () => {
     await waitFor(() => expect(screen.getByText('Nothing pending')).toBeInTheDocument());
     expect(mock.history.get.filter((r) => r.url === '/dashboard/pending-approvals').length).toBe(2);
   });
+
+  // plans/pending-approvals-fixes-plan.md ح٩ — an item with no client used to
+  // render as a link to '#' that did nothing when clicked.
+  it('renders an item with no client as a plain row, not a dead link', async () => {
+    const response = emptyResponse();
+    response.awaiting_client.approvals = [{
+      id: 9, type: 'approval', title: 'Orphan Request', status: 'pending',
+      workspace_id: 3, created_at: new Date().toISOString(), client: null,
+    }];
+    response.counts.total = 1;
+    response.counts.pending_requests = 1;
+    mock.onGet('/dashboard/pending-approvals').reply(200, response);
+    renderWithIntl(<Harness />);
+
+    await waitFor(() => expect(screen.getByText('Orphan Request')).toBeInTheDocument());
+    expect(screen.getByText('Orphan Request').closest('a')).toBeNull();
+  });
 });

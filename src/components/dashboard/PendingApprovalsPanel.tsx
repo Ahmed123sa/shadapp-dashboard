@@ -17,7 +17,9 @@ import type { PendingApprovalItem, PendingApprovalsResponse } from '@/types';
 export interface PendingApprovalRow {
   key: string;
   type: PendingApprovalItem['type'];
-  href: string;
+  // null when the item has no client to link to (ح٩) — rendered as a plain,
+  // dimmed row instead of a link to '#' that does nothing when clicked.
+  href: string | null;
   title: string;
   subtitle: string;
   accentClass: string;
@@ -25,9 +27,9 @@ export interface PendingApprovalRow {
   badgeClass: string;
 }
 
-function clientHref(item: PendingApprovalItem, tab: string): string {
+function clientHref(item: PendingApprovalItem, tab: string): string | null {
   const id = item.client?.uuid || item.client?.id;
-  return id ? `/dashboard/clients/${id}?tab=${tab}` : '#';
+  return id ? `/dashboard/clients/${id}?tab=${tab}` : null;
 }
 
 // Exported for PendingApprovalsListView (ك4, the full /dashboard?view=approvals
@@ -103,11 +105,8 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
 // Exported so PendingApprovalsListView (ك4) renders identical rows without
 // duplicating the markup.
 export function PendingApprovalRowLink({ row }: { row: PendingApprovalRow }) {
-  return (
-    <Link
-      href={row.href}
-      className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.025] transition-colors"
-    >
+  const content = (
+    <>
       <div className={`w-[3px] h-9 rounded-sm flex-shrink-0 ${row.accentClass}`} />
       <div className="flex-1 min-w-0">
         <div className="text-[length:var(--fs-2)] font-bold truncate">{row.title}</div>
@@ -116,6 +115,16 @@ export function PendingApprovalRowLink({ row }: { row: PendingApprovalRow }) {
       <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${row.badgeClass}`}>
         {row.waitingLabel}
       </span>
+    </>
+  );
+  const rowClass = 'flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0';
+
+  if (!row.href) {
+    return <div className={`${rowClass} opacity-60`}>{content}</div>;
+  }
+  return (
+    <Link href={row.href} className={`${rowClass} hover:bg-white/[0.025] transition-colors`}>
+      {content}
     </Link>
   );
 }

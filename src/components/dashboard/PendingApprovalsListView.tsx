@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { usePendingApprovals } from '@/hooks/queries/usePendingApprovals';
 import ErrorState from '@/components/ErrorState';
@@ -20,9 +21,37 @@ const FULL_LIST_LIMIT = 200;
 
 type FilterType = 'all' | PendingApprovalItem['type'];
 
+const FILTER_TYPES: FilterType[] = ['all', 'contract', 'payment', 'approval'];
+
+// plans/pending-approvals-fixes-plan.md ح٧ — the active filter lives in the
+// URL (?view=approvals&type=payment) instead of only in component state, so
+// opening an item and coming back with the browser's Back button lands on
+// the same filter, and a link can open the page pre-filtered. Anything
+// missing or unrecognised falls back to "all".
+function filterFromUrl(type: string | null): FilterType {
+  return FILTER_TYPES.includes(type as FilterType) ? (type as FilterType) : 'all';
+}
+
 export default function PendingApprovalsListView({ t, locale }: { t: TFunc; locale: string }) {
   const { data, isLoading, isError, refetch } = usePendingApprovals(FULL_LIST_LIMIT);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlFilter = filterFromUrl(searchParams.get('type'));
+  // Local state so a click shows the new filter immediately, re-synced
+  // whenever the URL's own value changes (React's "adjust state when a prop
+  // changes" pattern, no effect needed).
+  const [filter, setFilterState] = useState<FilterType>(urlFilter);
+  const [syncedUrlFilter, setSyncedUrlFilter] = useState<FilterType>(urlFilter);
+  if (syncedUrlFilter !== urlFilter) {
+    setSyncedUrlFilter(urlFilter);
+    setFilterState(urlFilter);
+  }
+  const setFilter = (next: FilterType) => {
+    setFilterState(next);
+    // replace, not push: switching filters shouldn't pile up history entries
+    // the Back button then has to step through.
+    router.replace(next === 'all' ? '/dashboard?view=approvals' : `/dashboard?view=approvals&type=${next}`, { scroll: false });
+  };
 
   const rows = data ? buildPendingApprovalRows(data, t, locale) : [];
   const filteredRows = filter === 'all' ? rows : rows.filter((r) => r.type === filter);

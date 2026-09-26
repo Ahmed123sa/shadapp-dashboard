@@ -18,6 +18,16 @@ vi.mock('@/lib/echo', async (importOriginal) => ({
   subscribeToNotifications: vi.fn(() => null),
 }));
 
+// ح٧ — the filter is read from / written to ?type= in the URL. currentType is
+// what useSearchParams returns; replace is spied on to check what gets
+// written back.
+let currentType: string | null = null;
+const replace = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace }),
+  useSearchParams: () => ({ get: (key: string) => (key === 'type' ? currentType : null) }),
+}));
+
 function Harness() {
   const t = useTranslations('dashboard');
   const locale = useLocale();
@@ -57,6 +67,8 @@ function responseWithItems(): PendingApprovalsResponse {
 let mock: MockAdapter;
 
 beforeEach(() => {
+  currentType = null;
+  replace.mockClear();
   mock = new MockAdapter(api);
 });
 
@@ -124,5 +136,41 @@ describe('PendingApprovalsListView', () => {
     fireEvent.click(retry);
 
     await waitFor(() => expect(screen.getByText('Villa Deal')).toBeInTheDocument());
+  });
+
+  // plans/pending-approvals-fixes-plan.md ح٧ — the filter used to live only in
+  // component state, so opening an item and pressing Back reset it to "All".
+  describe('filter in the URL', () => {
+    it('writes the chosen filter to ?type= (replace, not push) and clears it for "All"', async () => {
+      mock.onGet('/dashboard/pending-approvals').reply(200, responseWithItems());
+      renderWithIntl(<Harness />);
+      await waitFor(() => expect(screen.getByText('Villa Deal')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText(/^Payments/));
+      expect(replace).toHaveBeenLastCalledWith('/dashboard?view=approvals&type=payment', { scroll: false });
+
+      fireEvent.click(screen.getByText(/^All/));
+      expect(replace).toHaveBeenLastCalledWith('/dashboard?view=approvals', { scroll: false });
+    });
+
+    it('opens pre-filtered from ?type= (e.g. after Back)', async () => {
+      currentType = 'payment';
+      mock.onGet('/dashboard/pending-approvals').reply(200, responseWithItems());
+      renderWithIntl(<Harness />);
+
+      await waitFor(() => expect(screen.getByText('Payment from Co-ops')).toBeInTheDocument());
+      expect(screen.queryByText('Villa Deal')).not.toBeInTheDocument();
+      expect(screen.queryByText('Design Sign-off')).not.toBeInTheDocument();
+    });
+
+    it('falls back to "All" for an unknown ?type=', async () => {
+      currentType = 'bogus';
+      mock.onGet('/dashboard/pending-approvals').reply(200, responseWithItems());
+      renderWithIntl(<Harness />);
+
+      await waitFor(() => expect(screen.getByText('Villa Deal')).toBeInTheDocument());
+      expect(screen.getByText('Payment from Co-ops')).toBeInTheDocument();
+      expect(screen.getByText('Design Sign-off')).toBeInTheDocument();
+    });
   });
 });
