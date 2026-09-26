@@ -146,7 +146,8 @@ describe('DashboardHome', () => {
     // once as the client table's section header — both are correct.
     expect(screen.getAllByText('My Clients').length).toBe(2);
     expect(screen.getByText('Active Contracts')).toBeInTheDocument();
-    expect(screen.getByText('Pending Payments')).toBeInTheDocument();
+    // ح٤: the card and PendingApprovalsPanel's header share this label.
+    expect(screen.getAllByText('Pending Approvals').length).toBe(2);
     expect(screen.getByText('Unread Messages')).toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
   });

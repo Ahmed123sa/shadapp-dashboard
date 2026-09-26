@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import { useTranslations, useLocale } from 'next-intl';
 import { renderWithIntl } from '@/test/render';
@@ -78,17 +78,44 @@ describe('AMView', () => {
   // client-side filter over a 100-row-capped list still worked here, but a
   // manager with more than that many contracts would have silently seen an
   // undercount that could never grow past the cap. A server COUNT has none.
-  it('shows my clients, active contracts and pending payments from the server', async () => {
+  it('shows my clients and active contracts from the server', async () => {
     mock.onGet('/dashboard/stats').reply(200, statsResponse({
       clients: { total: 12 },
       contracts: { active: 35, awaiting_client: 4 },
-      payments: { pending: 6 },
     }));
     renderWithIntl(<Harness />);
 
     await waitFor(() => expect(screen.getByText('12')).toBeInTheDocument());
     expect(screen.getByText('35')).toBeInTheDocument();
-    expect(screen.getByText('6')).toBeInTheDocument();
+  });
+
+  // plans/pending-approvals-fixes-plan.md ح٤ — replaces the old unlinked
+  // "Pending Payments" card with the same card SAManagersView has, read from
+  // the same query as PendingApprovalsPanel (ح٢), so an account manager can
+  // always reach the full list in one click, even at zero.
+  it('shows a pending-approvals card from the panel\'s own source, linked to the full list', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse({
+      payments: { pending: 6 },
+      approvals: { pending_requests: 0, pending_contracts: 0, pending_payments: 0, total: 99 },
+    }));
+    const pending = emptyPendingApprovals();
+    pending.counts = { pending_requests: 1, pending_contracts: 2, pending_payments: 4, total: 7 };
+    mock.onGet('/dashboard/pending-approvals').reply(200, pending);
+    renderWithIntl(<Harness />);
+
+    const cardLabel = await screen.findByText('Pending Approvals', { selector: 'a span' });
+    expect(cardLabel.closest('a')).toHaveAttribute('href', '/dashboard?view=approvals');
+    await waitFor(() => expect(within(cardLabel.closest('a')!).getByText('7')).toBeInTheDocument());
+    expect(screen.queryByText('99')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pending Payments')).not.toBeInTheDocument();
+  });
+
+  it('keeps the pending-approvals card reachable when nothing is pending', async () => {
+    mock.onGet('/dashboard/stats').reply(200, statsResponse());
+    renderWithIntl(<Harness />);
+
+    const cardLabel = await screen.findByText('Pending Approvals', { selector: 'a span' });
+    expect(cardLabel.closest('a')).toHaveAttribute('href', '/dashboard?view=approvals');
   });
 
   it('shows the awaiting-response count from contracts.awaiting_client, not a re-filtered list', async () => {

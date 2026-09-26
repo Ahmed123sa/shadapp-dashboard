@@ -2,8 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Users, FileText, CreditCard, MessageCircle } from 'lucide-react';
+import { Users, FileText, Clock, MessageCircle } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
+import { usePendingApprovals } from '@/hooks/queries/usePendingApprovals';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
 import PendingApprovalsPanel from '@/components/dashboard/PendingApprovalsPanel';
@@ -30,7 +31,13 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
   const totalClients = stats?.clients.total ?? 0;
   const activeContracts = stats?.contracts.active ?? 0;
   const pendingContractsCount = stats?.contracts.awaiting_client ?? 0;
-  const pendingPaymentsCount = stats?.payments.pending ?? 0;
+  // plans/pending-approvals-fixes-plan.md ح٤ — this card used to be "Pending
+  // Payments", with no link, so an account manager had no way to reach the
+  // full approvals list from the home screen once PendingApprovalsPanel's
+  // "view all" link hid at zero. Now the same card as SAManagersView, read
+  // from the same query as the panel below (ح٢) — don't switch it to stats.
+  const { data: pendingApprovalsData } = usePendingApprovals();
+  const pendingApprovalsTotal = pendingApprovalsData?.counts.total ?? stats?.approvals.total ?? 0;
 
   const activityItems: ActivityItem[] = [];
   const approvedContracts = allContracts.filter(c => c.status === 'company_approved').slice(0, 2);
@@ -65,7 +72,7 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
               SAManagersView. */}
           <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" />
           <DashboardStatCard label={t('active_contracts')} value={activeContracts} icon={FileText} subtitle={t('awaiting_response', { count: pendingContractsCount })} />
-          <DashboardStatCard label={t('pending_payments')} value={pendingPaymentsCount} icon={CreditCard} color="gold" subtitle={t('subtitle_needs_action')} />
+          <DashboardStatCard label={t('pending_approvals')} value={pendingApprovalsTotal} icon={Clock} color="red" subtitle={t('subtitle_urgent')} href="/dashboard?view=approvals" />
           <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon={MessageCircle} color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />
         </div>
 
