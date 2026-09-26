@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl, safeJsonParse, notifyWriteError } from '../utils';
+import { getMeetingJoinStatus, formatMeetingDate, asSettingFlag, resolveFileUrl, safeJsonParse, notifyWriteError, clientHasSignedContract } from '../utils';
 import { reportError } from '../error-reporting';
 import { showToast } from '@/components/ToastNotification';
 
@@ -180,5 +180,27 @@ describe('notifyWriteError', () => {
   it('does not throw when called with a non-Error rejection value', () => {
     expect(() => notifyWriteError(t, 'ChatTab.send', 'some string rejection')).not.toThrow();
     expect(reportError).toHaveBeenCalledWith('ChatTab.send', 'some string rejection');
+  });
+});
+
+// client-signature-plan.md ن1 — mirrors the mobile app's
+// clientHasSignedContract() (lib/core/helpers/client_status.dart) test coverage.
+describe('clientHasSignedContract', () => {
+  it('is true for an active workspace, regardless of has_signed_contract or signed_at', () => {
+    expect(clientHasSignedContract({ workspace: { status: 'active' }, has_signed_contract: false, signed_at: undefined } as never)).toBe(true);
+  });
+
+  it('uses has_signed_contract when the workspace is inactive', () => {
+    expect(clientHasSignedContract({ workspace: { status: 'inactive' }, has_signed_contract: true, signed_at: undefined } as never)).toBe(true);
+    expect(clientHasSignedContract({ workspace: { status: 'inactive' }, has_signed_contract: false, signed_at: undefined } as never)).toBe(false);
+  });
+
+  it('falls back to signed_at when has_signed_contract is absent (older server response)', () => {
+    expect(clientHasSignedContract({ workspace: { status: 'inactive' }, has_signed_contract: undefined, signed_at: '2026-01-01' } as never)).toBe(true);
+    expect(clientHasSignedContract({ workspace: { status: 'inactive' }, has_signed_contract: undefined, signed_at: undefined } as never)).toBe(false);
+  });
+
+  it('is false with no workspace, no has_signed_contract, and no signed_at', () => {
+    expect(clientHasSignedContract({ workspace: undefined, has_signed_contract: undefined, signed_at: undefined } as never)).toBe(false);
   });
 });

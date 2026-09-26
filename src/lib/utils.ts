@@ -1,5 +1,6 @@
 import { reportError } from './error-reporting';
 import { showToast } from '@/components/ToastNotification';
+import type { Client } from '@/types';
 
 /**
  * Reads a system-setting flag that the backend stores as a string ('1'/'0').
@@ -73,6 +74,23 @@ export function formatMeetingDate(d: string, locale = 'en'): string {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch { return d; }
+}
+
+/**
+ * Whether a client has approved a contract — distinct from `signed_at`,
+ * which only records the client saving a profile signature (see
+ * client-signature-plan.md ن1). A paid, active client could otherwise show
+ * as "not signed". Mirrors the mobile app's `clientHasSignedContract()`
+ * (`lib/core/helpers/client_status.dart`): an active workspace always means
+ * a contract was approved (the workspace can't activate without one);
+ * `has_signed_contract` is the real signal from GET /clients and
+ * GET /clients/{id}; `signed_at` is only a fallback for an older server
+ * response that doesn't send the flag yet.
+ */
+export function clientHasSignedContract(client: Pick<Client, 'workspace' | 'has_signed_contract' | 'signed_at'>): boolean {
+  if (client.workspace?.status === 'active') return true;
+  if (typeof client.has_signed_contract === 'boolean') return client.has_signed_contract;
+  return !!client.signed_at;
 }
 
 /**

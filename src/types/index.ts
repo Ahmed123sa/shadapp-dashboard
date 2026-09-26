@@ -23,6 +23,10 @@ export interface Client {
   signature_data?: string;
   signature_url?: string | null;
   signed_at?: string;
+  // Whether the client has approved a contract — distinct from signed_at,
+  // which only records a saved profile signature. Only present on
+  // GET /clients and GET /clients/{id} (see client-signature-plan.md ن1).
+  has_signed_contract?: boolean;
   avatar_url?: string;
   notes?: string;
   latitude?: number | string | null;

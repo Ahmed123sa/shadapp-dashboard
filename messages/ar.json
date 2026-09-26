@@ -79,6 +79,8 @@
     "inactive": "غير مفعل",
     "signed": "تم التوقيع",
     "not_signed": "لم يتم التوقيع",
+    "contracted": "متعاقد",
+    "not_contracted": "غير متعاقد",
     "new_client": "عميل جديد",
     "client_search": "بحث بالاسم، البريد، أو رقم الهاتف...",
     "client_created": "تم إنشاء العميل بنجاح",

@@ -192,4 +192,42 @@ describe('ClientWorkspace (characterization)', () => {
     expect(screen.getByTitle('Settings').closest('a')).toHaveAttribute('href', '/dashboard/clients/5/settings');
     expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
+
+  // client-signature-plan.md ن1 — the badge used to read signed_at (a saved
+  // profile signature), so a paid, active client with no profile signature
+  // showed as "Not Signed". It now reads has_signed_contract (falling back
+  // to an active workspace, then to signed_at for an older server response
+  // that doesn't send the flag) — see lib/utils.ts's clientHasSignedContract.
+  describe('the contracted badge', () => {
+    it('shows Contracted for an active workspace, even with no saved signature', async () => {
+      vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+      mockClient({ signed_at: null, has_signed_contract: false, workspace: { id: 22, status: 'active' } });
+      mockFallback();
+      renderWithIntl(<ClientWorkspace />);
+
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+      expect(screen.getByText('Contracted')).toBeInTheDocument();
+      expect(screen.queryByText('Not Contracted')).not.toBeInTheDocument();
+    });
+
+    it('shows Contracted for an inactive workspace when has_signed_contract is true', async () => {
+      vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+      mockClient({ signed_at: null, has_signed_contract: true, workspace: { id: 22, status: 'inactive' } });
+      mockFallback();
+      renderWithIntl(<ClientWorkspace />);
+
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+      expect(screen.getByText('Contracted')).toBeInTheDocument();
+    });
+
+    it('shows Not Contracted for an inactive workspace with no approved contract and no saved signature', async () => {
+      vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+      mockClient({ signed_at: null, has_signed_contract: false, workspace: { id: 22, status: 'inactive' } });
+      mockFallback();
+      renderWithIntl(<ClientWorkspace />);
+
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+      expect(screen.getByText('Not Contracted')).toBeInTheDocument();
+    });
+  });
 });

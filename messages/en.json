@@ -79,6 +79,8 @@
     "inactive": "Inactive",
     "signed": "Signed",
     "not_signed": "Not Signed",
+    "contracted": "Contracted",
+    "not_contracted": "Not Contracted",
     "new_client": "New Client",
     "client_search": "Search by name, email, or phone...",
     "client_created": "Client created successfully",
