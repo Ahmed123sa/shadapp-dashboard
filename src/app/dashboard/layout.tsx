@@ -192,9 +192,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Logo */}
         <div className="px-3.5 py-5 mb-4">
-          <div className="flex items-center gap-1">
-            <span className="text-[length:var(--fs-6)] italic font-bold font-display">d</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] mb-[-2px]" />
+          <div className="flex items-end gap-2">
+            {/* Traced from public/logo.jpg so the mark matches the brand
+                exactly, on a transparent background. The sidebar stays dark
+                in both themes, so the white fill always has contrast. */}
+            <img src="/logo-mark.svg" alt="ShadApp" className="h-7 w-auto" />
             <span className="text-[length:var(--fs-4)] tracking-[3px] text-[var(--color-gold)] font-display">SHAD</span>
           </div>
         </div>
@@ -210,11 +212,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div>
             <div className="text-xs font-bold">{user?.name}</div>
-            <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">
+            <span className="inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] uppercase whitespace-nowrap rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
               {isSA ? t('role_admin') : t('role_am')}
-            </div>
-            <span className="inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
-              {isSA ? 'SUPER ADMIN' : 'ACCOUNT MANAGER'}
             </span>
           </div>
         </div>
