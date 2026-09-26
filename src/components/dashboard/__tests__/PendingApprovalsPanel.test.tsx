@@ -72,8 +72,8 @@ describe('PendingApprovalsPanel', () => {
 
     await waitFor(() => expect(screen.getByText('Villa Deal')).toBeInTheDocument());
     expect(screen.getByText('Office Lease')).toBeInTheDocument();
-    expect(screen.getByText('Villa Deal').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid-1?tab=العقود');
-    expect(screen.getByText('Office Lease').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid-2?tab=العقود');
+    expect(screen.getByText('Villa Deal').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid-1?tab=contracts');
+    expect(screen.getByText('Office Lease').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid-2?tab=contracts');
     // "awaiting you" (client_approved) is distinguished from "awaiting
     // client" (sent) — the exact conflation the plan's ن4 calls out.
     expect(screen.getByText('Awaiting you')).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('PendingApprovalsPanel', () => {
     renderWithIntl(<Harness />);
 
     await waitFor(() => expect(screen.getByText('Design Sign-off')).toBeInTheDocument());
-    expect(screen.getByText('Design Sign-off').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=الموافقات');
-    expect(screen.getByText('Payment from Co-ops').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=المدفوعات');
+    expect(screen.getByText('Design Sign-off').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=approvals');
+    expect(screen.getByText('Payment from Co-ops').closest('a')).toHaveAttribute('href', '/dashboard/clients/client-uuid?tab=payments');
   });
 });

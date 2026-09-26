@@ -11,7 +11,7 @@ import { useBadgeCounts } from '@/hooks/queries/useBadgeCounts';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
-  Folder, ClipboardList, Settings, UserCog, BarChart3, Sun, Moon,
+  Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
 
@@ -42,20 +42,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const currentView = searchParams.get('view') || '';
 
-  // plans/notifications-badges-toasts-plan.md ن8 — the sidebar has no
-  // dedicated "Approvals" or "Messages" links (approvals live per-client
-  // under ApprovalsTab, chat lives per-client too), so their unread counts
-  // ride on the two closest existing entry points instead: Home (where both
-  // AMView and SAManagersView already surface pending approvals) and My/All
-  // Clients (where every client's chat thread lives) — same mapping the
-  // mobile app's bottom nav uses (chat → Home tab, approvals → Approvals tab).
+  // plans/notifications-badges-toasts-plan.md ن8 — the chat count rides on
+  // My/All Clients (where every client's chat thread lives), since there is
+  // no dedicated "Messages" link. The approvals count used to ride on Home
+  // for the same reason; plans/pending-approvals-fixes-plan.md ح٨ gave it a
+  // dedicated "Pending Approvals" entry (?view=approvals) instead, so it now
+  // sits there and Home carries no badge — same mapping the mobile app's
+  // bottom nav uses (chat → Home tab, approvals → Approvals tab).
   const { data: badgeCounts } = useBadgeCounts();
 
   const amNavGroups = [
     {
       label: t('nav_group_main'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true, badge: badgeCounts?.approvals, badgeColor: 'gold' },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
+        { href: '/dashboard?view=approvals', label: t('pending_approvals'), icon: ClipboardCheck, badge: badgeCounts?.approvals, badgeColor: 'gold' },
         { href: '/dashboard/clients', label: t('my_clients'), icon: Users, badge: badgeCounts?.chat, badgeColor: 'crimson' },
       ],
     },
@@ -86,7 +87,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_admin'),
       items: [
-        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true, badge: badgeCounts?.approvals, badgeColor: 'gold' },
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
+        { href: '/dashboard?view=approvals', label: t('pending_approvals'), icon: ClipboardCheck, badge: badgeCounts?.approvals, badgeColor: 'gold' },
         { href: '/dashboard/clients', label: t('all_clients'), icon: Users, badge: badgeCounts?.chat, badgeColor: 'crimson' },
         { href: '/dashboard/finance', label: locale === 'ar' ? 'المالية' : 'Finance', icon: CreditCard },
         { href: '/dashboard/reports', label: t('reports'), icon: BarChart3 },
@@ -143,6 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const getPageTitle = () => {
     if (pathname === '/dashboard' && currentView) {
       const viewTitles: Record<string, string> = {
+        approvals: t('pending_approvals'),
         contracts: t('contracts_nav'),
         messages: t('messages'),
         meetings: t('meetings_nav'),

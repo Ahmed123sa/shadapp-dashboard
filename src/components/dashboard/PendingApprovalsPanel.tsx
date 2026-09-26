@@ -49,7 +49,7 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
     rows.push({
       key: `contract-you-${c.id}`,
       type: 'contract',
-      href: clientHref(c, 'العقود'),
+      href: clientHref(c, 'contracts'),
       title: c.title || '',
       subtitle: `${c.client?.company_name || ''} • ${Number(c.value || 0).toLocaleString()} ${c.currency || ''} — ${time}`,
       accentClass: youAccent,
@@ -62,7 +62,7 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
     rows.push({
       key: `payment-you-${p.id}`,
       type: 'payment',
-      href: clientHref(p, 'المدفوعات'),
+      href: clientHref(p, 'payments'),
       title: t('pending_approval_payment_title', { client: p.client?.company_name || '' }),
       subtitle: `${Number(p.amount || 0).toLocaleString()} ${p.currency || ''} — ${time}`,
       accentClass: youAccent,
@@ -75,7 +75,7 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
     rows.push({
       key: `contract-client-${c.id}`,
       type: 'contract',
-      href: clientHref(c, 'العقود'),
+      href: clientHref(c, 'contracts'),
       title: c.title || '',
       subtitle: `${c.client?.company_name || ''} • ${Number(c.value || 0).toLocaleString()} ${c.currency || ''} — ${time}`,
       accentClass: clientAccent,
@@ -88,7 +88,7 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
     rows.push({
       key: `approval-client-${a.id}`,
       type: 'approval',
-      href: clientHref(a, 'الموافقات'),
+      href: clientHref(a, 'approvals'),
       title: a.title || '',
       subtitle: `${a.client?.company_name || ''} — ${time}`,
       accentClass: clientAccent,
