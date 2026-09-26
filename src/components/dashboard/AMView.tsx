@@ -6,6 +6,7 @@ import { Users, FileText, CreditCard, MessageCircle } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/queries/useDashboardStats';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ActivityFeed, { ActivityItem } from '@/components/dashboard/ActivityFeed';
+import PendingApprovalsPanel from '@/components/dashboard/PendingApprovalsPanel';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { resolveFileUrl } from '@/lib/utils';
@@ -37,11 +38,12 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
     const name1 = c.workspace?.client?.company_name || t('client_label');
     activityItems.push({ color: 'green', text: t('activity_am_contract_approved', { name: name1 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
   });
-  const pendingContracts = allContracts.filter(c => c.status === 'sent' || c.status === 'client_approved').slice(0, 2);
-  pendingContracts.forEach(c => {
-    const name2 = c.workspace?.client?.company_name || t('client_label');
-    activityItems.push({ color: 'red', text: t('activity_am_contract_pending', { name: name2 }), time: timeAgo(c.created_at || new Date().toISOString(), locale, t) });
-  });
+  // 26 Sept 2026 — 'sent'/'client_approved' contracts used to also show up
+  // here ("Contract pending for X") on top of the new PendingApprovalsPanel
+  // below, which lists the exact same contracts — the same item duplicated
+  // twice on one screen (pending-approvals-plan.md ن4/س4, same fix already
+  // applied to SAManagersView). Dropped; a contract shows up here again once
+  // it's actually resolved (company_approved, above).
   const recentPayments = allPayments.slice(0, 2);
   recentPayments.forEach(p => {
     const amt3 = `${Number(p.amount).toLocaleString()} ${p.currency || 'SAR'}`;
@@ -127,11 +129,15 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
             </table>
           </div>
 
-          <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
+          <div className="flex flex-col gap-3.5">
+            <PendingApprovalsPanel t={t} locale={locale} />
+
+            <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
+              <div className="px-4 py-3 border-b border-[var(--border)]">
+                <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
+              </div>
+              <ActivityFeed items={activityItems} />
             </div>
-            <ActivityFeed items={activityItems} />
           </div>
         </div>
       </div>

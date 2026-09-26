@@ -5,7 +5,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { renderWithIntl } from '@/test/render';
 import api from '@/lib/api';
 import AMView from '../AMView';
-import type { DashboardStats } from '@/types';
+import type { DashboardStats, PendingApprovalsResponse } from '@/types';
+import type { Contract } from '@/components/dashboard/types';
 
 // AMView calls useRouter() itself (for the client-row click handler) — a
 // real Next.js app router isn't mounted under renderWithIntl, so this needs
@@ -13,6 +14,22 @@ import type { DashboardStats } from '@/types';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
+
+// 26 Sept 2026 — AMView now renders PendingApprovalsPanel (ك3), which calls
+// GET /dashboard/pending-approvals and subscribeToNotifications on its own.
+// Mocked the same way SAManagersView.test.tsx mocks both for the same panel.
+vi.mock('@/lib/echo', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/echo')>()),
+  subscribeToNotifications: vi.fn(() => null),
+}));
+
+function emptyPendingApprovals(): PendingApprovalsResponse {
+  return {
+    awaiting_you: { contracts: [], payments: [] },
+    awaiting_client: { contracts: [], approvals: [] },
+    counts: { pending_requests: 0, pending_contracts: 0, pending_payments: 0, total: 0 },
+  };
+}
 
 // 24 Sept 2026 — this account manager dashboard's four summary cards (my
 // clients, active contracts + "awaiting response" subtitle, pending
@@ -22,12 +39,12 @@ vi.mock('next/navigation', () => ({
 // cap saw an undercount that never grew past it. All three now come from
 // GET /dashboard/stats, mocked below instead of computed from prop arrays.
 
-function Harness() {
+function Harness({ allContracts = [] }: { allContracts?: Contract[] } = {}) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   return (
     <AMView
-      t={t} locale={locale} clients={[]} allContracts={[]} allPayments={[]}
+      t={t} locale={locale} clients={[]} allContracts={allContracts} allPayments={[]}
       allMeetings={[]} unreadCount={2} unreadClientsCount={1}
     />
   );
@@ -49,6 +66,7 @@ let mock: MockAdapter;
 
 beforeEach(() => {
   mock = new MockAdapter(api);
+  mock.onGet('/dashboard/pending-approvals').reply(200, emptyPendingApprovals());
 });
 
 afterEach(() => {
@@ -88,5 +106,35 @@ describe('AMView', () => {
     renderWithIntl(<Harness />);
 
     await waitFor(() => expect(screen.getAllByText('0').length).toBeGreaterThan(0));
+  });
+
+  // pending-approvals-plan.md ن2/ن4/س4 — the AM home never had a pending-
+  // approvals list at all before ك3, even though its badge already counted
+  // the same items. Now that PendingApprovalsPanel is here, 'sent'/
+  // 'client_approved' contracts must not also duplicate into Recent Activity.
+  describe('recent activity feed', () => {
+    it('no longer duplicates pending contracts already shown in the approvals panel', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse());
+      const contracts: Contract[] = [
+        { id: 1, title: 'Sent Deal', status: 'sent', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 1, client: { id: 1, company_name: 'Sent Co' } } },
+        { id: 2, title: 'Client Approved Deal', status: 'client_approved', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 2, client: { id: 2, company_name: 'Approved Co' } } },
+      ];
+      renderWithIntl(<Harness allContracts={contracts} />);
+
+      await waitFor(() => expect(screen.getByText('Recent Activity')).toBeInTheDocument());
+      expect(screen.queryByText(/Sent Co/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Approved Co/)).not.toBeInTheDocument();
+      expect(screen.queryByText('No activities')).toBeInTheDocument();
+    });
+
+    it('still shows a contract once the company itself has approved it', async () => {
+      mock.onGet('/dashboard/stats').reply(200, statsResponse());
+      const contracts: Contract[] = [
+        { id: 3, title: 'Done Deal', status: 'company_approved', value: '100', currency: 'SAR', created_at: new Date().toISOString(), workspace: { id: 3, client: { id: 3, company_name: 'Finished Co' } } },
+      ];
+      renderWithIntl(<Harness allContracts={contracts} />);
+
+      await waitFor(() => expect(screen.getByText(/Finished Co/)).toBeInTheDocument());
+    });
   });
 });
