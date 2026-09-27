@@ -24,6 +24,11 @@ interface NavItem {
   exact?: boolean;
 }
 
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('dashboard');
   const c = useTranslations('common');
@@ -51,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // bottom nav uses (chat → Home tab, approvals → Approvals tab).
   const { data: badgeCounts } = useBadgeCounts();
 
-  const amNavGroups = [
+  const amNavGroups: NavGroup[] = [
     {
       label: t('nav_group_main'),
       items: [
@@ -83,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
-  const saNavGroups = [
+  const saNavGroups: NavGroup[] = [
     {
       label: t('nav_group_admin'),
       items: [
