@@ -34,4 +34,13 @@ export function assertProductionEnv(env: NodeJS.ProcessEnv = process.env): void 
       `instead of failing visibly.`
     );
   }
+
+  const reverbHost = env.NEXT_PUBLIC_REVERB_HOST?.trim();
+  if (reverbHost === 'localhost' || reverbHost === '127.0.0.1') {
+    throw new Error(
+      `Invalid NEXT_PUBLIC_REVERB_HOST in production: "${reverbHost}". ` +
+      `In production, NEXT_PUBLIC_REVERB_HOST cannot be localhost or 127.0.0.1. ` +
+      `Provide your public Reverb domain or server IP in .env.production.`
+    );
+  }
 }

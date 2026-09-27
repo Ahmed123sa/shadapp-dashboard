@@ -33,7 +33,23 @@ describe('assertProductionEnv', () => {
     }
   });
 
-  it('does not throw in production once all required vars are set', () => {
+  it('throws in production when NEXT_PUBLIC_REVERB_HOST is localhost or 127.0.0.1', () => {
+    expect(() => assertProductionEnv({
+      NODE_ENV: 'production',
+      NEXT_PUBLIC_API_URL: 'https://api.example.com',
+      NEXT_PUBLIC_REVERB_HOST: 'localhost',
+      NEXT_PUBLIC_REVERB_KEY: 'real-key',
+    })).toThrow(/Invalid NEXT_PUBLIC_REVERB_HOST/);
+
+    expect(() => assertProductionEnv({
+      NODE_ENV: 'production',
+      NEXT_PUBLIC_API_URL: 'https://api.example.com',
+      NEXT_PUBLIC_REVERB_HOST: '127.0.0.1',
+      NEXT_PUBLIC_REVERB_KEY: 'real-key',
+    })).toThrow(/Invalid NEXT_PUBLIC_REVERB_HOST/);
+  });
+
+  it('does not throw in production once all required vars are validly set', () => {
     expect(() => assertProductionEnv({
       NODE_ENV: 'production',
       NEXT_PUBLIC_API_URL: 'https://api.example.com',
