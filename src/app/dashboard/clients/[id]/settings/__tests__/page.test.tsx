@@ -61,7 +61,7 @@ describe('ClientSettingsPage (characterization)', () => {
     renderWithIntl(<ClientSettingsPage />);
 
     await waitFor(() => expect(screen.getByText('Edit: Acme Corp')).toBeInTheDocument());
-    expect((screen.getByLabelText('Company Name') as HTMLInputElement).value).toBe('Acme Corp');
+    await waitFor(() => expect((screen.getByLabelText('Company Name') as HTMLInputElement).value).toBe('Acme Corp'));
     expect((screen.getByLabelText('Contact Person') as HTMLInputElement).value).toBe('John Doe');
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('john@acme.com');
     expect((screen.getByLabelText('Phone') as HTMLInputElement).value).toBe('0501234567');
