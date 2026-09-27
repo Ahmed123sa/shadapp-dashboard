@@ -2,6 +2,7 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { getUser } from './auth';
 import { getClient } from './client-auth';
+import { reportError } from './error-reporting';
 
 // Private-channel auth used to attach the Sanctum bearer token read from
 // localStorage. The token now lives only in an httpOnly cookie, so instead
@@ -30,6 +31,43 @@ function channelAuthCustomHandler() {
   };
 }
 
+// Exported for tests. laravel-echo hands these options straight to pusher-js,
+// which only reads wsHost/wsPort/wssPort/forceTLS at the top level. The old
+// nested `reverb: {host, port, scheme}` was ignored, so pusher-js fell back
+// to Pusher's cloud host (ws-.pusher.com) and the dashboard never reached
+// Reverb.
+export function reverbOptions() {
+  const scheme = process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http';
+  const port = parseInt(process.env.NEXT_PUBLIC_REVERB_PORT || '8080', 10);
+  return {
+    broadcaster: 'reverb' as const,
+    key: process.env.NEXT_PUBLIC_REVERB_KEY || 'shadapp-key',
+    wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
+    wsPort: port,
+    wssPort: port,
+    forceTLS: scheme === 'https',
+    enabledTransports: ['ws', 'wss'] as ('ws' | 'wss')[],
+    channelAuthorization: channelAuthCustomHandler(),
+  };
+}
+
+function bindErrorHandlers(echo: Echo<any>) {
+  try {
+    const connector = (echo as any).connector;
+    const pusher = connector?.pusher;
+    if (pusher?.connection) {
+      pusher.connection.bind('error', (err: any) => {
+        reportError('Echo connection error', err ?? new Error('Unknown Echo error'));
+      });
+      pusher.connection.bind('unavailable', () => {
+        reportError('Echo connection unavailable', new Error('Connection unavailable'));
+      });
+    }
+  } catch {
+    // Ignore if connector or pusher is not accessible in this environment.
+  }
+}
+
 let echoInstance: Echo<any> | null = null;
 
 export function getEcho(): Echo<any> | null {
@@ -41,17 +79,8 @@ export function getEcho(): Echo<any> | null {
 
   (window as any).Pusher = Pusher;
 
-  echoInstance = new Echo({
-    broadcaster: 'reverb',
-    key: process.env.NEXT_PUBLIC_REVERB_KEY || 'shadapp-key',
-    channelAuthorization: channelAuthCustomHandler(),
-    reverb: {
-      driver: 'reverb',
-      host: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-      port: parseInt(process.env.NEXT_PUBLIC_REVERB_PORT || '8080', 10),
-      scheme: process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http',
-    },
-  });
+  echoInstance = new Echo(reverbOptions());
+  bindErrorHandlers(echoInstance);
 
   return echoInstance;
 }
@@ -67,19 +96,32 @@ export function getClientEcho(): Echo<any> | null {
 
   (window as any).Pusher = Pusher;
 
-  clientEchoInstance = new Echo({
-    broadcaster: 'reverb',
-    key: process.env.NEXT_PUBLIC_REVERB_KEY || 'shadapp-key',
-    channelAuthorization: channelAuthCustomHandler(),
-    reverb: {
-      driver: 'reverb',
-      host: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-      port: parseInt(process.env.NEXT_PUBLIC_REVERB_PORT || '8080', 10),
-      scheme: process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http',
-    },
-  });
+  clientEchoInstance = new Echo(reverbOptions());
+  bindErrorHandlers(clientEchoInstance);
 
   return clientEchoInstance;
+}
+
+// Reference counter map to prevent unmounting one component from tearing down
+// channels shared across the entire application (e.g. NotificationBell + useBadgeCounts).
+const channelRefs = new Map<string, number>();
+
+function retainChannel(channelName: string): void {
+  channelRefs.set(channelName, (channelRefs.get(channelName) ?? 0) + 1);
+}
+
+function releaseChannel(echo: Echo<any>, channelName: string): void {
+  const count = (channelRefs.get(channelName) ?? 1) - 1;
+  if (count > 0) {
+    channelRefs.set(channelName, count);
+  } else {
+    channelRefs.delete(channelName);
+    try {
+      echo.leaveChannel(channelName);
+    } catch {
+      // Ignore if already left
+    }
+  }
 }
 
 export function subscribeToNotifications(callback: (notification: any) => void): (() => void) | null {
@@ -88,14 +130,16 @@ export function subscribeToNotifications(callback: (notification: any) => void):
     const echo = getEcho();
     if (!echo) return null;
 
+    const channelName = `private-App.Models.User.${user.id}`;
+    retainChannel(channelName);
     const channel = echo.private(`App.Models.User.${user.id}`);
-    channel.listen('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', (e: any) => {
-      callback(e);
-    });
+    const eventName = '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated';
+    const handler = (e: any) => callback(e);
+    channel.listen(eventName, handler);
 
     return () => {
-      channel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated');
-      echo.leaveChannel(`private-App.Models.User.${user.id}`);
+      channel.stopListening(eventName, handler);
+      releaseChannel(echo, channelName);
     };
   }
 
@@ -104,14 +148,16 @@ export function subscribeToNotifications(callback: (notification: any) => void):
     const echo = getClientEcho();
     if (!echo) return null;
 
+    const channelName = `private-App.Models.Client.${client.id}`;
+    retainChannel(channelName);
     const channel = echo.private(`App.Models.Client.${client.id}`);
-    channel.listen('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', (e: any) => {
-      callback(e);
-    });
+    const eventName = '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated';
+    const handler = (e: any) => callback(e);
+    channel.listen(eventName, handler);
 
     return () => {
-      channel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated');
-      echo.leaveChannel(`private-App.Models.Client.${client.id}`);
+      channel.stopListening(eventName, handler);
+      releaseChannel(echo, channelName);
     };
   }
 
@@ -133,64 +179,35 @@ export function subscribeToWorkspace(
   const echo = getEcho() || getClientEcho();
   if (!echo) return null;
 
+  const channelName = `private-workspace.${wsId}`;
+  retainChannel(channelName);
   const channel = echo.private(`workspace.${wsId}`);
 
-  if (callbacks.onMessageSent) {
-    channel.listen('.message.sent', (e: any) => {
-      callbacks.onMessageSent!(e);
-    });
-  }
+  const msgSentHandler = callbacks.onMessageSent ? (e: any) => callbacks.onMessageSent!(e) : null;
+  const msgUpdatedHandler = callbacks.onMessageUpdated ? (e: any) => callbacks.onMessageUpdated!(e) : null;
+  const contractStatusHandler = callbacks.onContractStatusChanged ? () => callbacks.onContractStatusChanged!() : null;
+  const wsStatusHandler = callbacks.onWorkspaceStatusChanged ? (e: any) => callbacks.onWorkspaceStatusChanged!(e) : null;
+  const paymentStatusHandler = callbacks.onPaymentStatusChanged ? (e: any) => callbacks.onPaymentStatusChanged!(e) : null;
 
-  if (callbacks.onMessageUpdated) {
-    channel.listen('.message.updated', (e: any) => {
-      callbacks.onMessageUpdated!(e);
-    });
-  }
-
-  if (callbacks.onContractStatusChanged) {
-    channel.listen('.contract.status_changed', () => {
-      callbacks.onContractStatusChanged!();
-    });
-  }
-
-  if (callbacks.onWorkspaceStatusChanged) {
-    channel.listen('.workspace.status_changed', (e: any) => {
-      callbacks.onWorkspaceStatusChanged!(e);
-    });
-  }
-
-  if (callbacks.onPaymentStatusChanged) {
-    channel.listen('.payment.status_changed', (e: any) => {
-      callbacks.onPaymentStatusChanged!(e);
-    });
-  }
+  if (msgSentHandler) channel.listen('.message.sent', msgSentHandler);
+  if (msgUpdatedHandler) channel.listen('.message.updated', msgUpdatedHandler);
+  if (contractStatusHandler) channel.listen('.contract.status_changed', contractStatusHandler);
+  if (wsStatusHandler) channel.listen('.workspace.status_changed', wsStatusHandler);
+  if (paymentStatusHandler) channel.listen('.payment.status_changed', paymentStatusHandler);
 
   return () => {
-    if (callbacks.onMessageSent) {
-      channel.stopListening('.message.sent');
-    }
-    if (callbacks.onMessageUpdated) {
-      channel.stopListening('.message.updated');
-    }
-    if (callbacks.onContractStatusChanged) {
-      channel.stopListening('.contract.status_changed');
-    }
-    if (callbacks.onWorkspaceStatusChanged) {
-      channel.stopListening('.workspace.status_changed');
-    }
-    if (callbacks.onPaymentStatusChanged) {
-      channel.stopListening('.payment.status_changed');
-    }
-    echo.leaveChannel(`private-workspace.${wsId}`);
+    if (msgSentHandler) channel.stopListening('.message.sent', msgSentHandler);
+    if (msgUpdatedHandler) channel.stopListening('.message.updated', msgUpdatedHandler);
+    if (contractStatusHandler) channel.stopListening('.contract.status_changed', contractStatusHandler);
+    if (wsStatusHandler) channel.stopListening('.workspace.status_changed', wsStatusHandler);
+    if (paymentStatusHandler) channel.stopListening('.payment.status_changed', paymentStatusHandler);
+    releaseChannel(echo, channelName);
   };
 }
 
 // Used by api.ts to attach X-Socket-Id to outgoing requests, so
 // broadcast(...)->toOthers() on the backend can exclude the tab that
-// triggered the event. Without this, chat send requests never carried a
-// socket id, so ->toOthers() had nothing to exclude and the sender's own
-// browser received its own message a second time over the socket, on top of
-// the one already added optimistically/from the HTTP response.
+// triggered the event.
 export function getActiveSocketId(): string | null {
   try {
     return (echoInstance?.socketId() as string | undefined)
@@ -203,12 +220,21 @@ export function getActiveSocketId(): string | null {
 }
 
 export function disconnectEcho(): void {
+  channelRefs.clear();
   if (echoInstance) {
-    echoInstance.disconnect();
+    try {
+      echoInstance.disconnect();
+    } catch {
+      // Ignore
+    }
     echoInstance = null;
   }
   if (clientEchoInstance) {
-    clientEchoInstance.disconnect();
+    try {
+      clientEchoInstance.disconnect();
+    } catch {
+      // Ignore
+    }
     clientEchoInstance = null;
   }
 }
