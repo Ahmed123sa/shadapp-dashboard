@@ -184,7 +184,22 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                         <p className="text-[length:var(--fs-1)] truncate max-w-[180px]">{m.reply_to.message || '...'}</p>
                       </div>
                     )}
+                    {m.type === 'file' && m.file_url && (
+                      <div className="mb-1">
+                        {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
+                          <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
+                        ) : (
+                          <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
+                        )}
+                      </div>
+                    )}
                     {m.message}
+                    {m.approval?.certificate?.pdf_url && (
+                      <a href={resolveFileUrl(m.approval.certificate.pdf_url)} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-[var(--color-primary)] text-white text-xs font-medium rounded-lg hover:bg-[var(--color-primary-dark)] transition-colors">
+                        {t('download_certificate')}
+                      </a>
+                    )}
                   </div>
                 </div>
                 {isClientTeam && (
@@ -277,7 +292,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                   )}
                   {m.type === 'file' && m.file_url && (
                     <div className="mb-1">
-                      {m.file_url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
+                      {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
                         <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
                       ) : (
                         <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>

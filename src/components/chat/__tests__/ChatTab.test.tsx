@@ -7,6 +7,7 @@ import ChatTab from '../ChatTab';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { subscribeToWorkspace } from '@/lib/echo';
+import type { ChatMessage } from '@/types';
 
 // Characterization suite written BEFORE migrating ChatTab off manual
 // useEffect+setState+setInterval onto TanStack Query (DASHBOARD_ASSESSMENT.md
@@ -192,6 +193,69 @@ describe('ChatTab (characterization)', () => {
     await waitFor(() => expect(screen.getByText('View only')).toBeInTheDocument());
     expect(screen.getByText('Hello from the account manager')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
+
+  it('super admin sees a file attachment link in the view-only chat', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 5,
+        type: 'file',
+        message: '',
+        file_url: 'https://api.example.com/files/chat/doc.pdf?expires=1&signature=abc',
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    const link = await screen.findByRole('link', { name: 'View Attachment' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('doc.pdf'));
+  });
+
+  it('super admin sees a signed image URL rendered as an image', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 6,
+        type: 'file',
+        message: '',
+        file_url: 'https://api.example.com/files/chat/p.jpg?expires=1&signature=abc',
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    expect(await screen.findByAltText('Attachment')).toBeInTheDocument();
+  });
+
+  it('super admin sees the approval certificate download link', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 7,
+        approval: { certificate: { pdf_url: 'https://api.example.com/files/certificates/c.pdf?signature=x' } } as unknown as ChatMessage['approval'],
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    expect(await screen.findByRole('link', { name: 'Download Approval Certificate' })).toBeInTheDocument();
+  });
+
+  it('manager sees a signed image URL rendered as an image', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 8,
+        type: 'file',
+        message: '',
+        file_url: 'https://api.example.com/files/chat/photo.png?expires=123&signature=xyz',
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    expect(await screen.findByAltText('Attachment')).toBeInTheDocument();
   });
 
   it('shows the unavailable message when the workspace is not active', async () => {

@@ -156,7 +156,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                   )}
                   {m.type === 'file' && m.file_url && (
                     <div className="mb-1">
-                      {m.file_url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
+                      {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
                         <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
                       ) : (
                         <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
