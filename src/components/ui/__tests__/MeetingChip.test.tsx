@@ -150,4 +150,44 @@ describe('MeetingChip', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.queryByText('Rescheduled')).not.toBeInTheDocument();
   });
+
+  it('shows "Start meeting" button when staffEntry is true and isHost is true', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          meeting_id: 10,
+          title: 'Kickoff call',
+          scheduled_at: new Date(NOW.getTime() + 5 * 60000).toISOString(),
+          link: 'https://meet.example.com/xyz',
+          status: 'scheduled',
+        }}
+        staffEntry={true}
+        isHost={true}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'Start meeting' });
+    expect(button).toBeInTheDocument();
+  });
+
+  it('shows "Join" button when staffEntry is true and isHost is false', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    renderWithIntl(
+      <MeetingChip
+        metadata={{
+          meeting_id: 10,
+          title: 'Kickoff call',
+          scheduled_at: new Date(NOW.getTime() + 5 * 60000).toISOString(),
+          link: 'https://meet.example.com/xyz',
+          status: 'scheduled',
+        }}
+        staffEntry={true}
+        isHost={false}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'Join' });
+    expect(button).toBeInTheDocument();
+  });
 });

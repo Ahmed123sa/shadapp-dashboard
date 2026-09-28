@@ -14,6 +14,8 @@ import { Check, CheckCheck, Reply } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
+import { useWorkspaceMeetings, meetingKeys } from '@/hooks/queries/useMeetings';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ChatMessage, Contract, User } from '@/types';
 
 // Messages box height: fills the viewport minus the page chrome above it
@@ -25,8 +27,13 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const chatQuery = useWorkspaceChat(wsId);
   const contractsQuery = useWorkspaceContracts(wsId);
+  const meetingsQuery = useWorkspaceMeetings(wsId);
+  const currentUserId = getUser()?.id;
+  const hostOf = (meetingId?: number) =>
+    meetingsQuery.data?.find((mt) => mt.id === meetingId)?.host_user_id ?? null;
   const sendMutation = useSendChatMessage(wsId);
   const toggleActionMutation = useToggleChatAction(wsId);
   const contractActionMutation = useContractAction(wsId);
@@ -48,6 +55,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const reloadAll = useCallback(() => {
     chatQuery.refetch();
     contractsQuery.refetch();
+    meetingsQuery.refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsId]);
 
@@ -139,9 +147,18 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             const isSubUser = m.sender_type === 'App\\Models\\SubUser';
             const isClientTeam = isClient || isSubUser;
             if (m.type === 'meeting' && m.metadata) {
+              const hostId = hostOf(m.metadata.meeting_id);
+              const isHost = !hostId || hostId === currentUserId;
               return (
                 <div key={m.id} className="flex justify-start">
-                  <MeetingChip metadata={m.metadata} staffEntry={true} />
+                  <MeetingChip
+                    metadata={m.metadata}
+                    staffEntry={true}
+                    isHost={isHost}
+                    onEntered={() => {
+                      queryClient.invalidateQueries({ queryKey: meetingKeys.workspace(wsId) });
+                    }}
+                  />
                 </div>
               );
             }
@@ -217,9 +234,18 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const isSubUser = m.sender_type === 'App\\Models\\SubUser';
           const isClientTeam = isClient || isSubUser;
           if (m.type === 'meeting' && m.metadata) {
+            const hostId = hostOf(m.metadata.meeting_id);
+            const isHost = !hostId || hostId === currentUserId;
             return (
               <div key={m.id} className="flex justify-start">
-                <MeetingChip metadata={m.metadata} staffEntry={true} />
+                <MeetingChip
+                  metadata={m.metadata}
+                  staffEntry={true}
+                  isHost={isHost}
+                  onEntered={() => {
+                    queryClient.invalidateQueries({ queryKey: meetingKeys.workspace(wsId) });
+                  }}
+                />
               </div>
             );
           }

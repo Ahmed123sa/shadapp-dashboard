@@ -5,13 +5,14 @@ import { enterMeeting } from '../zoom';
 
 describe('enterMeeting', () => {
   let mockApi: MockAdapter;
-  let mockTab: { location: { href: string }; close: ReturnType<typeof vi.fn> };
+  let mockTab: { location: { href: string }; close: ReturnType<typeof vi.fn>; opener: any };
 
   beforeEach(() => {
     mockApi = new MockAdapter(api);
     mockTab = {
       location: { href: '' },
       close: vi.fn(),
+      opener: {},
     };
     vi.stubGlobal('window', {
       open: vi.fn(() => mockTab),
@@ -24,7 +25,7 @@ describe('enterMeeting', () => {
     vi.unstubAllGlobals();
   });
 
-  it('opens blank tab synchronously, calls /meetings/:id/enter, and redirects as host', async () => {
+  it('opens blank tab synchronously, sets opener to null, calls /meetings/:id/enter, and redirects as host', async () => {
     mockApi.onPost('/meetings/42/enter').reply(200, {
       as: 'host',
       url: 'https://zoom.us/s/12345?zak=token1',
@@ -33,6 +34,7 @@ describe('enterMeeting', () => {
     const result = await enterMeeting(42);
 
     expect(window.open).toHaveBeenCalledWith('', '_blank');
+    expect(mockTab.opener).toBeNull();
     expect(mockTab.location.href).toBe('https://zoom.us/s/12345?zak=token1');
     expect(result).toBe('host');
   });

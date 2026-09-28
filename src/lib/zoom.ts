@@ -10,6 +10,9 @@ import api from '@/lib/api';
  */
 export async function enterMeeting(meetingId: number): Promise<'host' | 'participant'> {
   const tab = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+  // Cut the new tab's link back to the dashboard (window.opener) before it
+  // navigates away, same protection rel="noopener" gives a plain <a target=_blank>.
+  if (tab) tab.opener = null;
   try {
     const { data } = await api.post(`/meetings/${meetingId}/enter`);
     if (tab) {

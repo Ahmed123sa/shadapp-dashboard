@@ -18,9 +18,16 @@ interface MeetingChipProps {
     rescheduled?: boolean;
   };
   staffEntry?: boolean;
+  isHost?: boolean;
+  onEntered?: () => void;
 }
 
-export default function MeetingChip({ metadata, staffEntry = false }: MeetingChipProps) {
+export default function MeetingChip({
+  metadata,
+  staffEntry = false,
+  isHost = true,
+  onEntered,
+}: MeetingChipProps) {
   const [entering, setEntering] = useState(false);
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
@@ -38,6 +45,7 @@ export default function MeetingChip({ metadata, staffEntry = false }: MeetingChi
     setEntering(true);
     try {
       await enterMeeting(metadata.meeting_id);
+      onEntered?.();
     } catch (err) {
       notifyWriteError(tc, 'MeetingChip.enterMeeting', err);
     } finally {
@@ -74,7 +82,7 @@ export default function MeetingChip({ metadata, staffEntry = false }: MeetingChi
               disabled={entering}
               className="flex-shrink-0 text-[length:var(--fs-1)] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50"
             >
-              {entering ? t('meeting_opening') : t('meeting_chip_join_now')}
+              {entering ? t('meeting_opening') : isHost ? t('meeting_start_as_host') : t('meeting_join')}
             </button>
           ) : (
             <a
