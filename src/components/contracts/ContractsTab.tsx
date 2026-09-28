@@ -16,9 +16,11 @@ import {
   useContractClauseTemplates,
   useShowContractDatesSetting,
   useCreateContract,
+  useUpdateContract,
   useContractAction,
   useCompanyApproveContract,
 } from '@/hooks/queries/useContracts';
+import type { Contract } from '@/types';
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -32,8 +34,10 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editFixed, setEditFixed] = useState<string[]>([]);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
-  const [selectedOptional, setSelectedOptional] = useState<Record<number, boolean>>({});
+  const [selectedOptional, setSelectedOptional] = useState<Record<string, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
   const [approveSig, setApproveSig] = useState<{ id: number; signature: string } | null>(null);
@@ -51,6 +55,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const templatesQuery = useContractClauseTemplates();
   const showDatesQuery = useShowContractDatesSetting();
   const createMutation = useCreateContract(wsId);
+  const updateMutation = useUpdateContract(wsId);
   const actionMutation = useContractAction(wsId);
   const companyApproveMutation = useCompanyApproveContract(wsId);
 
@@ -72,22 +77,71 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const fixedTemplates = templates.filter((tpl) => tpl.type === 'fixed');
   const optionalTemplates = templates.filter((tpl) => tpl.type === 'optional');
 
-  const create = () => {
+  const startEdit = (c: Contract) => {
+    const byType = (type: string) => (c.clauses ?? []).filter((cl) => cl.type === type).map((cl) => cl.content);
+    setEditingId(c.id);
+    setForm({
+      title: c.title,
+      value: c.value ? String(Number(c.value)) : '',
+      currency: c.currency || 'SAR',
+      start_date: c.start_date?.slice(0, 10) ?? '',
+      end_date: c.end_date?.slice(0, 10) ?? '',
+    });
+    setEditFixed(byType('fixed'));
+    const optional = byType('optional');
+    const templateContents = new Set(optionalTemplates.map((tpl) => tpl.content));
+    setSelectedOptional(Object.fromEntries(optional.filter((o) => templateContents.has(o)).map((o) => [o, true])));
+    setCustomClauses([...optional.filter((o) => !templateContents.has(o)), ...byType('custom')]);
+    setRequiredDocs((c.required_documents ?? []).map((d) => d.name));
+    setNewCustom('');
+    setNewReqDoc('');
+    setShowForm(true);
+  };
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setEditFixed([]);
+    setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
+    setSelectedOptional({});
+    setCustomClauses([]);
+    setNewCustom('');
+    setRequiredDocs([]);
+    setNewReqDoc('');
+  };
+
+  const save = () => {
     if (!form.title) return;
-    const clauses: { content: string; type: 'optional' | 'custom' }[] = [];
-    optionalTemplates.forEach((tpl) => { if (selectedOptional[tpl.id]) clauses.push({ content: tpl.content, type: 'optional' }); });
+    const clauses: { content: string; type: 'fixed' | 'optional' | 'custom' }[] = [];
+    if (editingId) {
+      editFixed.forEach((content) => clauses.push({ content, type: 'fixed' }));
+    }
+    optionalTemplates.forEach((tpl) => {
+      if (selectedOptional[tpl.content]) clauses.push({ content: tpl.content, type: 'optional' });
+    });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom' }));
 
     const required_documents = requiredDocs.map((name) => ({ name }));
-    const contract_type = wsActive ? 'additional' : 'main';
 
+    if (editingId) {
+      updateMutation.mutate(
+        { id: editingId, payload: { ...form, value: form.value === '' ? 0 : form.value, clauses, required_documents } },
+        {
+          onSuccess: resetForm,
+          onError: (err) => notifyWriteError(tc, 'ContractsTab.update', err),
+        }
+      );
+      return;
+    }
+
+    const contract_type = wsActive ? 'additional' : 'main';
     createMutation.mutate({ ...form, contract_type, clauses, required_documents }, {
-      onSuccess: () => { setShowForm(false); setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' }); setSelectedOptional({}); setCustomClauses([]); setNewCustom(''); setRequiredDocs([]); setNewReqDoc(''); },
+      onSuccess: resetForm,
       onError: (err) => notifyWriteError(tc, 'ContractsTab.create', err),
     });
   };
 
-  const toggleOptional = (id: number) => setSelectedOptional((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleOptional = (content: string) => setSelectedOptional((prev) => ({ ...prev, [content]: !prev[content] }));
 
   const addCustom = () => {
     const trimmed = newCustom.trim();
@@ -130,12 +184,27 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   return (
     <div className="space-y-3">
       {!isSA && (
-        <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
+        <button
+          onClick={() => {
+            if (showForm && !editingId) {
+              setShowForm(false);
+            } else {
+              resetForm();
+              setShowForm(true);
+            }
+          }}
+          className="text-sm text-[var(--color-gold-text)] hover:underline font-medium"
+        >
           {wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`}
         </button>
       )}
       {!isSA && showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
+          {editingId && (
+            <p className="text-xs font-semibold text-[var(--color-gold-text)]">
+              {t('editing_contract', { title: form.title })}
+            </p>
+          )}
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('contract_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           <div className="flex gap-2">
             <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} type="number" placeholder={t('value_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-28 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
@@ -151,15 +220,24 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               </>
             )}
           </div>
-          {fixedTemplates.length > 0 && (
+          {(editingId ? editFixed.length > 0 : fixedTemplates.length > 0) && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h3>
-              {fixedTemplates.map((tpl) => (
-                <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
-                  <input type="checkbox" checked disabled className="mt-0.5" />
-                  <span dir="auto">{tpl.content}</span>
-                </label>
-              ))}
+              {editingId ? (
+                editFixed.map((content, idx) => (
+                  <label key={`fixed-${idx}`} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
+                    <input type="checkbox" checked disabled className="mt-0.5" />
+                    <span dir="auto">{content}</span>
+                  </label>
+                ))
+              ) : (
+                fixedTemplates.map((tpl) => (
+                  <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
+                    <input type="checkbox" checked disabled className="mt-0.5" />
+                    <span dir="auto">{tpl.content}</span>
+                  </label>
+                ))
+              )}
             </div>
           )}
           {optionalTemplates.length > 0 && (
@@ -167,7 +245,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('optional_clauses_heading')}</h3>
               {optionalTemplates.map((tpl) => (
                 <label key={tpl.id} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1 cursor-pointer hover:text-[var(--color-gold-text)]">
-                  <input type="checkbox" checked={!!selectedOptional[tpl.id]} onChange={() => toggleOptional(tpl.id)} className="mt-0.5" />
+                  <input type="checkbox" checked={!!selectedOptional[tpl.content]} onChange={() => toggleOptional(tpl.content)} className="mt-0.5" />
                   <span dir="auto">{tpl.content}</span>
                 </label>
               ))}
@@ -201,7 +279,23 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               </div>
             ))}
           </div>
-          <button onClick={create} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{tc('save')}</button>
+          <div className="flex gap-2">
+            <button
+              onClick={save}
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+            >
+              {tc('save')}
+            </button>
+            {editingId && (
+              <button
+                onClick={resetForm}
+                className="px-4 py-2 rounded-lg text-sm border border-[var(--color-card-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-card-border)]"
+              >
+                {tc('cancel')}
+              </button>
+            )}
+          </div>
         </div>
       )}
       {contracts.length === 0 ? <EmptyState message={t('no_contracts')} /> : null}
@@ -225,6 +319,11 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           </div>
           <ContractStatusStepper status={c.status} compact />
+          {c.status === 'edit_requested' && c.edit_reason && (
+            <p dir="auto" className="mt-2 text-xs text-amber-600 bg-amber-500/10 rounded px-2 py-1">
+              {t('contract_edit_reason', { reason: c.edit_reason })}
+            </p>
+          )}
           {/* dir="auto" on each clause below: a clause takes its direction from
               its own text, not from the UI language. Clauses are written by the
               company and are usually Arabic; on an English-locale page the
@@ -238,6 +337,9 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           )}
           <div className="mt-2 flex gap-2 flex-wrap">
+            {!isSA && (c.status === 'draft' || c.status === 'edit_requested') && (
+              <button onClick={() => startEdit(c)} className="text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
+            )}
             {!isSA && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
             {!isSA && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
             {c.status === 'client_approved' && (

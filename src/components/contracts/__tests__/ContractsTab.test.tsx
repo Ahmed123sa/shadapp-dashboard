@@ -131,4 +131,88 @@ describe('ContractsTab (characterization)', () => {
       expect(body.signature).toBe('Jane Doe');
     });
   });
+
+  it('displays client edit reason and lets a manager edit an edit_requested contract', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    const editRequestedContract = {
+      ...draftContract,
+      id: 602,
+      title: 'Agreement to Revise',
+      status: 'edit_requested',
+      value: '7500',
+      currency: 'USD',
+      start_date: '2026-01-01',
+      end_date: '2026-12-31',
+      edit_reason: 'Please reduce the rate and add NDA clause',
+      clauses: [
+        { id: 10, type: 'fixed', content: 'Fixed clause 1' },
+        { id: 11, type: 'custom', content: 'Custom clause 1' },
+      ],
+      required_documents: [{ id: 20, name: 'Commercial Register' }],
+    };
+    mockLoad({ contracts: [editRequestedContract] });
+    mock.onPut('/contracts/602').reply(200, {
+      contract: { ...editRequestedContract, title: 'Agreement Revised' },
+    });
+
+    const user = userEvent.setup();
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Agreement to Revise')).toBeInTheDocument());
+    // Client edit reason is visible
+    expect(screen.getByText(/Please reduce the rate and add NDA clause/)).toBeInTheDocument();
+
+    // Click Edit button
+    const editBtn = screen.getByText('Edit', { selector: 'button' });
+    expect(editBtn).toBeInTheDocument();
+    await user.click(editBtn);
+
+    // Form is pre-populated
+    expect(screen.getByDisplayValue('Agreement to Revise')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('7500')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2026-01-01')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2026-12-31')).toBeInTheDocument();
+    expect(screen.getByText('Commercial Register')).toBeInTheDocument();
+
+    // Change title and save
+    const titleInput = screen.getByDisplayValue('Agreement to Revise');
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Agreement Revised');
+    await user.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      const call = mock.history.put.find((r) => r.url === '/contracts/602');
+      expect(call).toBeTruthy();
+      const body = JSON.parse(call!.data);
+      expect(body.title).toBe('Agreement Revised');
+      expect(body.value).toBe('7500');
+      expect(body.currency).toBe('USD');
+      expect(body.contract_type).toBeUndefined();
+      // Fixed clause is preserved in PUT payload
+      expect(body.clauses).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'fixed', content: 'Fixed clause 1' }),
+        ])
+      );
+    });
+  });
+
+  it('does not show edit button for sent or company_approved contracts, nor for super admins', async () => {
+    // 1. Sent contract for manager: no edit button
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockLoad({ contracts: [{ ...draftContract, status: 'sent' }] });
+    const { unmount } = renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Retainer Agreement')).toBeInTheDocument());
+    expect(screen.queryByText('Edit', { selector: 'button' })).not.toBeInTheDocument();
+    unmount();
+
+    // 2. Draft contract for super admin: no edit button
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({ contracts: [draftContract] });
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Retainer Agreement')).toBeInTheDocument());
+    expect(screen.queryByText('Edit', { selector: 'button' })).not.toBeInTheDocument();
+  });
 });

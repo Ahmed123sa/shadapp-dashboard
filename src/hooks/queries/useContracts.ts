@@ -58,6 +58,20 @@ export function useCreateContract(wsId: number) {
   });
 }
 
+export function useUpdateContract(wsId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      api.put(`/contracts/${id}`, payload).then((r) => r.data),
+    onSuccess: (data) => {
+      if (!data?.contract) return;
+      queryClient.setQueryData<Contract[] | undefined>(contractKeys.workspace(wsId), (old) =>
+        old ? old.map((c) => (c.id === data.contract.id ? { ...c, ...data.contract } : c)) : old
+      );
+    },
+  });
+}
+
 // Generic verb-in-URL actions (send, archive, resend, ...) used by the
 // staff-facing ContractsTab.
 export function useContractAction(wsId: number) {
@@ -93,12 +107,12 @@ export function useCompanyApproveContract(wsId: number) {
 export function useClientContractAction(wsId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, action }: { id: number; action: string }) =>
-      api.post(`/contracts/${id}/client-action`, { action }).then((r) => r.data),
+    mutationFn: ({ id, action, reason }: { id: number; action: string; reason?: string }) =>
+      api.post(`/contracts/${id}/client-action`, { action, ...(reason ? { reason } : {}) }).then((r) => r.data),
     onSuccess: (data) => {
       if (!data?.contract) return;
       queryClient.setQueryData<Contract[] | undefined>(contractKeys.workspace(wsId), (old) =>
-        old ? old.map((c) => (c.id === data.contract.id ? data.contract : c)) : old
+        old ? old.map((c) => (c.id === data.contract.id ? { ...c, ...data.contract } : c)) : old
       );
     },
   });

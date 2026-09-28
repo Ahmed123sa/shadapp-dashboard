@@ -60,6 +60,9 @@ export interface Contract {
   client_signed_at?: string;
   company_signed_at?: string;
   archived_at?: string;
+  // Filled when the client asks for changes (status edit_requested); cleared
+  // when they approve. Shown to the manager next to the contract.
+  edit_reason?: string | null;
   // Eloquent's default timestamp, not previously declared here — added for
   // CalendarTab's fallback event on a contract with neither start_date nor
   // end_date (24 Sept 2026).

@@ -158,4 +158,28 @@ describe('ClientContracts (characterization)', () => {
       expect(mock.history.get.filter((r) => r.url === '/workspaces/9/contracts').length).toBeGreaterThan(1);
     });
   });
+
+  it('lets the client request edits with a reason via the confirm dialog', async () => {
+    mockLoad();
+    mock.onPost('/contracts/701/client-action').reply(200, {
+      contract: { ...sentContract, status: 'edit_requested', edit_reason: 'Need price change' },
+    });
+
+    const user = userEvent.setup();
+    renderWithIntl(<ClientContracts wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Request Edit', { selector: 'button' })).toBeInTheDocument());
+    await user.click(screen.getByText('Request Edit', { selector: 'button' }));
+
+    const dialog = await screen.findByRole('dialog');
+    const reasonInput = within(dialog).getByPlaceholderText('Describe the requested changes...');
+    await user.type(reasonInput, 'Need price change');
+    await user.click(within(dialog).getByRole('button', { name: 'Request Edit' }));
+
+    await waitFor(() => {
+      const call = mock.history.post.find((r) => r.url === '/contracts/701/client-action');
+      expect(call).toBeTruthy();
+      expect(JSON.parse(call!.data)).toEqual({ action: 'edit_requested', reason: 'Need price change' });
+    });
+  });
 });

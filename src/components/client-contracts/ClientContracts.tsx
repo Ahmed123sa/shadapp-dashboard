@@ -18,6 +18,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   const tc = useTranslations('common');
   const [viewContractId, setViewContractId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: number; action: string } | null>(null);
+  const [editReason, setEditReason] = useState('');
 
   const contractsQuery = useWorkspaceContracts(wsId);
   const clientActionMutation = useClientContractAction(wsId);
@@ -31,9 +32,12 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   // the refetch triggered by a document upload — without a manual re-sync.
   const viewContract = contracts.find((c) => c.id === viewContractId) ?? null;
 
-  const doAction = (id: number, action: string) => {
-    clientActionMutation.mutate({ id, action }, {
-      onSuccess: () => setViewContractId(null),
+  const doAction = (id: number, action: string, reason?: string) => {
+    clientActionMutation.mutate({ id, action, ...(reason?.trim() ? { reason: reason.trim() } : {}) }, {
+      onSuccess: () => {
+        setViewContractId(null);
+        setEditReason('');
+      },
       onError: (err) => {
         // client-signature-plan.md ن6 — a 422 signature_required rejection
         // (ك3) means the client reached the approve button without a saved
@@ -52,7 +56,10 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
         }
         notifyWriteError(tc, 'ClientContracts.doAction', err);
       },
-      onSettled: () => setConfirmAction(null),
+      onSettled: () => {
+        setConfirmAction(null);
+        setEditReason('');
+      },
     });
   };
 
@@ -122,9 +129,25 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
         confirmLabel={confirmAction?.action === 'approved' ? t('contract_confirm_approve_btn') : t('contract_confirm_edit_request_btn')}
         cancelLabel={t('contract_confirm_cancel')}
         variant="default"
-        onConfirm={() => confirmAction && doAction(confirmAction.id, confirmAction.action)}
-        onCancel={() => setConfirmAction(null)}
-      />
+        onConfirm={() => confirmAction && doAction(confirmAction.id, confirmAction.action, confirmAction.action === 'edit_requested' ? editReason : undefined)}
+        onCancel={() => {
+          setConfirmAction(null);
+          setEditReason('');
+        }}
+      >
+        {confirmAction?.action === 'edit_requested' && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-foreground)]">{t('client_edit_reason')}</label>
+            <textarea
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              placeholder={t('client_edit_reason_ph')}
+              rows={3}
+              className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] resize-none"
+            />
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }
