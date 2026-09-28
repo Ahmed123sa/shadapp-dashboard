@@ -420,6 +420,9 @@
     "meeting_complete": "✔ انتهى",
     "meeting_cancel": "✕ إلغاء",
     "minutes_suffix": "د",
+    "meeting_start_as_host": "ابدأ الاجتماع",
+    "meeting_join": "انضم",
+    "meeting_opening": "جارٍ الفتح…",
 
     "deadline_prefix": "موعد نهائي: ",
     "start_prefix": "بداية: ",

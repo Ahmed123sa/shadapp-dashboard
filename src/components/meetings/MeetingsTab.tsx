@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
+import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,6 +15,7 @@ import type { Meeting } from '@/types';
 export default function MeetingsTab({ wsId }: { wsId: number }) {
   const [form, setForm] = useState({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' });
   const [showForm, setShowForm] = useState(false);
+  const [enteringMeetingId, setEnteringMeetingId] = useState<number | null>(null);
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
 
@@ -58,6 +60,18 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
       onSuccess: () => { isSubmittingRef.current = false; setShowForm(false); setForm({ title: '', date: '', time: '', duration: 30, notes: '', contract_id: '', approval_id: '' }); },
       onError: (err) => { isSubmittingRef.current = false; notifyWriteError(tc, 'MeetingsTab.create', err); },
     });
+  };
+
+  const handleEnterMeeting = async (id: number) => {
+    setEnteringMeetingId(id);
+    try {
+      await enterMeeting(id);
+      meetingsQuery.refetch();
+    } catch (err) {
+      notifyWriteError(tc, 'MeetingsTab.enterMeeting', err);
+    } finally {
+      setEnteringMeetingId(null);
+    }
   };
 
   const completeMeeting = (id: number) => {
@@ -113,7 +127,16 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
         <>
           <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('upcoming_meetings')}</h3>
           {upcoming.map((m) => (
-            <MeetingCard key={m.id} meeting={m} isSA={isSA} onComplete={completeMeeting} onCancel={cancelMeeting} />
+            <MeetingCard
+              key={m.id}
+              meeting={m}
+              isSA={isSA}
+              currentUserId={user?.id}
+              isEntering={enteringMeetingId === m.id}
+              onEnter={handleEnterMeeting}
+              onComplete={completeMeeting}
+              onCancel={cancelMeeting}
+            />
           ))}
         </>
       )}
@@ -122,7 +145,16 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
         <>
           <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('past_meetings')}</h3>
           {past.map((m) => (
-            <MeetingCard key={m.id} meeting={m} isSA={isSA} onComplete={completeMeeting} onCancel={cancelMeeting} />
+            <MeetingCard
+              key={m.id}
+              meeting={m}
+              isSA={isSA}
+              currentUserId={user?.id}
+              isEntering={enteringMeetingId === m.id}
+              onEnter={handleEnterMeeting}
+              onComplete={completeMeeting}
+              onCancel={cancelMeeting}
+            />
           ))}
         </>
       )}
@@ -130,11 +162,30 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
   );
 }
 
-function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: Meeting; isSA: boolean; onComplete: (id: number) => void; onCancel: (id: number) => void }) {
+function MeetingCard({
+  meeting: m,
+  isSA,
+  currentUserId,
+  isEntering,
+  onEnter,
+  onComplete,
+  onCancel,
+}: {
+  meeting: Meeting;
+  isSA: boolean;
+  currentUserId?: number;
+  isEntering?: boolean;
+  onEnter: (id: number) => void;
+  onComplete: (id: number) => void;
+  onCancel: (id: number) => void;
+}) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const isScheduled = m.status === 'scheduled';
   const joinStatus = m.scheduled_at ? getMeetingJoinStatus(m.scheduled_at, locale) : null;
+  const isZoom = Boolean(m.zoom_meeting_id);
+  const isHost = !m.host_user_id || m.host_user_id === currentUserId;
+
   return (
     <div className="border border-[var(--color-card-border)] rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -147,7 +198,18 @@ function MeetingCard({ meeting: m, isSA, onComplete, onCancel }: { meeting: Meet
       {isScheduled && m.link && joinStatus && (
         <div className="mt-3">
           {joinStatus.canJoin ? (
-            <a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">🎥 {t('meeting_chip_join_now')}</a>
+            isZoom ? (
+              <button
+                type="button"
+                onClick={() => onEnter(m.id)}
+                disabled={isEntering}
+                className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+              >
+                🎥 {isEntering ? t('meeting_opening') : isHost ? t('meeting_start_as_host') : t('meeting_join')}
+              </button>
+            ) : (
+              <a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">🎥 {t('meeting_chip_join_now')}</a>
+            )
           ) : (
             <span className="inline-flex items-center gap-1.5 text-xs bg-gray-600/40 text-gray-400 px-3 py-1.5 rounded-lg">⏳ {joinStatus.label}</span>
           )}

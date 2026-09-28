@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
+import { getMeetingJoinStatus, formatMeetingDate, notifyWriteError } from '@/lib/utils';
+import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface MeetingChipProps {
@@ -15,10 +17,13 @@ interface MeetingChipProps {
     status?: string;
     rescheduled?: boolean;
   };
+  staffEntry?: boolean;
 }
 
-export default function MeetingChip({ metadata }: MeetingChipProps) {
+export default function MeetingChip({ metadata, staffEntry = false }: MeetingChipProps) {
+  const [entering, setEntering] = useState(false);
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const locale = useLocale();
   const title = metadata.title || t('meeting_chip_title');
   const link = metadata.link;
@@ -27,6 +32,18 @@ export default function MeetingChip({ metadata }: MeetingChipProps) {
   const status = metadata.status || 'scheduled';
 
   const joinStatus = scheduledAt ? getMeetingJoinStatus(scheduledAt, locale) : null;
+
+  const handleStaffEnter = async () => {
+    if (!metadata.meeting_id || entering) return;
+    setEntering(true);
+    try {
+      await enterMeeting(metadata.meeting_id);
+    } catch (err) {
+      notifyWriteError(tc, 'MeetingChip.enterMeeting', err);
+    } finally {
+      setEntering(false);
+    }
+  };
 
   return (
     <div className="max-w-xs border border-[#1a5276]/30 rounded-lg p-3 bg-[#0d2137]">
@@ -50,14 +67,25 @@ export default function MeetingChip({ metadata }: MeetingChipProps) {
           )}
         </div>
         {joinStatus && link && status === 'scheduled' && joinStatus.canJoin && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 text-[length:var(--fs-1)] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors"
-          >
-            {t('meeting_chip_join_now')}
-          </a>
+          staffEntry && metadata.meeting_id ? (
+            <button
+              type="button"
+              onClick={handleStaffEnter}
+              disabled={entering}
+              className="flex-shrink-0 text-[length:var(--fs-1)] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            >
+              {entering ? t('meeting_opening') : t('meeting_chip_join_now')}
+            </button>
+          ) : (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 text-[length:var(--fs-1)] font-bold bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors"
+            >
+              {t('meeting_chip_join_now')}
+            </a>
+          )
         )}
         {/* 23 Sept 2026 — a completed/cancelled meeting used to fall into
             the countdown/"Ended" span below (e.g. a cancelled meeting still

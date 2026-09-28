@@ -166,4 +166,48 @@ describe('MeetingsTab (characterization)', () => {
     });
     await waitFor(() => expect(screen.getByText('Cancelled')).toBeInTheDocument());
   });
+
+  it('shows "Start meeting" for Zoom meeting when host is not yet set and enters as host on click', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockLoad({
+      meetings: [{
+        ...upcomingMeeting,
+        scheduled_at: new Date(Date.now() + 5 * 60000).toISOString(),
+        zoom_meeting_id: '12345',
+        link: 'https://zoom.us/j/12345',
+        host_user_id: null,
+      }],
+    });
+    mock.onPost('/meetings/401/enter').reply(200, {
+      as: 'host',
+      url: 'https://zoom.us/s/12345?zak=token',
+    });
+
+    const user = userEvent.setup();
+    renderWithIntl(<MeetingsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Start meeting/i })).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /Start meeting/i }));
+
+    await waitFor(() => {
+      expect(mock.history.post.some((r) => r.url === '/meetings/401/enter')).toBe(true);
+    });
+  });
+
+  it('shows "Join" for Zoom meeting when another user is already the host', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockLoad({
+      meetings: [{
+        ...upcomingMeeting,
+        scheduled_at: new Date(Date.now() + 5 * 60000).toISOString(),
+        zoom_meeting_id: '12345',
+        link: 'https://zoom.us/j/12345',
+        host_user_id: 99, // another user
+      }],
+    });
+
+    renderWithIntl(<MeetingsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Join/i })).toBeInTheDocument());
+  });
 });

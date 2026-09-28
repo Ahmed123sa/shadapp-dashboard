@@ -158,6 +158,7 @@ export interface Meeting {
   contract?: Contract;
   approval?: Approval;
   created_by?: number;
+  host_user_id?: number | null;
   creator?: User;
   workspace?: Workspace;
 }

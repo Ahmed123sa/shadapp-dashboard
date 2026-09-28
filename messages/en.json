@@ -420,6 +420,9 @@
     "meeting_complete": "Completed",
     "meeting_cancel": "Cancel",
     "minutes_suffix": "min",
+    "meeting_start_as_host": "Start meeting",
+    "meeting_join": "Join",
+    "meeting_opening": "Opening…",
 
     "deadline_prefix": "Deadline: ",
     "start_prefix": "Start: ",

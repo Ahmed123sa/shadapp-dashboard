@@ -141,7 +141,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             if (m.type === 'meeting' && m.metadata) {
               return (
                 <div key={m.id} className="flex justify-start">
-                  <MeetingChip metadata={m.metadata} />
+                  <MeetingChip metadata={m.metadata} staffEntry={true} />
                 </div>
               );
             }
@@ -219,7 +219,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           if (m.type === 'meeting' && m.metadata) {
             return (
               <div key={m.id} className="flex justify-start">
-                <MeetingChip metadata={m.metadata} />
+                <MeetingChip metadata={m.metadata} staffEntry={true} />
               </div>
             );
           }
