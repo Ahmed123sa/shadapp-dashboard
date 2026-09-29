@@ -19,13 +19,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{children}</p>;
 }
 
-function InputField({ label, required, id, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+function InputField({ label, required, id, error, className, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   const generatedId = useId();
   const inputId = id || generatedId;
   return (
     <div>
       <label htmlFor={inputId} className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{label}{required && <span className="text-red-400 ms-0.5">*</span>}</label>
-      <input id={inputId} className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-4 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none transition-colors" {...props} />
+      <input id={inputId} className={`w-full bg-[var(--color-card)] border ${error ? 'border-red-500 focus:border-red-500' : 'border-[var(--color-card-border)] focus:border-[var(--color-gold)]'} rounded-lg px-4 py-2.5 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:outline-none transition-colors ${className || ''}`} {...props} />
+      {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
     </div>
   );
 }
@@ -111,7 +112,17 @@ export default function ClientsPage() {
       setAutoPassword(true);
       setAvatarFile(null);
       setAvatarPreview('');
+      setFieldErrors({});
     } catch (err: any) {
+      if (err?.response?.data?.errors) {
+        const serverErrors: Record<string, string> = {};
+        for (const [key, val] of Object.entries(err.response.data.errors)) {
+          if (Array.isArray(val) && val.length > 0) {
+            serverErrors[key] = val[0] as string;
+          }
+        }
+        setFieldErrors(serverErrors);
+      }
       setCreateError(err?.response?.data?.message || t('create_failed'));
     }
   };
@@ -156,7 +167,15 @@ export default function ClientsPage() {
 
   const isSA = getUser()?.role === 'super_admin';
 
-  const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) => setForm(f => ({ ...f, [k]: v }));
+  const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) => {
+    setForm(f => ({ ...f, [k]: v }));
+    setFieldErrors(prev => {
+      if (!prev[k]) return prev;
+      const next = { ...prev };
+      delete next[k];
+      return next;
+    });
+  };
 
   return (
     <div>
@@ -248,10 +267,10 @@ export default function ClientsPage() {
           <div>
             <SectionLabel>{t('company_data')}</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <InputField label={t('company_name')} required placeholder={t('company_name_ph')} value={form.company_name} onChange={e => update('company_name', e.target.value)} />
-              <InputField label={t('contact_person')} required placeholder={t('contact_person_ph')} value={form.contact_person} onChange={e => update('contact_person', e.target.value)} />
-              <InputField label={t('email')} required type="email" placeholder={t('email_ph')} value={form.email} onChange={e => update('email', e.target.value)} dir="ltr" />
-              <InputField label={t('phone')} required type="tel" placeholder={t('phone_ph')} value={form.phone} onChange={e => update('phone', e.target.value)} dir="ltr" />
+              <InputField label={t('company_name')} required placeholder={t('company_name_ph')} value={form.company_name} onChange={e => update('company_name', e.target.value)} error={fieldErrors.company_name} />
+              <InputField label={t('contact_person')} required placeholder={t('contact_person_ph')} value={form.contact_person} onChange={e => update('contact_person', e.target.value)} error={fieldErrors.contact_person} />
+              <InputField label={t('email')} required type="email" placeholder={t('email_ph')} value={form.email} onChange={e => update('email', e.target.value)} dir="ltr" error={fieldErrors.email} />
+              <InputField label={t('phone')} required type="tel" placeholder={t('phone_ph')} value={form.phone} onChange={e => update('phone', e.target.value)} dir="ltr" error={fieldErrors.phone} />
             </div>
           </div>
 

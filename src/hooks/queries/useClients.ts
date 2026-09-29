@@ -81,11 +81,12 @@ async function fetchClient(id: number | string): Promise<Client> {
 // is the first caller that may not have an id yet — the client session is
 // read from localStorage after mount, so this needs to stay off until then
 // instead of firing a request against `/clients/undefined`.
-export function useClient(id: number | string, options?: { enabled?: boolean }) {
+export function useClient(id: number | string, options?: { enabled?: boolean; refetchInterval?: number | false | ((query: any) => number | false) }) {
   return useQuery({
     queryKey: clientKeys.detail(id),
     queryFn: () => fetchClient(id),
     enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? ((query) => query.state.data?.workspace?.status !== 'active' ? 4000 : false),
   });
 }
 
