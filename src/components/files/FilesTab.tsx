@@ -7,12 +7,16 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
-import { useWorkspaceFiles, useUploadFile, useAddDocumentDefinition, useReviewFile } from '@/hooks/queries/useFiles';
+import { useWorkspaceFiles, useUploadFile, useAddDocumentDefinition, useReviewFile, useManagersCanReviewFilesSetting } from '@/hooks/queries/useFiles';
 
 export default function FilesTab({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
-  const isSA = getUser()?.role === 'super_admin';
+  const user = getUser();
+  const isSA = user?.role === 'super_admin';
+  const isAM = user?.role === 'account_manager';
+  const { data: managersCanReview = false } = useManagersCanReviewFilesSetting();
+  const canReview = isSA || (isAM && managersCanReview);
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');
@@ -107,7 +111,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
               {f.file_url && (
                 <a href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{t('view_file')}</a>
               )}
-              {isSA && f.status === 'pending' && (
+              {canReview && f.status === 'pending' && (
                 <>
                   <button onClick={() => reviewFile(f.id, 'approved')} className="text-xs text-green-600 hover:underline">{t('accept')}</button>
                   <button onClick={() => { const r = prompt(t('rejection_reason_prompt')); if (r) reviewFile(f.id, 'rejected', r); }} className="text-xs text-red-600 hover:underline">{t('reject')}</button>

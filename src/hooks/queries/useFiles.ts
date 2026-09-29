@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { asSettingFlag } from '@/lib/utils';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 // FilesTab (staff view) and ClientFiles (client view) both hit the exact
@@ -32,6 +33,19 @@ export function useWorkspaceFiles(wsId: number) {
   return useQuery({
     queryKey: fileKeys.workspace(wsId),
     queryFn: () => fetchWorkspaceFiles(wsId),
+  });
+}
+
+async function fetchManagersCanReviewFiles(): Promise<boolean> {
+  const { data } = await api.get('/settings');
+  const mr = data.settings?.managers_can_review_files?.value;
+  return mr !== undefined ? asSettingFlag(mr) : false;
+}
+
+export function useManagersCanReviewFilesSetting() {
+  return useQuery({
+    queryKey: ['settings', 'managers-can-review-files'],
+    queryFn: fetchManagersCanReviewFiles,
   });
 }
 

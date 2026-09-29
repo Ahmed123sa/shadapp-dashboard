@@ -33,6 +33,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
     const unsub = subscribeToWorkspace(wsId, {
       onMessageSent: () => { chatQuery.refetch(); },
       onMessageUpdated: () => { chatQuery.refetch(); },
+      onMessageDeleted: () => { chatQuery.refetch(); },
     });
     return () => { if (unsub) unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

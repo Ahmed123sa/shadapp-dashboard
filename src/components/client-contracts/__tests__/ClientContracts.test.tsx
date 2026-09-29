@@ -84,16 +84,30 @@ describe('ClientContracts (characterization)', () => {
     expect(screen.getByText('Document not yet uploaded')).toBeInTheDocument();
   });
 
-  it('lets the client approve a sent contract via the confirm dialog', async () => {
+  it('disables the approve button and shows warning when required documents are missing', async () => {
     mockLoad();
+    renderWithIntl(<ClientContracts wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Retainer Agreement')).toBeInTheDocument());
+    const approveBtn = screen.getByText('Approve', { selector: 'button' });
+    expect(approveBtn).toBeDisabled();
+    expect(screen.getByText(/Upload the required documents first/i)).toBeInTheDocument();
+  });
+
+  it('lets the client approve a sent contract via the confirm dialog when documents are uploaded', async () => {
+    const readyContract = {
+      ...sentContract,
+      required_documents: [{ id: 1, name: 'ID Card', files: [{ id: 10, status: 'approved' }] }],
+    };
+    mockLoad({ contracts: [readyContract] });
     mock.onPost('/contracts/701/client-action').reply(200, {
-      contract: { ...sentContract, status: 'company_approved' },
+      contract: { ...readyContract, status: 'company_approved' },
     });
 
     const user = userEvent.setup();
     renderWithIntl(<ClientContracts wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).not.toBeDisabled());
     await user.click(screen.getByText('Approve', { selector: 'button' }));
 
     const dialog = await screen.findByRole('dialog');
@@ -110,7 +124,11 @@ describe('ClientContracts (characterization)', () => {
   // should surface a specific, actionable toast (title/message + a link to
   // the signature tab) instead of the generic notifyWriteError failure.
   it('shows the signature-required toast when the backend rejects an approval for a missing signature', async () => {
-    mockLoad();
+    const readyContract = {
+      ...sentContract,
+      required_documents: [{ id: 1, name: 'ID Card', files: [{ id: 10, status: 'approved' }] }],
+    };
+    mockLoad({ contracts: [readyContract] });
     mock.onPost('/contracts/701/client-action').reply(422, {
       message: 'You need to save your signature before approving this contract.',
       code: 'signature_required',
@@ -119,7 +137,7 @@ describe('ClientContracts (characterization)', () => {
     const user = userEvent.setup();
     renderWithToasts(<ClientContracts wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).not.toBeDisabled());
     await user.click(screen.getByText('Approve', { selector: 'button' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Approve' }));
@@ -129,6 +147,32 @@ describe('ClientContracts (characterization)', () => {
 
     await user.click(screen.getByText('Signature Required'));
     expect(routerPush).toHaveBeenCalledWith('/client-dashboard?tab=التوقيع');
+  });
+
+  it('shows missing documents toast when backend rejects approval with required_documents_missing', async () => {
+    const readyContract = {
+      ...sentContract,
+      required_documents: [{ id: 1, name: 'ID Card', files: [{ id: 10, status: 'approved' }] }],
+    };
+    mockLoad({ contracts: [readyContract] });
+    mock.onPost('/contracts/701/client-action').reply(422, {
+      message: 'Upload required documents first',
+      code: 'required_documents_missing',
+      missing_documents: [{ id: 1, name: 'ID Card' }],
+    });
+
+    const user = userEvent.setup();
+    renderWithToasts(<ClientContracts wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).not.toBeDisabled());
+    await user.click(screen.getByText('Approve', { selector: 'button' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Approve' }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Required Documents').length).toBeGreaterThanOrEqual(1);
+    });
+    expect(screen.getByText('Upload required documents first')).toBeInTheDocument();
   });
 
   it('uploads a required document from the detail modal and refetches the contract list', async () => {

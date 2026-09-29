@@ -54,6 +54,16 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
           });
           return;
         }
+        if (getErrorCode(err) === 'required_documents_missing') {
+          reportError('ClientContracts.doAction', err);
+          showToast({
+            id: 'ClientContracts.requiredDocumentsMissing',
+            title: t('contract_docs_required_title'),
+            message: getErrorMessage(err) || t('contract_upload_required_first_msg'),
+          });
+          setViewContractId(id);
+          return;
+        }
         notifyWriteError(tc, 'ClientContracts.doAction', err);
       },
       onSettled: () => {
@@ -69,7 +79,12 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   return (
     <div className="space-y-3">
       {contracts.length === 0 ? <EmptyState message={t('contract_no_contracts')} /> : null}
-      {contracts.map((c) => (
+      {contracts.map((c) => {
+        const missingDocs = (c.required_documents ?? []).filter(
+          (d) => !(d.files ?? []).some((f) => f.status !== 'rejected')
+        );
+        const hasMissingDocs = missingDocs.length > 0;
+        return (
         <div key={c.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
@@ -86,12 +101,27 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
             </button>
             {c.status === 'sent' && (
               <>
-                <button onClick={() => setConfirmAction({ id: c.id, action: 'approved' })}
-                  className="text-xs text-emerald-600 hover:underline">{t('contract_approve_action')}</button>
-                <button onClick={() => setConfirmAction({ id: c.id, action: 'edit_requested' })}
-                  className="text-xs text-amber-600 hover:underline">{t('contract_edit_action')}</button>
+                <button
+                  onClick={() => setConfirmAction({ id: c.id, action: 'approved' })}
+                  disabled={hasMissingDocs}
+                  className={`text-xs ${hasMissingDocs ? 'text-[var(--color-text-disabled)] cursor-not-allowed' : 'text-emerald-600 hover:underline'}`}
+                >
+                  {t('contract_approve_action')}
+                </button>
+                <button
+                  onClick={() => setConfirmAction({ id: c.id, action: 'edit_requested' })}
+                  className="text-xs text-amber-600 hover:underline"
+                >
+                  {t('contract_edit_action')}
+                </button>
               </>
             )}
+          </div>
+          {c.status === 'sent' && hasMissingDocs && (
+            <p className="text-xs text-amber-600 mt-1">
+              {t('contract_upload_required_first', { docs: missingDocs.map((d) => d.name).join('، ') })}
+            </p>
+          )}
             {c.status === 'company_approved' && (
               <div className="mt-2 space-y-1">
                 <p className="text-xs text-emerald-600">{t('contract_company_approved_badge')}</p>
@@ -108,8 +138,8 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               </div>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {viewContract && (
         <ContractDetailModal

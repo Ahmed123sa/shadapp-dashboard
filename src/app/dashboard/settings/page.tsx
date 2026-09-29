@@ -50,6 +50,9 @@ export default function SettingsPage() {
   const [showContractDates, setShowContractDates] = useState(true);
   const [savingDates, setSavingDates] = useState(false);
   const [datesSuccess, setDatesSuccess] = useState(false);
+  const [managersCanReviewFiles, setManagersCanReviewFiles] = useState(false);
+  const [savingManagerFiles, setSavingManagerFiles] = useState(false);
+  const [managerFilesSuccess, setManagerFilesSuccess] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sigUploadInputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +96,8 @@ export default function SettingsPage() {
         if (v !== undefined) setTaxPercentage(String(v));
         const cd = data.settings?.show_contract_dates?.value;
         if (cd !== undefined) setShowContractDates(asSettingFlag(cd));
+        const mr = data.settings?.managers_can_review_files?.value;
+        if (mr !== undefined) setManagersCanReviewFiles(asSettingFlag(mr));
       }).catch((err) => reportError('SettingsPage.loadSettings', err));
       loadClauses();
     }
@@ -291,6 +296,21 @@ export default function SettingsPage() {
       setShowContractDates(!enabled);
     } finally {
       setSavingDates(false);
+    }
+  };
+
+  const toggleManagersCanReviewFiles = async (enabled: boolean) => {
+    setManagersCanReviewFiles(enabled);
+    setSavingManagerFiles(true);
+    setManagerFilesSuccess(false);
+    try {
+      await api.put('/settings', { key: 'managers_can_review_files', value: enabled ? '1' : '0' });
+      setManagerFilesSuccess(true);
+      setTimeout(() => setManagerFilesSuccess(false), 3000);
+    } catch {
+      setManagersCanReviewFiles(!enabled);
+    } finally {
+      setSavingManagerFiles(false);
     }
   };
 
@@ -549,6 +569,32 @@ export default function SettingsPage() {
           </label>
         </div>
         {datesSuccess && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">
+            ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
+          </div>
+        )}
+      </div>}
+
+      {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">{t('setting_managers_can_review_files')}</h2>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+              {t('setting_managers_can_review_files_desc')}
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={managersCanReviewFiles}
+              onChange={(e) => toggleManagersCanReviewFiles(e.target.checked)}
+              disabled={savingManagerFiles}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-[var(--color-primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)]"></div>
+          </label>
+        </div>
+        {managerFilesSuccess && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">
             ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
           </div>

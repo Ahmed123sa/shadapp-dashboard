@@ -41,6 +41,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
   };
 
   const docs = contract.required_documents || [];
+  const hasMissingDocs = docs.length > 0 && docs.some((d) => !(d.files ?? []).some((f) => f.status !== 'rejected'));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
@@ -129,15 +130,23 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         )}
 
         {canAct && (
-          <div className="mt-6 flex gap-2">
-            <button onClick={() => onAction('approved')}
-              className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700">
-              {t('contract_approve_action')}
-            </button>
-            <button onClick={() => onAction('edit_requested')}
-              className="flex-1 bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-700">
-              {t('contract_edit_action')}
-            </button>
+          <div className="mt-6">
+            {hasMissingDocs && (
+              <p className="mb-3 text-xs text-amber-500 text-center font-medium">
+                {t('contract_upload_required_first_msg')}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => onAction('approved')}
+                disabled={hasMissingDocs}
+                className="flex-1 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                {t('contract_approve_action')}
+              </button>
+              <button onClick={() => onAction('edit_requested')}
+                className="flex-1 bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-700">
+                {t('contract_edit_action')}
+              </button>
+            </div>
           </div>
         )}
 

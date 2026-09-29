@@ -171,6 +171,7 @@ export function subscribeToWorkspace(
     // An existing message changed - an edit, or a client answering an
     // approval card. Added 23 Sept 2026; the backend already broadcast it.
     onMessageUpdated?: (payload: any) => void;
+    onMessageDeleted?: (payload: any) => void;
     onContractStatusChanged?: () => void;
     onWorkspaceStatusChanged?: (payload: any) => void;
     onPaymentStatusChanged?: (payload: any) => void;
@@ -185,12 +186,14 @@ export function subscribeToWorkspace(
 
   const msgSentHandler = callbacks.onMessageSent ? (e: any) => callbacks.onMessageSent!(e) : null;
   const msgUpdatedHandler = callbacks.onMessageUpdated ? (e: any) => callbacks.onMessageUpdated!(e) : null;
+  const msgDeletedHandler = callbacks.onMessageDeleted ? (e: any) => callbacks.onMessageDeleted!(e) : null;
   const contractStatusHandler = callbacks.onContractStatusChanged ? () => callbacks.onContractStatusChanged!() : null;
   const wsStatusHandler = callbacks.onWorkspaceStatusChanged ? (e: any) => callbacks.onWorkspaceStatusChanged!(e) : null;
   const paymentStatusHandler = callbacks.onPaymentStatusChanged ? (e: any) => callbacks.onPaymentStatusChanged!(e) : null;
 
   if (msgSentHandler) channel.listen('.message.sent', msgSentHandler);
   if (msgUpdatedHandler) channel.listen('.message.updated', msgUpdatedHandler);
+  if (msgDeletedHandler) channel.listen('.message.deleted', msgDeletedHandler);
   if (contractStatusHandler) channel.listen('.contract.status_changed', contractStatusHandler);
   if (wsStatusHandler) channel.listen('.workspace.status_changed', wsStatusHandler);
   if (paymentStatusHandler) channel.listen('.payment.status_changed', paymentStatusHandler);
@@ -198,6 +201,7 @@ export function subscribeToWorkspace(
   return () => {
     if (msgSentHandler) channel.stopListening('.message.sent', msgSentHandler);
     if (msgUpdatedHandler) channel.stopListening('.message.updated', msgUpdatedHandler);
+    if (msgDeletedHandler) channel.stopListening('.message.deleted', msgDeletedHandler);
     if (contractStatusHandler) channel.stopListening('.contract.status_changed', contractStatusHandler);
     if (wsStatusHandler) channel.stopListening('.workspace.status_changed', wsStatusHandler);
     if (paymentStatusHandler) channel.stopListening('.payment.status_changed', paymentStatusHandler);

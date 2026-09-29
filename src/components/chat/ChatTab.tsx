@@ -63,6 +63,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     const unsub = subscribeToWorkspace(wsId, {
       onMessageSent: () => { reloadAll(); },
       onMessageUpdated: () => { reloadAll(); },
+      onMessageDeleted: () => { reloadAll(); },
       onContractStatusChanged: () => { reloadAll(); },
     });
     return () => { if (unsub) unsub(); };
