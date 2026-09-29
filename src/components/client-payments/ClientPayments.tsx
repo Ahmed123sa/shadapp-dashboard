@@ -105,7 +105,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
 
   const pendingPayment = payments.find((p) => p.status === 'pending');
-  const showPaymentForm = pendingPayment || payableContract;
+  const showPaymentForm = Boolean(editingPayment || pendingPayment || payableContract);
 
   const approvedPayments = payments.filter(p => p.status === 'approved');
   const totalPaid = approvedPayments.reduce((s, p) => s + Number(p.amount), 0);
@@ -183,7 +183,11 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           <div className="flex items-start gap-3">
             <span className="text-2xl">💳</span>
             <div>
-              {pendingPayment ? (
+              {editingPayment ? (
+                <p className="font-medium text-blue-800">
+                  {editingPayment.status === 'rejected' ? t('pay_reupload_for_rejected') : t('pay_edit')}
+                </p>
+              ) : pendingPayment ? (
                 <p className="font-medium text-blue-800">{t('pay_required_notice', { amount: pendingPayment.amount })}</p>
               ) : (
                 <p className="font-medium text-blue-800">
@@ -226,7 +230,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
             <div className="flex gap-2">
               <button onClick={submit} disabled={saving || !amount || !methodType}
                 className="flex-1 bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-                {saving ? t('pay_saving') : editingPayment ? t('pay_update') : t('pay_submit_proof')}
+                {saving ? t('pay_saving') : editingPayment ? (editingPayment.status === 'rejected' ? t('pay_reupload_proof') : t('pay_update')) : t('pay_submit_proof')}
               </button>
               {editingPayment && (
                 <button onClick={cancelEdit} type="button"
@@ -246,14 +250,15 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
           const linkedContract = p.contract;
           const isPending = p.status === 'pending';
           const isApproved = p.status === 'approved';
-          const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-disabled)]';
-          const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : 'bg-gray-500';
-          const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : p.status;
+          const isRejected = p.status === 'rejected';
+          const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold-text)]' : isRejected ? 'text-red-400' : 'text-[var(--color-text-disabled)]';
+          const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : isRejected ? 'bg-red-400' : 'bg-gray-500';
+          const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : isRejected ? t('pay_status_rejected') : p.status;
 
           const proofUrl = p.proof_file_url ? resolveFileUrl(p.proof_file_url) || null : null;
 
           return (
-          <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>
+          <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : isRejected ? 'border-red-500/40' : 'border-[var(--color-card-border)]'}`}>
             {/* ── القسم العلوي ── */}
             <div className="px-5 pt-5 pb-4">
               <p className="text-xs text-[var(--color-gold-text)] font-medium">{installmentName(idx)}</p>
@@ -262,6 +267,12 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                 <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
               </div>
+              {isRejected && p.notes && (
+                <div className="mt-2.5 p-2.5 bg-red-900/20 border border-red-500/30 rounded-lg text-xs text-red-300">
+                  <p className="font-medium text-red-400 mb-0.5">{t('pay_rejection_reason')}:</p>
+                  <p>{p.notes}</p>
+                </div>
+              )}
             </div>
 
             {/* ── الفاصل ── */}
@@ -287,9 +298,11 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
                   <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('pay_view_proof')}</a>
                 </div>
               )}
-              {isPending && (
+              {(isPending || isRejected) && (
                 <div className="pt-2">
-                  <button onClick={() => startEdit(p)} className="w-full text-sm text-[var(--color-gold-text)] hover:underline font-medium">{t('pay_edit')}</button>
+                  <button onClick={() => startEdit(p)} className={`w-full text-sm font-medium py-1.5 px-3 rounded-lg border transition-colors ${isRejected ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-[var(--color-gold)]/40 text-[var(--color-gold-text)] hover:bg-[var(--color-gold)]/10'}`}>
+                    {isRejected ? t('pay_reupload_proof') : t('pay_edit')}
+                  </button>
                 </div>
               )}
             </div>

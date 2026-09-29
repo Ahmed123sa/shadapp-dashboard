@@ -35,13 +35,17 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const tc = useTranslations('common');
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
+  const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [requestForm, setRequestForm] = useState<RequestForm>({ amount: '', contract_id: '', notes: '' });
   const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ amount: '', contract_id: '', due_date: '', installment_label: '' });
   const [installments, setInstallments] = useState<Installment[]>([]);
   const scheduleTitleId = useId();
   const requestTitleId = useId();
+  const rejectTitleId = useId();
   const { dialogRef: scheduleDialogRef, dialogProps: scheduleDialogProps } = useModalA11y<HTMLDivElement>(showSchedule, () => setShowSchedule(false));
   const { dialogRef: requestDialogRef, dialogProps: requestDialogProps } = useModalA11y<HTMLDivElement>(showRequest, () => setShowRequest(false));
+  const { dialogRef: rejectDialogRef, dialogProps: rejectDialogProps } = useModalA11y<HTMLDivElement>(rejectingPaymentId !== null, () => setRejectingPaymentId(null));
   const user = getUser();
   const canReview = user?.role === 'super_admin';
   const isSA = user?.role === 'super_admin';
@@ -93,6 +97,28 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
     reviewMutation.mutate({ pid, action }, {
       onError: (err) => notifyWriteError(tc, 'PaymentsTab.reviewPayment', err),
       onSuccess: (data) => {
+        if (data?.workspace && onWorkspaceUpdate) onWorkspaceUpdate(data.workspace);
+      },
+    });
+  };
+
+  const handleRejectClick = (pid: number) => {
+    setRejectingPaymentId(pid);
+    setRejectionReason('');
+  };
+
+  const confirmRejectPayment = () => {
+    if (!rejectingPaymentId) return;
+    reviewMutation.mutate({
+      pid: rejectingPaymentId,
+      action: 'rejected',
+      notes: rejectionReason || undefined,
+      rejection_reason: rejectionReason || undefined,
+    }, {
+      onError: (err) => notifyWriteError(tc, 'PaymentsTab.reviewPayment', err),
+      onSuccess: (data) => {
+        setRejectingPaymentId(null);
+        setRejectionReason('');
         if (data?.workspace && onWorkspaceUpdate) onWorkspaceUpdate(data.workspace);
       },
     });
@@ -220,14 +246,15 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         const isApproved = p.status === 'approved';
         const isScheduled = p.status === 'scheduled';
         const isOverdue = p.status === 'overdue';
+        const isRejected = p.status === 'rejected';
         const isManagerScheduled = p.requested_by_manager === true;
         const isRequested = isManagerScheduled && !p.due_date;
-        const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-yellow-400' : isOverdue ? 'text-red-400' : isRequested ? 'text-yellow-400' : isScheduled ? 'text-yellow-400' : 'text-[var(--color-text-disabled)]';
-        const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-yellow-400' : isOverdue ? 'bg-red-400' : isRequested ? 'bg-yellow-400' : isScheduled ? 'bg-yellow-400' : 'bg-gray-500';
-        const statusText = isApproved ? t('approved_status') : isPending ? t('pending_status') : isOverdue ? t('overdue_status') : isRequested ? t('payment_request_status') : isScheduled ? t('scheduled_status') : p.status;
+        const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-yellow-400' : isOverdue ? 'text-red-400' : isRejected ? 'text-red-400' : isRequested ? 'text-yellow-400' : isScheduled ? 'text-yellow-400' : 'text-[var(--color-text-disabled)]';
+        const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-yellow-400' : isOverdue ? 'bg-red-400' : isRejected ? 'bg-red-400' : isRequested ? 'bg-yellow-400' : isScheduled ? 'bg-yellow-400' : 'bg-gray-500';
+        const statusText = isApproved ? t('approved_status') : isPending ? t('pending_status') : isOverdue ? t('overdue_status') : isRejected ? t('rejected_status') : isRequested ? t('payment_request_status') : isScheduled ? t('scheduled_status') : p.status;
 
         return (
-          <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : 'border-[var(--color-card-border)]'}`}>
+          <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : isRejected ? 'border-red-500/40' : 'border-[var(--color-card-border)]'}`}>
             {/* ── القسم العلوي ── */}
             <div className="px-5 pt-5 pb-4">
               <p className="text-xs text-[var(--color-gold-text)] font-medium">{installmentName(idx)}</p>
@@ -241,6 +268,12 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
                   <span className={`text-xs ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
                     {t('due_date_prefix')}{p.due_date}
                   </span>
+                </div>
+              )}
+              {isRejected && p.notes && (
+                <div className="mt-2.5 p-2.5 bg-red-900/20 border border-red-500/30 rounded-lg text-xs text-red-300">
+                  <p className="font-medium text-red-400 mb-0.5">{t('rejection_reason_label')}:</p>
+                  <p>{p.notes}</p>
                 </div>
               )}
             </div>
@@ -271,7 +304,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               {isPending && canReview && (
                 <div className="pt-2 flex gap-2">
                   <button onClick={() => reviewPayment(p.id, 'approved')} className="flex-1 text-sm bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 font-medium">{t('approve_payment')}</button>
-                  <button onClick={() => reviewPayment(p.id, 'rejected')} className="flex-1 text-sm bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium">{t('reject_payment')}</button>
+                  <button onClick={() => handleRejectClick(p.id)} className="flex-1 text-sm bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium">{t('reject_payment')}</button>
                 </div>
               )}
               {isManagerScheduled && (isScheduled || isOverdue) && (
@@ -388,6 +421,52 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               <button onClick={submitRequest} disabled={!requestForm.amount || Number(requestForm.amount) <= 0 || (!hasSingleCurrency && !requestForm.contract_id)} className="w-full text-sm bg-[var(--color-gold)] text-black py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-40">
                 {t('send_request')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {rejectingPaymentId !== null && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setRejectingPaymentId(null)}>
+          <div
+            ref={rejectDialogRef}
+            {...rejectDialogProps}
+            aria-labelledby={rejectTitleId}
+            className="bg-[var(--color-sidebar-hover)] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 id={rejectTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('reject_payment_title')}</h3>
+              <button onClick={() => setRejectingPaymentId(null)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('reject_payment_desc')}</p>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="pay-reject-reason" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('rejection_reason_label')}</label>
+                <textarea
+                  id="pay-reject-reason"
+                  rows={3}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)]"
+                  placeholder={t('reject_reason_ph')}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={confirmRejectPayment}
+                  disabled={reviewMutation.isPending}
+                  className="flex-1 bg-red-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                >
+                  {reviewMutation.isPending ? t('saving') : t('confirm_reject')}
+                </button>
+                <button
+                  onClick={() => setRejectingPaymentId(null)}
+                  type="button"
+                  className="bg-[var(--color-input-fill)] px-4 py-2.5 rounded-lg text-sm hover:bg-[var(--color-card-border)]"
+                >
+                  {t('cancel')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

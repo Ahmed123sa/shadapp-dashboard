@@ -69,8 +69,8 @@ export function useWorkspaceContracts(wsId: number) {
 export function useReviewPayment(wsId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ pid, action }: { pid: number; action: string }) =>
-      api.post(`/payments/${pid}/review`, { action }).then((r) => r.data),
+    mutationFn: ({ pid, action, notes, rejection_reason }: { pid: number; action: string; notes?: string; rejection_reason?: string }) =>
+      api.post(`/payments/${pid}/review`, { action, notes, rejection_reason }).then((r) => r.data),
     onSuccess: (data) => {
       if (!data?.payment) return;
       queryClient.setQueryData<WorkspacePaymentsData | undefined>(paymentKeys.workspace(wsId), (old) =>
