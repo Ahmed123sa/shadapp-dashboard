@@ -109,9 +109,11 @@ export default function LoginPage() {
             <Link href="/forgot-password" className="text-[var(--color-gold)] hover:underline">{t('forgot_link')}</Link>
           </p>
 
-          <p className="text-center text-sm text-white/50 mt-3">
-            <Link href="/client-login" className="text-[var(--color-gold)] hover:underline">{t('login_client_link')}</Link>
-          </p>
+          {/* Client login link intentionally removed from this page — clients
+              now use the mobile app only. The /client-login route itself and
+              its backend endpoint are untouched (still reachable by direct
+              URL / used by nothing else), so nothing breaks if it's ever
+              needed again. */}
         </div>
       </div>
     </div>
