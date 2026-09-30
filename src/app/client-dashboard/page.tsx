@@ -142,7 +142,17 @@ export default function ClientDashboardPage() {
             </div>
           </div>
 
-          <ClientSignature clientId={session.id} clientData={client} onSigned={() => refetchClient()} />
+          {/* subuser-review-plan.md م٥ — signing is the primary client's own
+              act; a sub-user who somehow lands here (before the client has
+              signed) can't do anything on this screen, so show a waiting
+              message instead of the signature form. */}
+          {isSubUser() ? (
+            <div className="bg-[var(--color-card)] rounded-2xl border border-[var(--color-card-border)] p-6 text-center text-sm text-[var(--color-text-secondary)]">
+              {t('client_signature_waiting_for_owner')}
+            </div>
+          ) : (
+            <ClientSignature clientId={session.id} clientData={client} onSigned={() => refetchClient()} />
+          )}
         </main>
       </div>
     );
@@ -241,7 +251,11 @@ export default function ClientDashboardPage() {
               // (the tab had `perm: null` — "always visible" — which never
               // accounted for this). The backend now rejects a SubUser here
               // too; this just keeps the tab from appearing at all.
-              if (t.key === 'المستخدمين') return !isSubUser();
+              // subuser-review-plan.md م٥ — same reasoning as 'المستخدمين'
+              // above: the e-signature is the primary client's own act
+              // (backend م٣), so a sub-user has no business on this tab
+              // either, regardless of its `perm: null`.
+              if (t.key === 'المستخدمين' || t.key === 'التوقيع') return !isSubUser();
               return t.perm === null || hasFreshSubUserPermission(t.perm);
             }).map((t) => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}

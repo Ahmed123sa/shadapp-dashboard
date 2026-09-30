@@ -5,6 +5,16 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import ClientFiles from '../ClientFiles';
 import api from '@/lib/api';
+import { canDo } from '@/lib/client-auth';
+
+// subuser-review-plan.md م٦ — canDo() is mocked directly (it calls
+// hasSubUserPermission() through its own module's closure, so mocking that
+// export instead would not be observed here). Defaults to true so the
+// pre-existing characterization tests above keep behaving as before.
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  canDo: vi.fn(),
+}));
 
 // Characterization suite written BEFORE migrating ClientFiles off manual
 // useEffect+setState onto TanStack Query (DASHBOARD_ASSESSMENT.md Round 3,
@@ -50,6 +60,7 @@ function mockLoad(overrides?: { files?: unknown[]; definitions?: unknown[]; paym
 
 beforeEach(() => {
   mock = new MockAdapter(api);
+  vi.mocked(canDo).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -114,5 +125,26 @@ describe('ClientFiles (characterization)', () => {
     await waitFor(() => expect(screen.getByText('passport.pdf')).toBeInTheDocument());
     // Modal closes on success.
     expect(screen.queryByText('Upload Document', { selector: 'h3' })).not.toBeInTheDocument();
+  });
+
+  // subuser-review-plan.md م٦ — uploading a file maps to can_upload_files;
+  // a sub-user without it must not see the upload trigger button at all.
+  describe('sub-user action gating (م٦)', () => {
+    it('hides the upload trigger button when can_upload_files is false', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      mockLoad();
+      renderWithIntl(<ClientFiles wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('ID Card.pdf')).toBeInTheDocument());
+      expect(screen.queryByText('+ Upload Document')).not.toBeInTheDocument();
+    });
+
+    it('shows the upload trigger button when can_upload_files is true', async () => {
+      vi.mocked(canDo).mockReturnValue(true);
+      mockLoad();
+      renderWithIntl(<ClientFiles wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('+ Upload Document')).toBeInTheDocument());
+    });
   });
 });

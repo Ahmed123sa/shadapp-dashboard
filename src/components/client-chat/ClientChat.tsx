@@ -9,6 +9,7 @@ import MeetingChip from '@/components/ui/MeetingChip';
 import { Check, CheckCheck, Reply } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useWorkspaceChat, useSendChatMessage, useRespondChatAction } from '@/hooks/queries/useChat';
+import { canDo } from '@/lib/client-auth';
 import type { ChatMessage, User } from '@/types';
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
@@ -194,13 +195,19 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                     </span>
                   </div>
                 </div>
-                {isPending && (
+                {/* subuser-review-plan.md م٦ — responding to an approval
+                    request maps to can_respond_approvals, per the plan's
+                    action table (same key as ClientApprovals.tsx). */}
+                {isPending && canDo('can_respond_approvals') && (
                   <div className="flex gap-1 mt-1">
                     <button onClick={() => respond(m.id, 'approved')} disabled={responding[m.id]}
                       className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 disabled:opacity-50">{t('chat_approve_button')}</button>
                     <button onClick={() => respond(m.id, 'edit_requested')} disabled={responding[m.id]}
                       className="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 disabled:opacity-50">{t('chat_edit_button')}</button>
                   </div>
+                )}
+                {isPending && !canDo('can_respond_approvals') && (
+                  <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{t('subuser_action_needs_owner')}</p>
                 )}
               </div>
             </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useTranslations } from 'next-intl';
-import { isClientAuthenticated, getClient, clientLogout } from '@/lib/client-auth';
+import { isClientAuthenticated, getClient, clientLogout, isSubUser, getSubUser } from '@/lib/client-auth';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
 
@@ -14,9 +14,20 @@ export default function ClientSettingsPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const session = getClient();
+  // subuser-review-plan.md م٤ — this page used to be entirely unaware that a
+  // sub-user could reach it at all: it always fetched/saved the *client's*
+  // record (`GET`/`POST /clients/{id}...`), so a sub-user saw the primary
+  // client's own name/photo/DOB and any save silently updated the client
+  // instead of them (or 403'd, depending on the field). A sub-user now reads
+  // and writes their own `/sub-users/{id}` record; the primary client's
+  // fields and behavior below are unchanged.
+  const isSub = isSubUser();
+  const subUser = getSubUser();
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -30,14 +41,27 @@ export default function ClientSettingsPage() {
   }, [router]);
 
   useEffect(() => {
+    if (isSub) {
+      if (!subUser?.id) return;
+      api.get(`/sub-users/${subUser.id}`).then(({ data }) => {
+        const s = data.sub_user;
+        setDisplayName(s.name || '');
+        setEmail(s.email || '');
+        setPhone(s.phone || '');
+        if (s.date_of_birth) setDateOfBirth(String(s.date_of_birth).substring(0, 10));
+        if (s.avatar_url) setAvatarPreview(resolveFileUrl(s.avatar_url));
+      }).catch((err) => reportError('ClientSettingsPage.loadSubUser', err));
+      return;
+    }
     if (!session?.id) return;
     api.get(`/clients/${session.id}`).then(({ data }) => {
       const c = data.client;
       setDisplayName(c.contact_person || '');
+      setEmail(c.email || '');
       if (c.date_of_birth) setDateOfBirth(String(c.date_of_birth).substring(0, 10));
       if (c.avatar_url) setAvatarPreview(resolveFileUrl(c.avatar_url));
     }).catch((err) => reportError('ClientSettingsPage.loadClient', err));
-  }, [session?.id]);
+  }, [session?.id, isSub, subUser?.id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,15 +75,24 @@ export default function ClientSettingsPage() {
     setSaving(true);
     setSuccess(false);
     try {
-      const form = new FormData();
-      if (avatar) form.append('avatar', avatar);
-      form.append('contact_person', displayName);
-      if (dateOfBirth) form.append('date_of_birth', dateOfBirth);
-      await api.post(`/clients/${session!.id}/profile`, form);
+      if (isSub) {
+        const form = new FormData();
+        if (avatar) form.append('avatar', avatar);
+        form.append('name', displayName);
+        form.append('phone', phone);
+        if (dateOfBirth) form.append('date_of_birth', dateOfBirth);
+        await api.post(`/sub-users/${subUser!.id}/profile`, form);
+      } else {
+        const form = new FormData();
+        if (avatar) form.append('avatar', avatar);
+        form.append('contact_person', displayName);
+        if (dateOfBirth) form.append('date_of_birth', dateOfBirth);
+        await api.post(`/clients/${session!.id}/profile`, form);
+      }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch {
-      // ignore
+    } catch (err) {
+      reportError('ClientSettingsPage.save', err);
     } finally {
       setSaving(false);
     }
@@ -111,10 +144,21 @@ export default function ClientSettingsPage() {
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           </div>
 
+          {isSub && (
+            <div className="space-y-1">
+              <label htmlFor="client-settings-phone" className="text-xs text-[var(--color-text-secondary)]">{t('phone')}</label>
+              <input id="client-settings-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
+                className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" dir="ltr" />
+            </div>
+          )}
+
           <div className="space-y-1">
             <label htmlFor="client-settings-email" className="text-xs text-[var(--color-text-secondary)]">{t('email')}</label>
-            <input id="client-settings-email" value={session?.email || ''} disabled
+            <input id="client-settings-email" value={isSub ? email : (session?.email || '')} disabled
               className="border border-[var(--color-card-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-card-border)] text-[var(--color-text-disabled)]" dir="ltr" />
+            {isSub && (
+              <p className="text-xs text-[var(--color-text-disabled)] pt-1">{t('subuser_settings_contact_owner')}</p>
+            )}
           </div>
 
           <div className="space-y-1">

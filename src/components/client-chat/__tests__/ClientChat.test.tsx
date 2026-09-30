@@ -6,6 +6,16 @@ import { renderWithIntl } from '@/test/render';
 import ClientChat from '../ClientChat';
 import api from '@/lib/api';
 import { subscribeToWorkspace } from '@/lib/echo';
+import { canDo } from '@/lib/client-auth';
+
+// subuser-review-plan.md م٦ — canDo() is mocked directly (it calls
+// hasSubUserPermission() through its own module's closure, so mocking that
+// export instead would not be observed here). Defaults to true so the
+// pre-existing characterization tests above keep behaving as before.
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  canDo: vi.fn(),
+}));
 
 // Characterization suite written BEFORE migrating ClientChat off manual
 // useEffect+setState+setInterval onto TanStack Query (DASHBOARD_ASSESSMENT.md
@@ -61,6 +71,7 @@ function mockLoad(overrides?: { messages?: unknown[] }) {
 beforeEach(() => {
   mock = new MockAdapter(api);
   vi.mocked(subscribeToWorkspace).mockReturnValue(vi.fn());
+  vi.mocked(canDo).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -179,5 +190,31 @@ describe('ClientChat (characterization)', () => {
 
     await waitFor(() => expect(screen.getByText('Chat unavailable — awaiting workspace activation after payment')).toBeInTheDocument());
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
+
+  // subuser-review-plan.md م٦ — responding to an approval request in chat
+  // maps to can_respond_approvals (same key as ClientApprovals); a sub-user
+  // without it must not see the inline approve/edit buttons.
+  describe('sub-user action gating (م٦)', () => {
+    it('hides the inline respond buttons and shows the owner-only message when can_respond_approvals is false', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      mockLoad({ messages: [pendingApprovalMessage] });
+      renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+      await waitFor(() => expect(screen.getByText('Please approve this change')).toBeInTheDocument());
+      expect(screen.queryByText('Approve')).not.toBeInTheDocument();
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      expect(screen.getByText('This action needs approval from the account owner or a user with permission')).toBeInTheDocument();
+    });
+
+    it('shows the inline respond buttons when can_respond_approvals is true', async () => {
+      vi.mocked(canDo).mockReturnValue(true);
+      mockLoad({ messages: [pendingApprovalMessage] });
+      renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+      await waitFor(() => expect(screen.getByText('Please approve this change')).toBeInTheDocument());
+      expect(screen.getByText('Approve')).toBeInTheDocument();
+      expect(screen.getByText('Edit')).toBeInTheDocument();
+    });
   });
 });

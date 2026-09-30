@@ -119,6 +119,19 @@ export function hasSubUserPermission(key: string): boolean {
 // hasSubUserPermission() then reads the refreshed value on the next
 // render. Only `permissions` is replaced; the rest of the cached `sub_user`
 // record (name, email, avatar) is left as-is.
+// subuser-review-plan.md م٦ — action buttons (approve a contract, upload a
+// payment proof, respond to an approval, upload a file...) used to only be
+// gated by whether their *tab* was visible, never by the specific action
+// permission itself. A sub-user with "view contracts" but not "approve
+// contracts" could see the tab and the button, and only found out it was
+// forbidden after clicking it and getting a raw 403. `canDo` is just a more
+// readable name for the same check `hasSubUserPermission` already does
+// (true for the primary client, or a sub-user holding `key`) — used at each
+// button's render site instead of the tab's `perm` list.
+export function canDo(key: string): boolean {
+  return hasSubUserPermission(key);
+}
+
 export function syncSubUserPermissions(permissions: Record<string, boolean>): void {
   if (typeof window === 'undefined') return;
   const sub = getSubUser();

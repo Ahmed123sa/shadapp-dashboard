@@ -23,6 +23,11 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', date_of_birth: '' });
+  // subuser-review-plan.md م٤ — sub-users can no longer change their own
+  // password (backend), so the owning client needs a way to set one here.
+  const [passwordTargetId, setPasswordTargetId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState<number | null>(null);
 
   useEffect(() => {
     api.get(`/clients/${clientId}/sub-users`)
@@ -65,6 +70,20 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
       setSubUsers((prev) => prev.filter((u) => u.id !== id));
       if (expandedId === id) setExpandedId(null);
     } catch { setError(t('subuser_delete_failed')); }
+  };
+
+  const setPassword = async (userId: number) => {
+    if (!newPassword) return;
+    setError('');
+    try {
+      await api.patch(`/sub-users/${userId}/password`, { password: newPassword });
+      setPasswordTargetId(null);
+      setNewPassword('');
+      setPasswordSuccess(userId);
+      setTimeout(() => setPasswordSuccess((prev) => (prev === userId ? null : prev)), 4000);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || t('subuser_password_change_failed'));
+    }
   };
 
   const togglePermission = async (userId: number, key: string, current: boolean) => {
@@ -141,11 +160,26 @@ export default function ClientSubUsers({ clientId }: { clientId: number }) {
                       setEditForm({ name: u.name || '', email: u.email || '', phone: u.phone || '', date_of_birth: u.date_of_birth ? String(u.date_of_birth).substring(0, 10) : '' });
                     }}
                       className="text-xs text-[var(--color-gold-text)] hover:underline">{t('subuser_edit')}</button>
+                    <button onClick={() => { setPasswordTargetId(u.id); setNewPassword(''); }}
+                      className="text-xs text-[var(--color-gold-text)] hover:underline">{t('subuser_set_password')}</button>
                     <button onClick={() => setExpandedId(isExpanded ? null : u.id)}
                       className="text-xs text-[var(--color-text-secondary)] hover:underline">
                       {isExpanded ? t('subuser_hide') : t('subuser_permissions')}
                     </button>
                     <button onClick={() => remove(u.id)} className="text-xs text-red-500 hover:underline">{t('subuser_delete')}</button>
+                  </div>
+                </div>
+              )}
+              {passwordSuccess === u.id && (
+                <p className="px-3 pb-2 text-xs text-emerald-500">{t('subuser_password_changed')}</p>
+              )}
+              {passwordTargetId === u.id && (
+                <div className="border-t border-[var(--color-card-border)] p-3 space-y-2">
+                  {error && <p className="text-xs text-red-500">{error}</p>}
+                  <PasswordField value={newPassword} onChange={setNewPassword} placeholder={t('subuser_new_password_ph')} />
+                  <div className="flex gap-2">
+                    <button onClick={() => setPassword(u.id)} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-xs hover:bg-[var(--color-primary-dark)]">{t('subuser_save')}</button>
+                    <button onClick={() => { setPasswordTargetId(null); setNewPassword(''); }} className="px-4 py-1.5 rounded-lg text-xs border border-[var(--color-card-border)] hover:bg-[var(--color-card-border)]">{t('subuser_cancel')}</button>
                   </div>
                 </div>
               )}

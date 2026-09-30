@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
 import { resolveFileUrl } from '@/lib/utils';
 import { useWorkspaceFiles, fileKeys } from '@/hooks/queries/useFiles';
+import { canDo } from '@/lib/client-auth';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
 
 export default function ClientFiles({ wsId }: { wsId: number }) {
@@ -38,9 +39,13 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
         ))}
       </div>
 
-      <button onClick={() => setShowUpload(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
-        {t('file_upload_button')}
-      </button>
+      {/* subuser-review-plan.md م٦ — uploading a file maps to
+          can_upload_files, per the plan's action table. */}
+      {canDo('can_upload_files') && (
+        <button onClick={() => setShowUpload(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
+          {t('file_upload_button')}
+        </button>
+      )}
 
       {files.length === 0 && paymentFiles.length === 0 ? <EmptyState message={t('file_no_files')} /> : null}
       <div className="space-y-2">

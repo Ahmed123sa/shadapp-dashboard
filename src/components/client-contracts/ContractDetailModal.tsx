@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { useTranslations } from 'next-intl';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import { canDo } from '@/lib/client-auth';
 import type { Contract } from '@/types';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
@@ -115,7 +116,9 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
                     )}
                   </div>
                   <div>
-                    {(!file || file.status === 'rejected') ? (
+                    {/* subuser-review-plan.md م٦ — required-document uploads
+                        map to can_upload_files, per the plan's action table. */}
+                    {(!file || file.status === 'rejected') && canDo('can_upload_files') ? (
                       <label className={`inline-flex items-center gap-1 text-xs text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)] ${uploading[doc.id] ? 'opacity-50' : ''}`}>
                         <input type="file" className="hidden" disabled={uploading[doc.id]} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(doc.id, f); }} />
                         {uploading[doc.id] ? t('doc_uploading') : file ? t('doc_upload_new') : t('doc_upload')}
@@ -129,7 +132,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
           </div>
         )}
 
-        {canAct && (
+        {canAct && canDo('can_approve_contracts') && (
           <div className="mt-6">
             {hasMissingDocs && (
               <p className="mb-3 text-xs text-amber-500 text-center font-medium">
@@ -148,6 +151,9 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
               </button>
             </div>
           </div>
+        )}
+        {canAct && !canDo('can_approve_contracts') && (
+          <p className="mt-4 text-sm text-[var(--color-text-disabled)] text-center">{t('subuser_action_needs_owner')}</p>
         )}
 
         {!canAct && contract.status !== 'draft' && contract.status !== 'archived' && (

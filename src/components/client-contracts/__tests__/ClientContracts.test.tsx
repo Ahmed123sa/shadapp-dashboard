@@ -7,10 +7,23 @@ import { renderWithIntl } from '@/test/render';
 import ClientContracts from '../ClientContracts';
 import ToastNotification from '@/components/ToastNotification';
 import api from '@/lib/api';
+import { canDo } from '@/lib/client-auth';
 
 const routerPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: routerPush }),
+}));
+
+// subuser-review-plan.md م٦ — canDo() is mocked directly (rather than via
+// isSubUser()/hasSubUserPermission(), which canDo calls internally through
+// its own module's closure and would not observe a mock on those exports)
+// so both ClientContracts and its ContractDetailModal see a controllable
+// permission result. Defaults to true (primary-client-like: everything
+// allowed) so all the pre-existing characterization tests above keep their
+// original behavior unless a test below overrides it.
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  canDo: vi.fn(),
 }));
 
 // Characterization suite written BEFORE migrating ClientContracts (and, via
@@ -39,6 +52,7 @@ function mockLoad(overrides?: { contracts?: unknown[] }) {
 
 beforeEach(() => {
   mock = new MockAdapter(api);
+  vi.mocked(canDo).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -224,6 +238,51 @@ describe('ClientContracts (characterization)', () => {
       const call = mock.history.post.find((r) => r.url === '/contracts/701/client-action');
       expect(call).toBeTruthy();
       expect(JSON.parse(call!.data)).toEqual({ action: 'edit_requested', reason: 'Need price change' });
+    });
+  });
+
+  // subuser-review-plan.md م٦ — a sub-user without can_approve_contracts
+  // must not see the approve/edit-request buttons at all, on either the row
+  // or the detail modal, and should instead see an explanatory message.
+  describe('sub-user action gating (م٦)', () => {
+    it('hides the row-level approve/edit buttons and shows the owner-only message when can_approve_contracts is false', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      mockLoad();
+      renderWithIntl(<ClientContracts wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('Retainer Agreement')).toBeInTheDocument());
+      expect(screen.queryByText('Approve', { selector: 'button' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Request Edit', { selector: 'button' })).not.toBeInTheDocument();
+      expect(screen.getByText('This action needs approval from the account owner or a user with permission')).toBeInTheDocument();
+    });
+
+    it('hides the modal-level approve/edit buttons and the document upload control when permissions are missing', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      mockLoad();
+      const user = userEvent.setup();
+      renderWithIntl(<ClientContracts wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('View Details')).toBeInTheDocument());
+      await user.click(screen.getByText('View Details'));
+
+      await waitFor(() => expect(screen.getByText('Required Documents')).toBeInTheDocument());
+      expect(screen.queryByText('Upload Document')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Request Edit' })).not.toBeInTheDocument();
+    });
+
+    it('shows the approve/edit buttons normally when the sub-user does have can_approve_contracts', async () => {
+      vi.mocked(canDo).mockReturnValue(true);
+      const readyContract = {
+        ...sentContract,
+        required_documents: [{ id: 1, name: 'ID Card', files: [{ id: 10, status: 'approved' }] }],
+      };
+      mockLoad({ contracts: [readyContract] });
+      renderWithIntl(<ClientContracts wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('Approve', { selector: 'button' })).toBeInTheDocument());
+      expect(screen.getByText('Request Edit', { selector: 'button' })).toBeInTheDocument();
+      expect(screen.queryByText('This action needs approval from the account owner or a user with permission')).not.toBeInTheDocument();
     });
   });
 });

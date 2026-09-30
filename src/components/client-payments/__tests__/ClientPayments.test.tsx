@@ -5,6 +5,16 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import ClientPayments from '../ClientPayments';
 import api from '@/lib/api';
+import { canDo } from '@/lib/client-auth';
+
+// subuser-review-plan.md م٦ — canDo() is mocked directly (canDo calls
+// hasSubUserPermission() through its own module's closure, so mocking that
+// export instead would not be observed here). Defaults to true so the
+// pre-existing characterization tests above keep behaving as before.
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  canDo: vi.fn(),
+}));
 
 // Characterization suite written BEFORE migrating ClientPayments off manual
 // useEffect+setState onto TanStack Query (DASHBOARD_ASSESSMENT.md Round 3).
@@ -40,6 +50,7 @@ function mockLoad(overrides?: { payments?: unknown[]; contracts?: unknown[]; met
 beforeEach(() => {
   mock = new MockAdapter(api);
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.mocked(canDo).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -151,5 +162,40 @@ describe('ClientPayments (characterization)', () => {
     expect(screen.getByText('Unclear proof image')).toBeInTheDocument();
     expect(screen.getByText('Notes:')).toBeInTheDocument();
     expect(screen.getByText('First installment')).toBeInTheDocument();
+  });
+
+  // subuser-review-plan.md م٦ — uploading/re-uploading a payment proof maps
+  // to can_upload_payment_proof; a sub-user without it must not see the
+  // submission form or the per-payment edit/reupload trigger.
+  describe('sub-user action gating (م٦)', () => {
+    it('replaces the payment form with the owner-only message when can_upload_payment_proof is false', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      mockLoad();
+      renderWithIntl(<ClientPayments wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('This action needs approval from the account owner or a user with permission')).toBeInTheDocument());
+      expect(screen.queryByPlaceholderText('Amount')).not.toBeInTheDocument();
+      expect(screen.queryByText('Submit Payment Proof')).not.toBeInTheDocument();
+    });
+
+    it('hides the per-payment edit/reupload button when can_upload_payment_proof is false', async () => {
+      vi.mocked(canDo).mockReturnValue(false);
+      const pending = { id: 901, workspace_id: 9, client_id: 1, amount: '3000', currency: 'SAR', method_type: 'instapay', status: 'pending', created_at: '2026-08-01T00:00:00Z' };
+      mockLoad({ payments: [pending] });
+      renderWithIntl(<ClientPayments wsId={9} />);
+
+      await waitFor(() => expect(screen.getByText('Pending')).toBeInTheDocument());
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('shows the payment form normally when can_upload_payment_proof is true', async () => {
+      vi.mocked(canDo).mockReturnValue(true);
+      mockLoad();
+      renderWithIntl(<ClientPayments wsId={9} />);
+
+      await screen.findByPlaceholderText('Amount');
+      expect(screen.getByText('Submit Payment Proof')).toBeInTheDocument();
+      expect(screen.queryByText('This action needs approval from the account owner or a user with permission')).not.toBeInTheDocument();
+    });
   });
 });

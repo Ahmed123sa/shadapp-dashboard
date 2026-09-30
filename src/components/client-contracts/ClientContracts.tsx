@@ -12,6 +12,7 @@ import { notifyWriteError, getErrorCode, getErrorMessage } from '@/lib/utils';
 import { showToast } from '@/components/ToastNotification';
 import { reportError } from '@/lib/error-reporting';
 import { useWorkspaceContracts, useClientContractAction } from '@/hooks/queries/useContracts';
+import { canDo } from '@/lib/client-auth';
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
   const t = useTranslations('dashboard');
@@ -99,7 +100,12 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
             <button onClick={() => setViewContractId(c.id)} className="text-xs text-[var(--color-gold-text)] hover:underline">
               {t('contract_view_details')}
             </button>
-            {c.status === 'sent' && (
+            {/* subuser-review-plan.md م٦ — the tab was already gated on
+                can_view_contracts, but the approve/edit buttons themselves
+                were not gated on can_approve_contracts, so a sub-user with
+                view-only access saw them and only found out they were
+                forbidden after a raw 403 on click. */}
+            {c.status === 'sent' && canDo('can_approve_contracts') && (
               <>
                 <button
                   onClick={() => setConfirmAction({ id: c.id, action: 'approved' })}
@@ -117,6 +123,9 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               </>
             )}
           </div>
+          {c.status === 'sent' && !canDo('can_approve_contracts') && (
+            <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('subuser_action_needs_owner')}</p>
+          )}
           {c.status === 'sent' && hasMissingDocs && (
             <p className="text-xs text-amber-600 mt-1">
               {t('contract_upload_required_first', { docs: missingDocs.map((d) => d.name).join('، ') })}

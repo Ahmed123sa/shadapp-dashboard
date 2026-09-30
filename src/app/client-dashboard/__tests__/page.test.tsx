@@ -277,4 +277,36 @@ describe('ClientDashboardPage (characterization)', () => {
     await waitFor(() => expect(screen.getByText(/Employee/)).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Users' })).not.toBeInTheDocument();
   });
+
+  // subuser-review-plan.md م٥ — the client's e-signature is theirs alone
+  // (م٣ on the backend); a sub-user must not see the Signature tab, or the
+  // primary-client-only pre-signature form, at all.
+  it('hides the Signature tab for a sub-user even though it has no permission gate', async () => {
+    vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
+    vi.mocked(clientAuth.getSubUser).mockReturnValue({
+      id: 5, name: 'Employee', email: 'employee@acme.com', permissions: {},
+    } as any);
+    mock.onGet('/sub-users/5').reply(200, { sub_user: { id: 5, name: 'Employee', permissions: {} } });
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText(/Employee/)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Signature' })).not.toBeInTheDocument();
+  });
+
+  it('shows a waiting-for-owner message instead of the signature form for a sub-user before the client has signed', async () => {
+    vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
+    vi.mocked(clientAuth.getSubUser).mockReturnValue({
+      id: 5, name: 'Employee', email: 'employee@acme.com', permissions: {},
+    } as any);
+    mockClient({ signed_at: null });
+    mockFallback();
+
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Waiting for the account owner to register their electronic signature.')).toBeInTheDocument());
+  });
 });

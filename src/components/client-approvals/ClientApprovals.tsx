@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceApprovals, useRespondApproval } from '@/hooks/queries/useApprovals';
+import { canDo } from '@/lib/client-auth';
 
 export default function ClientApprovals({ wsId }: { wsId: number; clientId: number }) {
   const t = useTranslations('dashboard');
@@ -77,13 +78,18 @@ export default function ClientApprovals({ wsId }: { wsId: number; clientId: numb
             </div>
           )}
 
-          {a.status === 'pending' && (
+          {/* subuser-review-plan.md م٦ — responding to an approval request
+              maps to can_respond_approvals, per the plan's action table. */}
+          {a.status === 'pending' && canDo('can_respond_approvals') && (
             <div className="mt-3 flex gap-2">
               <button onClick={() => setRespondTarget({ id: a.id, action: 'approved' })}
                 className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">{t('approval_respond_approve')}</button>
               <button onClick={() => setRespondTarget({ id: a.id, action: 'edit_requested' })}
                 className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700">{t('approval_respond_edit_request')}</button>
             </div>
+          )}
+          {a.status === 'pending' && !canDo('can_respond_approvals') && (
+            <p className="mt-3 text-xs text-[var(--color-text-disabled)]">{t('subuser_action_needs_owner')}</p>
           )}
         </div>
       ))}

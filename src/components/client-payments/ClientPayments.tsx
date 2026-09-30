@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import type { Payment, Contract } from '@/types';
 import { useSubmitClientPayment, useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
+import { canDo } from '@/lib/client-auth';
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
@@ -178,7 +179,14 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
       )}
 
       {/* نموذج إرسال الدفع */}
-      {showPaymentForm && (
+      {/* subuser-review-plan.md م٦ — uploading/re-uploading a payment proof
+          maps to can_upload_payment_proof, per the plan's action table. */}
+      {showPaymentForm && !canDo('can_upload_payment_proof') && (
+        <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4 text-center text-sm text-[var(--color-text-disabled)]">
+          {t('subuser_action_needs_owner')}
+        </div>
+      )}
+      {showPaymentForm && canDo('can_upload_payment_proof') && (
         <div className="bg-blue-900/30 border border-blue-200 rounded-xl p-5 space-y-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl">💳</span>
@@ -311,7 +319,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
                   <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('pay_view_proof')}</a>
                 </div>
               )}
-              {(isPending || isRejected) && (
+              {(isPending || isRejected) && canDo('can_upload_payment_proof') && (
                 <div className="pt-2">
                   <button onClick={() => startEdit(p)} className={`w-full text-sm font-medium py-1.5 px-3 rounded-lg border transition-colors ${isRejected ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-[var(--color-gold)]/40 text-[var(--color-gold-text)] hover:bg-[var(--color-gold)]/10'}`}>
                     {isRejected ? t('pay_reupload_proof') : t('pay_edit')}
