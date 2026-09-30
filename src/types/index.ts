@@ -110,6 +110,7 @@ export interface Payment {
   due_date?: string | null;
   requested_by_manager?: boolean;
   notes?: string;
+  rejection_reason?: string | null;
   reviewed_by?: number;
   reviewed_at?: string;
   contract_id?: number;

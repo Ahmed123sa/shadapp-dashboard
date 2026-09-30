@@ -267,10 +267,10 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                 <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
               </div>
-              {isRejected && p.notes && (
+              {isRejected && (p.rejection_reason || p.notes) && (
                 <div className="mt-2.5 p-2.5 bg-red-900/20 border border-red-500/30 rounded-lg text-xs text-red-300">
                   <p className="font-medium text-red-400 mb-0.5">{t('pay_rejection_reason')}:</p>
-                  <p>{p.notes}</p>
+                  <p>{p.rejection_reason || p.notes}</p>
                 </div>
               )}
             </div>
