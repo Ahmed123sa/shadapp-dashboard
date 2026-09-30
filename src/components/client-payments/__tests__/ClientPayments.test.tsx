@@ -126,4 +126,30 @@ describe('ClientPayments (characterization)', () => {
 
     await waitFor(() => expect(screen.getByText('Payment of 1200 SAR is required')).toBeInTheDocument());
   });
+
+  // payments-fixes-2-plan.md ت٢ — rejection_reason used to fall back to
+  // notes whenever it was empty, so a manager's own note from requesting the
+  // payment ("First installment") was mislabeled as their rejection reason
+  // when they rejected it without typing one.
+  it('does not show "Rejection Reason" from the request note when the manager rejected without one', async () => {
+    const rejected = { id: 903, workspace_id: 9, client_id: 1, amount: '1200', currency: 'SAR', method_type: 'bank_transfer', status: 'rejected', rejection_reason: null, notes: 'First installment', created_at: '2026-08-01T00:00:00Z' };
+    mockLoad({ payments: [rejected] });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Rejected')).toBeInTheDocument());
+    expect(screen.queryByText('Rejection Reason:')).not.toBeInTheDocument();
+    expect(screen.getByText('Notes:')).toBeInTheDocument();
+    expect(screen.getByText('First installment')).toBeInTheDocument();
+  });
+
+  it('still shows the real rejection reason when the manager gave one', async () => {
+    const rejected = { id: 904, workspace_id: 9, client_id: 1, amount: '1200', currency: 'SAR', method_type: 'bank_transfer', status: 'rejected', rejection_reason: 'Unclear proof image', notes: 'First installment', created_at: '2026-08-01T00:00:00Z' };
+    mockLoad({ payments: [rejected] });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Rejection Reason:')).toBeInTheDocument());
+    expect(screen.getByText('Unclear proof image')).toBeInTheDocument();
+    expect(screen.getByText('Notes:')).toBeInTheDocument();
+    expect(screen.getByText('First installment')).toBeInTheDocument();
+  });
 });

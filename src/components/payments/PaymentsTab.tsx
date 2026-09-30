@@ -269,10 +269,23 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
                   </span>
                 </div>
               )}
-              {isRejected && (p.rejection_reason || p.notes) && (
+              {/* payments-fixes-2-plan.md ت٢ — rejection_reason and notes are
+                  different things: notes is the manager's note when
+                  requesting the payment, rejection_reason is why it was
+                  later rejected. Falling back to notes whenever
+                  rejection_reason is empty mislabeled the manager's own note
+                  as "rejection reason" for any payment rejected without one.
+                  Each is now shown under its own label, independently. */}
+              {isRejected && p.rejection_reason && (
                 <div className="mt-2.5 p-2.5 bg-red-900/20 border border-red-500/30 rounded-lg text-xs text-red-300">
                   <p className="font-medium text-red-400 mb-0.5">{t('rejection_reason_label')}:</p>
-                  <p>{p.rejection_reason || p.notes}</p>
+                  <p>{p.rejection_reason}</p>
+                </div>
+              )}
+              {p.notes && (
+                <div className="mt-2.5 p-2.5 bg-white/[0.03] border border-[var(--color-card-border)] rounded-lg text-xs text-[var(--color-text-secondary)]">
+                  <p className="font-medium text-[var(--color-text-primary)] mb-0.5">{t('notes')}:</p>
+                  <p>{p.notes}</p>
                 </div>
               )}
             </div>

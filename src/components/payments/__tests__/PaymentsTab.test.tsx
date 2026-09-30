@@ -275,6 +275,37 @@ describe('PaymentsTab (characterization)', () => {
     confirmSpy.mockRestore();
   });
 
+  // payments-fixes-2-plan.md ت٢ — rejection_reason used to fall back to
+  // notes whenever it was empty, so a manager's own note from requesting the
+  // payment ("First installment") was mislabeled as the rejection reason
+  // when a (different) manager rejected it without typing one.
+  const rejectedNoReason = { ...pendingPayment, id: 503, status: 'rejected', rejection_reason: null, notes: 'First installment' };
+  const rejectedWithReason = { ...pendingPayment, id: 504, status: 'rejected', rejection_reason: 'Unclear proof image', notes: 'First installment' };
+
+  it('does not show "Rejection Reason" from the request note when rejected without one', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockInitialLoad([rejectedNoReason]);
+
+    renderWithIntl(<PaymentsTab wsId={9} client={client} />);
+
+    await waitFor(() => expect(screen.getByText('Rejected')).toBeInTheDocument());
+    expect(screen.queryByText('Rejection Reason:')).not.toBeInTheDocument();
+    expect(screen.getByText('Notes:')).toBeInTheDocument();
+    expect(screen.getByText('First installment')).toBeInTheDocument();
+  });
+
+  it('still shows the real rejection reason when the manager gave one', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockInitialLoad([rejectedWithReason]);
+
+    renderWithIntl(<PaymentsTab wsId={9} client={client} />);
+
+    await waitFor(() => expect(screen.getByText('Rejection Reason:')).toBeInTheDocument());
+    expect(screen.getByText('Unclear proof image')).toBeInTheDocument();
+    expect(screen.getByText('Notes:')).toBeInTheDocument();
+    expect(screen.getByText('First installment')).toBeInTheDocument();
+  });
+
   it('polls the workspace payments/contracts every 30s', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockInitialLoad();
