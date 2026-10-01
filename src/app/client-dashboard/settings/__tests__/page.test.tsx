@@ -74,6 +74,11 @@ describe('ClientSettingsPage — sub-user branch (م٤ characterization)', () =>
     renderWithIntl(<ClientSettingsPage />);
 
     const phoneInput = await screen.findByLabelText('Phone') as HTMLInputElement;
+    // Wait for the fetched sub-user record to actually settle into the
+    // field before typing — otherwise a slow CI run can have the GET's
+    // setState land mid-type, re-seeding the field with the fetched value
+    // and leaving clear()+type() concatenated onto it instead of replacing.
+    await waitFor(() => expect(phoneInput.value).toBe('0100000000'));
     await user.clear(phoneInput);
     await user.type(phoneInput, '0111111111');
     await user.click(screen.getByText('Save Settings'));
