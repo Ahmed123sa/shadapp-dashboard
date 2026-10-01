@@ -162,51 +162,25 @@ export default function FinancePage() {
             <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{stats.approved_count || 0} {locale === 'ar' ? 'عملية معتمدة' : 'approved'}</p>
           </div>
 
-          <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'المدفوعات المعتمدة (ر.س)' : 'Approved SAR'}</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <DollarSign size={16} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold mt-2 text-emerald-400 font-display">
-              {Number(stats.approved_total_sar || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              <span className="text-xs font-normal text-emerald-400/70 ms-1">SAR</span>
-            </p>
-            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالريال' : 'Total SAR revenue'}</p>
-          </div>
-
-          <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'المدفوعات المعتمدة (USD)' : 'Approved USD'}</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                <DollarSign size={16} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold mt-2 text-amber-400 font-display">
-              {Number(stats.approved_total_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              <span className="text-xs font-normal text-amber-400/70 ms-1">USD</span>
-            </p>
-            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'إجمالي الإيرادات بالدولار' : 'Total USD revenue'}</p>
-          </div>
-
-          {/* Extra currency cards: any currency beyond SAR/USD that has an
-              approved payment gets its own card here, driven by
-              approved_by_currency from the backend. SAR/USD stay on their
-              existing cards above (untouched) to avoid duplicating them. */}
+          {/* Currency cards: one per currency that actually moved money
+              (nonzero approved total), driven entirely by
+              approved_by_currency from the backend (SAR/USD included in
+              there same as any other currency — no more pinning SAR/USD as
+              permanent cards regardless of whether they have data). */}
           {Object.entries(stats.approved_by_currency || {})
-            .filter(([cur]) => cur !== 'SAR' && cur !== 'USD')
+            .filter(([, total]) => Number(total || 0) > 0)
+            .sort(([, a], [, b]) => Number(b || 0) - Number(a || 0))
             .map(([cur, total]) => (
               <div key={cur} className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? `المدفوعات المعتمدة (${cur})` : `Approved ${cur}`}</span>
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                     <DollarSign size={16} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mt-2 text-blue-400 font-display">
+                <p className="text-2xl font-bold mt-2 text-emerald-400 font-display">
                   {Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  <span className="text-xs font-normal text-blue-400/70 ms-1">{cur}</span>
+                  <span className="text-xs font-normal text-emerald-400/70 ms-1">{cur}</span>
                 </p>
                 <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? `إجمالي الإيرادات بعملة ${cur}` : `Total ${cur} revenue`}</p>
               </div>

@@ -67,7 +67,12 @@ describe('FinancePage', () => {
     expect(screen.getAllByText('Manager Mike').length).toBe(2);
   });
 
-  it('renders an extra card for a currency beyond SAR/USD from approved_by_currency', async () => {
+  // Finance UX fix: currency KPI cards used to always pin SAR and USD
+  // (showing 0.00 even with zero real data) and only show other currencies
+  // dynamically. Now every currency — SAR/USD included — is driven purely
+  // by approved_by_currency and only gets a card when money actually moved
+  // in it (nonzero total).
+  it('renders a card for every currency with a nonzero approved total, SAR included, from approved_by_currency', async () => {
     mock.onGet(/\/all-payments/).reply(200, {
       ...mockPaymentsData,
       stats: {
@@ -79,8 +84,36 @@ describe('FinancePage', () => {
     renderWithIntl(<FinancePage />);
 
     expect(await screen.findByText('Annual Retainer')).toBeInTheDocument();
+    // 5,000.00 appears both on the SAR KPI card and in the payments table row
+    // for the same mock payment — getAllByText rather than getByText.
+    expect(screen.getAllByText(/5,000\.00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('SAR').length).toBeGreaterThan(0);
     expect(screen.getByText(/1,200\.00/)).toBeInTheDocument();
     expect(screen.getAllByText('EGP').length).toBeGreaterThan(0);
+  });
+
+  it('does not render a card for a currency with a zero approved total, even SAR/USD', async () => {
+    mock.onGet(/\/all-payments/).reply(200, {
+      ...mockPaymentsData,
+      stats: {
+        ...mockPaymentsData.stats,
+        approved_by_currency: { SAR: 0, USD: 0, EGP: 900 },
+      },
+    });
+
+    renderWithIntl(<FinancePage />);
+
+    expect(await screen.findByText('Annual Retainer')).toBeInTheDocument();
+    expect(screen.getByText(/900\.00/)).toBeInTheDocument();
+    expect(screen.queryByText(/المدفوعات المعتمدة \(SAR\)|Approved SAR/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/المدفوعات المعتمدة \(USD\)|Approved USD/)).not.toBeInTheDocument();
+  });
+
+  it('shows no currency cards at all when nothing has been approved yet', async () => {
+    renderWithIntl(<FinancePage />);
+
+    expect(await screen.findByText('Annual Retainer')).toBeInTheDocument();
+    expect(screen.queryByText(/المدفوعات المعتمدة|Approved (SAR|USD)/)).not.toBeInTheDocument();
   });
 
   it('triggers reload when searching or filtering', async () => {
