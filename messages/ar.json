@@ -863,8 +863,6 @@
     "contract_docs_required_title": "مستندات مطلوبة",
     "contract_upload_required_first": "ارفع المستندات المطلوبة الأول: {docs}",
     "contract_upload_required_first_msg": "لازم ترفع المستندات المطلوبة الأول قبل الموافقة على العقد.",
-    "setting_managers_can_review_files": "السماح للمدير بالموافقة على الملفات",
-    "setting_managers_can_review_files_desc": "تمكين مديري الحسابات من مراجعة وقبول أو رفض ملفات عملائهم",
     "approval_ref_prefix": "مرجع: ",
     "approval_file_label": "ملف",
     "approval_certificate": "شهادة الموافقة",
@@ -1034,6 +1032,8 @@
     "contract_dates_setting": "تواريخ بداية ونهاية العقود",
     "contract_dates_desc": "إظهار أو إخفاء حقول تاريخ بداية ونهاية العقد أثناء إنشاء العقود (في الويب والموبايل)",
     "contract_dates_saved": "تم حفظ إعداد تواريخ العقود بنجاح",
+    "setting_managers_can_review_files": "السماح للمدير بالموافقة على الملفات",
+    "setting_managers_can_review_files_desc": "تمكين مديري الحسابات من مراجعة وقبول أو رفض ملفات عملائهم",
     "setting_saved": "تم حفظ الإعداد بنجاح"
   },
   "contracts": {

@@ -863,8 +863,6 @@
     "contract_docs_required_title": "Required Documents",
     "contract_upload_required_first": "Upload the required documents first: {docs}",
     "contract_upload_required_first_msg": "You must upload the required documents before approving the contract.",
-    "setting_managers_can_review_files": "Allow account managers to review files",
-    "setting_managers_can_review_files_desc": "Enable account managers to review, approve, or reject files uploaded by their clients",
     "approval_ref_prefix": "Ref: ",
     "approval_file_label": "File",
     "approval_certificate": "Approval Certificate",
@@ -1034,6 +1032,8 @@
     "contract_dates_setting": "Contract Start & End Dates",
     "contract_dates_desc": "Show or hide contract start and end date fields during contract creation (web & mobile)",
     "contract_dates_saved": "Contract dates setting saved successfully",
+    "setting_managers_can_review_files": "Allow account managers to review files",
+    "setting_managers_can_review_files_desc": "Enable account managers to review, approve, or reject files uploaded by their clients",
     "setting_saved": "Setting saved successfully"
   },
   "contracts": {
