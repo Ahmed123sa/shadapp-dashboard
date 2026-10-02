@@ -692,7 +692,7 @@ export default function SettingsPage() {
                         {cl.is_active ? t('deactivate') : t('activate')}
                       </button>
                       <button onClick={() => setEditingClause({ id: cl.id, content: cl.content, type: cl.type, category: cl.category })} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1.5 py-1">{t('edit')}</button>
-                      <button onClick={() => deleteClause(cl.id)} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500 px-1.5 py-1">{t('delete')}</button>
+                      <button onClick={() => deleteClause(cl.id)} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500 px-1.5 py-1">{t('delete_clause')}</button>
                     </div>
                   </div>
                 )}

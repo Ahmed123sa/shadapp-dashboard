@@ -1020,6 +1020,7 @@
     "clause_deleted": "Clause deleted",
     "clause_delete_failed": "Failed to delete clause",
     "delete_clause_confirm": "Delete this clause? Existing contracts are not affected.",
+    "delete_clause": "Delete",
     "reorder_hint": "Drag clauses to reorder",
     "save_order": "Save order",
     "loading_clauses": "Loading clauses...",

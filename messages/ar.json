@@ -1020,6 +1020,7 @@
     "clause_deleted": "تم حذف البند",
     "clause_delete_failed": "فشل حذف البند",
     "delete_clause_confirm": "حذف هذا البند؟ العقود الحالية لن تتأثر.",
+    "delete_clause": "حذف",
     "reorder_hint": "اسحب البنود لإعادة الترتيب",
     "save_order": "حفظ الترتيب",
     "loading_clauses": "جاري تحميل البنود...",
