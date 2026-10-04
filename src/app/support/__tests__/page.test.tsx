@@ -57,10 +57,9 @@ describe('SupportPage', () => {
     expect(screen.getByText('دعم ShadApp')).toBeInTheDocument();
   });
 
-  it('shows the support email and the in-app delete-account note', () => {
+  it('shows the support email', () => {
     renderWithIntl(<SupportPage />);
 
     expect(screen.getByRole('link', { name: 'support@shadmanagement.co' })).toBeInTheDocument();
-    expect(screen.getByText(/Delete account/)).toBeInTheDocument();
   });
 });

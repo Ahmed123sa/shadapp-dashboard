@@ -23,8 +23,6 @@ const STRINGS = {
     sent: 'Your message was sent. We will reply to your email soon.',
     error: 'Could not send your message. Please try again.',
     contact: 'You can also email us directly at',
-    deleteTitle: 'Delete your account',
-    deleteBody: 'You can delete your account from inside the ShadApp mobile app (Settings → Delete account).',
     switchTo: 'العربية',
   },
   ar: {
@@ -39,8 +37,6 @@ const STRINGS = {
     sent: 'تم إرسال رسالتك. هنرد عليك على بريدك قريبًا.',
     error: 'تعذّر إرسال رسالتك. حاول مرة أخرى.',
     contact: 'ولو حبيت تراسلنا مباشرة على',
-    deleteTitle: 'حذف الحساب',
-    deleteBody: 'تقدر تحذف حسابك من داخل تطبيق ShadApp على الموبايل (الإعدادات ← حذف الحساب).',
     switchTo: 'English',
   },
 } as const;
@@ -144,15 +140,11 @@ export default function SupportPage() {
           </form>
         )}
 
-        <div className="mt-8 pt-6 border-t border-white/10 text-sm text-white/60 space-y-4">
+        <div className="mt-8 pt-6 border-t border-white/10 text-sm text-white/60">
           <p>
             {s.contact}{' '}
             <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[var(--color-gold)] hover:underline" dir="ltr">{SUPPORT_EMAIL}</a>
           </p>
-          <div>
-            <h2 className="text-white/80 font-medium mb-1">{s.deleteTitle}</h2>
-            <p>{s.deleteBody}</p>
-          </div>
         </div>
       </div>
     </div>
