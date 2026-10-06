@@ -21,6 +21,7 @@ export default function AccountManagersPage() {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [password, setPassword] = useState('');
   const [autoPassword, setAutoPassword] = useState(true);
+  const [sendEmail, setSendEmail] = useState(true);
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -59,6 +60,7 @@ export default function AccountManagersPage() {
     setDateOfBirth('');
     setPassword('');
     setAutoPassword(true);
+    setSendEmail(true);
   };
 
   const createManager = async (e: React.FormEvent) => {
@@ -66,8 +68,8 @@ export default function AccountManagersPage() {
     setError('');
     setSaving(true);
     try {
-      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string | null } =
-        { name, email, phone, date_of_birth: dateOfBirth || null };
+      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string | null; send_email: boolean } =
+        { name, email, phone, date_of_birth: dateOfBirth || null, send_email: sendEmail };
       if (autoPassword) {
         payload.password = null;
       } else {
@@ -213,6 +215,12 @@ export default function AccountManagersPage() {
                 <PasswordField value={password} onChange={setPassword} placeholder={t('manager_pw_ph')} required />
               )}
             </div>
+          )}
+          {!editId && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+              {t('team_send_login_email')}
+            </label>
           )}
           {editId && (
             <PasswordField value={password} onChange={setPassword} label={t('manager_new_pw')} placeholder={t('manager_new_pw_ph')} opt />

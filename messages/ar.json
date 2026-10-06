@@ -76,6 +76,7 @@
     "team_update": "حفظ التعديلات",
     "team_load_failed": "مقدرناش نحمّل الفريق.",
     "team_save_failed": "مقدرناش نحفظ المساعد.",
+    "team_send_login_email": "ابعت بيانات الدخول على إيميله",
     "team_permissions": "الصلاحيات",
     "team_perm_always_on": "مفعّلة دايمًا",
     "team_perm_can_view_clients": "عرض عملائي",

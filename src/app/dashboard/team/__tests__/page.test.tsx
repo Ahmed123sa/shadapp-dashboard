@@ -59,9 +59,11 @@ describe('TeamPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
 
     const boxes = screen.getAllByRole('checkbox');
+    // first box is "email the login details" (on by default), then the permissions
     expect(boxes[0]).toBeChecked();
-    expect(boxes[0]).toBeDisabled();
-    expect(boxes.slice(1).every((b) => !(b as HTMLInputElement).checked)).toBe(true);
+    expect(boxes[1]).toBeChecked();
+    expect(boxes[1]).toBeDisabled();
+    expect(boxes.slice(2).every((b) => !(b as HTMLInputElement).checked)).toBe(true);
   });
 
   it('creates an assistant with the ticked permissions', async () => {
@@ -73,7 +75,7 @@ describe('TeamPage', () => {
     await userEvent.type(screen.getByLabelText('Name'), 'Sami Helper');
     await userEvent.type(screen.getByLabelText('Email'), 'sami@example.com');
     await userEvent.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'Str0ng!Pass#1');
-    await userEvent.click(screen.getAllByRole('checkbox')[2]); // can_chat
+    await userEvent.click(screen.getAllByRole('checkbox')[3]); // can_chat (0 = send email, 1 = can_view_clients)
     await userEvent.click(screen.getByRole('button', { name: 'Create assistant' }));
 
     await waitFor(() => expect(mock.history.post.length).toBe(1));
@@ -81,6 +83,22 @@ describe('TeamPage', () => {
     expect(body.email).toBe('sami@example.com');
     expect(body.permissions.can_chat).toBe(true);
     expect(body.permissions.can_manage_contracts).toBe(false);
+    expect(body.send_email).toBe(true);
+  });
+
+  it('can switch the login-details email off', async () => {
+    mock.onGet('/team').reply(200, { assistants: [] });
+    mock.onPost('/team').reply(201, { assistant: sami });
+    renderWithIntl(<TeamPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
+    await userEvent.type(screen.getByLabelText('Name'), 'Sami Helper');
+    await userEvent.type(screen.getByLabelText('Email'), 'sami@example.com');
+    await userEvent.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'Str0ng!Pass#1');
+    await userEvent.click(screen.getByLabelText('Email the login details to this person'));
+    await userEvent.click(screen.getByRole('button', { name: 'Create assistant' }));
+
+    await waitFor(() => expect(mock.history.post.length).toBe(1));
+    expect(JSON.parse(mock.history.post[0].data).send_email).toBe(false);
   });
 
   it('shows the backend validation message when creation fails', async () => {

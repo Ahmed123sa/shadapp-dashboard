@@ -50,6 +50,7 @@ export default function TeamPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [sendEmail, setSendEmail] = useState(true);
   const [permissions, setPermissions] = useState<Permissions>(emptyPermissions());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -79,7 +80,7 @@ export default function TeamPage() {
   }
 
   const resetForm = () => {
-    setName(''); setEmail(''); setPhone(''); setPassword('');
+    setName(''); setEmail(''); setPhone(''); setPassword(''); setSendEmail(true);
     setPermissions(emptyPermissions()); setFormError('');
   };
 
@@ -108,7 +109,7 @@ export default function TeamPage() {
       if (editId) {
         await api.put(`/team/${editId}`, { name, email, phone: phone || null, permissions });
       } else {
-        await api.post('/team', { name, email, phone: phone || null, password, permissions });
+        await api.post('/team', { name, email, phone: phone || null, password, permissions, send_email: sendEmail });
         setNotice(t('team_created'));
       }
       closeForm();
@@ -200,6 +201,13 @@ export default function TeamPage() {
           </div>
           {!editId && (
             <PasswordField value={password} onChange={setPassword} label={t('manager_password')} placeholder={t('manager_pw_ph')} required />
+          )}
+
+          {!editId && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+              {t('team_send_login_email')}
+            </label>
           )}
 
           <fieldset className="space-y-2">

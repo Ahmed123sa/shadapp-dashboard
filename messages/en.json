@@ -76,6 +76,7 @@
     "team_update": "Save changes",
     "team_load_failed": "Could not load your team.",
     "team_save_failed": "Could not save the assistant.",
+    "team_send_login_email": "Email the login details to this person",
     "team_permissions": "Permissions",
     "team_perm_always_on": "always on",
     "team_perm_can_view_clients": "View my clients",
