@@ -134,6 +134,22 @@ export default function TeamPage() {
     }
   };
 
+  const removeAssistant = async (a: Assistant) => {
+    // Two separate, deliberately blunt warnings — removal cannot be undone.
+    if (!confirm(t('team_remove_confirm_1'))) return;
+    if (!confirm(t('team_remove_confirm_2'))) return;
+    setBusyId(a.id);
+    try {
+      await api.delete(`/team/${a.id}`);
+      setNotice(t('team_removed'));
+      load();
+    } catch (err: any) {
+      setNotice(err?.response?.data?.message || t('team_save_failed'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const changePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pwId) return;
@@ -280,6 +296,13 @@ export default function TeamPage() {
                   className={`text-xs hover:underline border rounded px-2 py-1 disabled:opacity-50 ${a.is_active ? 'text-red-400 border-red-900/30' : 'text-green-400 border-green-900/30'}`}
                 >
                   {a.is_active ? t('manager_deactivate') : t('manager_activate')}
+                </button>
+                <button
+                  onClick={() => removeAssistant(a)}
+                  disabled={busyId === a.id}
+                  className="text-xs hover:underline border rounded px-2 py-1 disabled:opacity-50 text-red-500 border-red-900/50"
+                >
+                  {t('team_remove')}
                 </button>
               </div>
             </div>

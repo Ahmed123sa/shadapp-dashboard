@@ -125,6 +125,42 @@ describe('TeamPage', () => {
     await waitFor(() => expect(mock.history.post.some((r) => r.url === '/team/7/deactivate')).toBe(true));
   });
 
+  it('removes an assistant only after two separate warnings', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mock.onGet('/team').reply(200, { assistants: [sami] });
+    mock.onDelete('/team/7').reply(200, { message: 'ok' });
+    renderWithIntl(<TeamPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => expect(mock.history.delete.length).toBe(1));
+    expect(confirmSpy).toHaveBeenCalledTimes(2);
+    expect(String(confirmSpy.mock.calls[0][0])).toMatch(/WARNING/);
+    expect(String(confirmSpy.mock.calls[1][0])).toMatch(/LAST WARNING/);
+  });
+
+  it('does not remove when the second warning is declined', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(true).mockReturnValueOnce(false);
+    mock.onGet('/team').reply(200, { assistants: [sami] });
+    renderWithIntl(<TeamPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(2);
+    expect(mock.history.delete.length).toBe(0);
+  });
+
+  it('does not remove when the first warning is declined', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    mock.onGet('/team').reply(200, { assistants: [sami] });
+    renderWithIntl(<TeamPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(mock.history.delete.length).toBe(0);
+  });
+
   it('explains an assistant that is off only because the manager is', async () => {
     mock.onGet('/team').reply(200, { assistants: [{ ...sami, is_active: false, deactivated_by_parent: true }] });
     renderWithIntl(<TeamPage />);
