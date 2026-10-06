@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
 import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -89,6 +90,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
+  const canManage = !isSA && canDo(user, 'can_manage_meetings');
   const now = new Date();
 
   const upcoming = meetings.filter((m) => {
@@ -102,8 +104,8 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
   return (
     <div className="space-y-4">
-      {!isSA && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('new_meeting')}</button>}
-      {!isSA && showForm && (
+      {canManage && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('new_meeting')}</button>}
+      {canManage && showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('meeting_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           <div className="flex gap-2">
@@ -218,7 +220,7 @@ function MeetingCard({
       {m.passcode && (
         <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('meeting_passcode', { code: m.passcode })}</p>
       )}
-      {isScheduled && !isSA && (
+      {isScheduled && !isSA && canDo(getUser(), 'can_manage_meetings') && (
         <div className="flex gap-2 mt-3">
           <button onClick={() => onComplete(m.id)} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">{t('meeting_complete')}</button>
           <button onClick={() => onCancel(m.id)} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">{t('meeting_cancel')}</button>

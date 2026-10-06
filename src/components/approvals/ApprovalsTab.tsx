@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
@@ -10,6 +11,7 @@ import { useWorkspaceApprovals, useSendApproval } from '@/hooks/queries/useAppro
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';
+  const canWrite = !isSA && canDo(getUser(), 'can_manage_approvals');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -43,7 +45,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
 
   return (
     <div className="space-y-4">
-      {!isSA && (
+      {canWrite && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           <h3 className="font-medium text-sm text-[var(--color-foreground)]">{t('new_approval_request')}</h3>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('approval_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />

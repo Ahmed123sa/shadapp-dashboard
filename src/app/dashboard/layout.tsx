@@ -11,9 +11,10 @@ import { useBadgeCounts } from '@/hooks/queries/useBadgeCounts';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
-  Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon,
+  Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
+import { canDo, isAssistant, refreshAssistantUser } from '@/lib/permissions';
 
 interface NavItem {
   href: string;
@@ -44,6 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const user = getUser();
   const isSA = user?.role === 'super_admin';
+  const isAsst = isAssistant(user);
+  const isManager = user?.role === 'account_manager';
 
   const currentView = searchParams.get('view') || '';
 
@@ -87,6 +90,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ],
     },
   ];
+  // An account manager also gets "My Team" (their assistants).
+  if (isManager) {
+    amNavGroups[0].items.push({ href: '/dashboard/team', label: t('team_nav'), icon: UsersRound });
+  }
+
+  // An assistant has no payments, audit log, settings or team: those groups
+  // (and the Payments entry) are simply not in their sidebar.
+  const assistantNavGroups: NavGroup[] = [
+    {
+      label: t('nav_group_main'),
+      items: [
+        { href: '/dashboard', label: t('home'), icon: LayoutDashboard, exact: true },
+        { href: '/dashboard?view=approvals', label: t('pending_approvals'), icon: ClipboardCheck, badge: badgeCounts?.approvals, badgeColor: 'gold' },
+        { href: '/dashboard/clients', label: t('my_clients'), icon: Users, badge: badgeCounts?.chat, badgeColor: 'crimson' },
+      ],
+    },
+    {
+      label: t('nav_group_comm'),
+      items: [
+        { href: '/dashboard?view=contracts', label: t('contracts_nav'), icon: FileText },
+        { href: '/dashboard?view=meetings', label: t('meetings_nav'), icon: Calendar },
+        ...(canDo(user, 'can_view_files') ? [{ href: '/dashboard?view=files', label: t('files_nav'), icon: Folder }] : []),
+      ],
+    },
+  ];
 
   const saNavGroups: NavGroup[] = [
     {
@@ -114,10 +142,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
-  const navGroups = isSA ? saNavGroups : amNavGroups;
+  const navGroups = isSA ? saNavGroups : isAsst ? assistantNavGroups : amNavGroups;
 
   useEffect(() => {
     setMounted(true);
+    void refreshAssistantUser();
     if (typeof window !== 'undefined' && !isAuthenticated()) {
       router.push('/login');
     }
@@ -169,6 +198,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/finance')) return locale === 'ar' ? 'المالية' : 'Finance';
     if (pathname.startsWith('/dashboard/audit-log')) return t('audit_log');
     if (pathname.startsWith('/dashboard/settings')) return t('settings');
+    if (pathname.startsWith('/dashboard/team')) return t('team_nav');
     return t('title');
   };
 
@@ -221,7 +251,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div>
             <div className="text-xs font-bold">{user?.name}</div>
             <span className="inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] uppercase whitespace-nowrap rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
-              {isSA ? t('role_admin') : t('role_am')}
+              {isSA ? t('role_admin') : isAsst ? t('role_assistant') : t('role_am')}
             </span>
           </div>
         </div>

@@ -268,7 +268,12 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant';
+  // Only for assistants (see lib/permissions.ts).
+  assistant_permissions?: Record<string, boolean> | null;
+  parent_manager_id?: number | null;
+  // Set on audit-log actors that are assistants: their manager's name.
+  assistant_of?: string | null;
   official_email?: string;
   signature_data?: string;
   signature_url?: string | null;
@@ -316,7 +321,7 @@ export interface AuditLog {
   action: string;
   ip_address?: string | null;
   created_at: string;
-  user?: { id: number; name: string } | null;
+  user?: { id: number; name: string; role?: string; assistant_of?: string | null } | null;
   client?: { company_name?: string; contact_person?: string; name?: string; client_type?: string } | null;
   auditable_type?: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

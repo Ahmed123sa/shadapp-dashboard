@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { isAssistant } from '@/lib/permissions';
 import { DashboardSkeleton } from '@/components/ui/LoadingSkeleton';
 import type { Client, Contract, Payment, Meeting, Manager } from '@/components/dashboard/types';
 import AMView from '@/components/dashboard/AMView';
@@ -19,6 +20,7 @@ export default function DashboardHome() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSA = getUser()?.role === 'super_admin';
+  const asst = isAssistant(getUser());
   const view = searchParams.get('view') || '';
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -51,7 +53,7 @@ export default function DashboardHome() {
       Promise.all([
         api.get('/account-managers').catch(() => ({ data: { managers: [] } })),
         api.get('/all-contracts?per_page=100').catch(() => ({ data: { contracts: { data: [] } } })),
-        api.get('/all-payments?per_page=100').catch(() => ({ data: { payments: { data: [] } } })),
+        asst ? Promise.resolve({ data: { payments: { data: [] } } }) : api.get('/all-payments?per_page=100').catch(() => ({ data: { payments: { data: [] } } })),
         api.get('/all-meetings?per_page=100').catch(() => ({ data: { meetings: { data: [] } } })),
         api.get('/notifications').catch(() => ({ data: { unread_count: 0 } })),
       ]).then(([managersRes, contractsRes, paymentsRes, meetingsRes, notifRes]) => {
@@ -66,7 +68,7 @@ export default function DashboardHome() {
       Promise.all([
         api.get('/clients').catch(() => ({ data: { clients: { data: [] } } })),
         api.get('/all-contracts?per_page=100').catch(() => ({ data: { contracts: { data: [] } } })),
-        api.get('/all-payments?per_page=100').catch(() => ({ data: { payments: { data: [] } } })),
+        asst ? Promise.resolve({ data: { payments: { data: [] } } }) : api.get('/all-payments?per_page=100').catch(() => ({ data: { payments: { data: [] } } })),
         api.get('/all-meetings?per_page=100').catch(() => ({ data: { meetings: { data: [] } } })),
         api.get('/notifications').catch(() => ({ data: { unread_count: 0 } })),
       ]).then(([clientsRes, contractsRes, paymentsRes, meetingsRes, notifRes]) => {
@@ -78,7 +80,7 @@ export default function DashboardHome() {
         setUnreadClientsCount(notifRes.data.unread_clients_count || 0);
       }).finally(() => setLoading(false));
     }
-  }, [isSA, view]);
+  }, [isSA, asst, view]);
 
   // pending-approvals-plan.md ك4 — role-agnostic: GET /dashboard/pending-approvals
   // already scopes by the caller (AM to their own clients, SA to everyone),
@@ -98,6 +100,10 @@ export default function DashboardHome() {
       t={t} locale={locale} managers={managers} allContracts={allContracts}
       allPayments={allPayments} allMeetings={allMeetings} unreadCount={unreadCount}
     />;
+  }
+
+  if (asst && view === 'payments') {
+    return null;
   }
 
   if (view === 'meetings' || view === 'payments' || view === 'files' || view === 'contracts') {

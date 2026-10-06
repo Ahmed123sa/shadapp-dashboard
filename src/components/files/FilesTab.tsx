@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
@@ -16,7 +17,8 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   const isSA = user?.role === 'super_admin';
   const isAM = user?.role === 'account_manager';
   const { data: managersCanReview = false } = useManagersCanReviewFilesSetting();
-  const canReview = isSA || (isAM && managersCanReview);
+  const isAsst = user?.role === 'manager_assistant';
+  const canReview = isSA || ((isAM || (isAsst && canDo(user, 'can_review_files'))) && managersCanReview);
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');

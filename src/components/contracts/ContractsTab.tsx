@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
@@ -73,6 +74,8 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
+  // Not SA, and an assistant needs can_manage_contracts to write.
+  const canManage = !isSA && canDo(user, 'can_manage_contracts');
 
   const fixedTemplates = templates.filter((tpl) => tpl.type === 'fixed');
   const optionalTemplates = templates.filter((tpl) => tpl.type === 'optional');
@@ -183,7 +186,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
 
   return (
     <div className="space-y-3">
-      {!isSA && (
+      {canManage && (
         <button
           onClick={() => {
             if (showForm && !editingId) {
@@ -198,7 +201,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
           {wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`}
         </button>
       )}
-      {!isSA && showForm && (
+      {canManage && showForm && (
         <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           {editingId && (
             <p className="text-xs font-semibold text-[var(--color-gold-text)]">
@@ -337,11 +340,11 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             </div>
           )}
           <div className="mt-2 flex gap-2 flex-wrap">
-            {!isSA && (c.status === 'draft' || c.status === 'edit_requested') && (
+            {canManage && (c.status === 'draft' || c.status === 'edit_requested') && (
               <button onClick={() => startEdit(c)} className="text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
             )}
-            {!isSA && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
-            {!isSA && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
+            {canManage && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
+            {canManage && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
             {c.status === 'client_approved' && (
               <>
                 {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('view_signed_contract')}</a>}
@@ -353,7 +356,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             {c.status === 'company_approved' && (
               <>
                 {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('download_final_contract')}</a>}
-                {!isSA && <button onClick={() => doAction(c.id, 'archive')} className="text-xs text-[var(--color-text-secondary)] hover:underline">{t('archive_contract')}</button>}
+                {canManage && <button onClick={() => doAction(c.id, 'archive')} className="text-xs text-[var(--color-text-secondary)] hover:underline">{t('archive_contract')}</button>}
               </>
             )}
             {c.status === 'completed' && (

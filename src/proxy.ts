@@ -10,6 +10,15 @@ import { assertProductionEnv } from '@/lib/env-guard';
 assertProductionEnv();
 
 const locales = ['ar', 'en'];
+// Dashboard sections a manager assistant can never open.
+const ASSISTANT_BLOCKED = [
+  '/dashboard/finance',
+  '/dashboard/reports',
+  '/dashboard/account-managers',
+  '/dashboard/settings',
+  '/dashboard/audit-log',
+  '/dashboard/team',
+];
 const defaultLocale = 'en';
 // NEXT_PUBLIC_API_URL is the *API* base (e.g. http://host:8000/api) — strip
 // the /api suffix to get the Laravel origin that actually serves /storage/*.
@@ -96,6 +105,18 @@ export async function proxy(request: NextRequest) {
         const homeUrl = new URL('/dashboard', request.url);
         return NextResponse.redirect(homeUrl);
       }
+    }
+
+    // Manager assistants (MANAGER_ASSISTANT_PLAN.md §5): walled off from
+    // everything financial or administrative. The backend refuses the same
+    // routes (not.assistant) — this just keeps them from being served.
+    // /dashboard/team is the opposite: only an account manager has a team.
+    const role = request.cookies.get(SESSION_ROLE_COOKIE)?.value;
+    if (role === 'manager_assistant' && ASSISTANT_BLOCKED.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    if (pathname.startsWith('/dashboard/team') && role !== 'account_manager') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

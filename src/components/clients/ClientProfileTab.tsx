@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { MapPin, Pencil, ExternalLink, FileText, CreditCard, Stamp, CalendarDays, ChevronLeft, Map } from 'lucide-react';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClientTypeBadge } from '@/components/ui/ClientTypeBadge';
@@ -37,7 +38,8 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const isAM = getUser()?.role === 'account_manager';
+  const me = getUser();
+  const isAM = me?.role === 'account_manager' || (me?.role === 'manager_assistant' && canDo(me, 'can_edit_clients'));
 
   const confirmLocation = async (lat: number, lng: number, address: string) => {
     try {

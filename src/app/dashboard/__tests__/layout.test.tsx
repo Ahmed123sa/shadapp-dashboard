@@ -109,3 +109,35 @@ describe('DashboardLayout sidebar badges', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Pending Approvals' })).toBeInTheDocument());
   });
 });
+
+describe('DashboardLayout — manager assistant', () => {
+  beforeEach(() => {
+    mock.onGet('/badge-counts').reply(200, { chat: 0, contracts: 0, approvals: 0, payments: 0, files: 0, notifications: 0 });
+    mock.onGet('/auth/me').reply(200, { user: {} });
+  });
+
+  const asAssistant = (perms: Record<string, boolean>) =>
+    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'Sami', role: 'manager_assistant', assistant_permissions: perms } as any);
+
+  it('never shows payments or the team page, and hides files without can_view_files', async () => {
+    asAssistant({ can_view_clients: true });
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+
+    await waitFor(() => expect(screen.getAllByText('My Clients').length).toBeGreaterThan(0));
+    expect(screen.queryByText('Payments')).not.toBeInTheDocument();
+    expect(screen.queryByText('My Team')).not.toBeInTheDocument();
+    expect(screen.queryByText('Files')).not.toBeInTheDocument();
+  });
+
+  it('shows files once can_view_files is granted', async () => {
+    asAssistant({ can_view_clients: true, can_view_files: true });
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+    await waitFor(() => expect(screen.getAllByText('Files').length).toBeGreaterThan(0));
+  });
+
+  it('gives an account manager the My Team entry', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager' } as any);
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+    await waitFor(() => expect(screen.getAllByText('My Team').length).toBeGreaterThan(0));
+  });
+});

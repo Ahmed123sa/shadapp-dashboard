@@ -4,7 +4,10 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant';
+  // Only for assistants (see lib/permissions.ts).
+  assistant_permissions?: Record<string, boolean> | null;
+  parent_manager_id?: number | null;
   official_email?: string;
   signature_data?: string;
   signature_url?: string | null;

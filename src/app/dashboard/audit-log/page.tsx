@@ -337,6 +337,7 @@ export default function AuditLogPage() {
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{actor.name}</span>
+                              {log.user?.assistant_of && (<span className="text-[10px] text-[var(--color-text-secondary)]">({t('audit_assistant_of', { name: log.user.assistant_of })})</span>)}
                               {actor.isClient && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
                                   {locale === 'ar' ? 'عميل' : 'Client'}

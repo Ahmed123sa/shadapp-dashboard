@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getUser } from '@/lib/auth';
+import { canDo } from '@/lib/permissions';
 import { subscribeToWorkspace } from '@/lib/echo';
 import ChatContractCard from '@/components/chat/ChatContractCard';
 import ContractBuilder from '@/components/chat/ContractBuilder';
@@ -129,7 +130,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
-  const canChat = wsActive !== false && !isSA;
+  const canChat = wsActive !== false && !isSA && canDo(user, 'can_chat');
 
   if (!canChat) {
     return (
@@ -339,7 +340,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                     )}
                   </div>
                 )}
-                {!isClientTeam && !m.action_taken && (
+                {!isClientTeam && !m.action_taken && canDo(getUser(), 'can_manage_approvals') && (
                   <button onClick={() => toggleAction(m.id)} className={`text-xs mt-0.5 ${m.requires_action ? 'text-red-500' : 'text-[var(--color-text-disabled)]'} hover:underline`}>
                     {m.requires_action ? t('chat_cancel_action') : t('chat_require_action')}
                   </button>

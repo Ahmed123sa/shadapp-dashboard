@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
+import { canDo, isAssistant } from '@/lib/permissions';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -45,11 +46,14 @@ export default function ClientWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
+  // Assistants never see money (payments) and only see files if allowed.
+  const me = getUser();
+  const visibleTabs = TABS.filter((k) => !(isAssistant(me) && (k === 'payments' || (k === 'files' && !canDo(me, 'can_view_files')))));
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {
-      const match = TABS.find((k) => k === tabParam || t(TAB_LABELS[k]) === tabParam || t(TAB_LABELS[k])?.toLowerCase() === tabParam.toLowerCase());
+      const match = visibleTabs.find((k) => k === tabParam || t(TAB_LABELS[k]) === tabParam || t(TAB_LABELS[k])?.toLowerCase() === tabParam.toLowerCase());
       if (match) {
         setActiveTab(match);
       }
@@ -103,6 +107,7 @@ export default function ClientWorkspace() {
   if (!client) return <EmptyState message={t('not_found')} />;
 
   const isSA = getUser()?.role === 'super_admin';
+  const asst = isAssistant(getUser());
   const wsId = client.workspace?.id;
   const isArchived = client.status === 'archived';
 
@@ -175,7 +180,7 @@ export default function ClientWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isSA && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+            {!isSA && !asst && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
             {isArchived && <StatusBadge status="archived" />}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             {/* has_signed_contract, not signed_at — see client-signature-plan.md
@@ -185,7 +190,7 @@ export default function ClientWorkspace() {
             <span className={`px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {clientHasSignedContract(client) ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('contracted')}</> : t('not_contracted')}
             </span>
-            {isArchived ? (
+            {!asst && (isArchived ? (
               <button
                 onClick={unarchiveClient}
                 disabled={unarchiveMutation.isPending}
@@ -201,7 +206,7 @@ export default function ClientWorkspace() {
               >
                 {t('client_archive')}
               </button>
-            )}
+            ))}
             {isSA && (
               <button
                 onClick={openTransfer}
@@ -244,7 +249,7 @@ export default function ClientWorkspace() {
 
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
         <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button key={tab} ref={(el) => { tabRefs.current[tab] = el; }} onClick={() => setActiveTab(tab)}
               className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
               {t(TAB_LABELS[tab])}
