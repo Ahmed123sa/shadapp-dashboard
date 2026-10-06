@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import api from '@/lib/api';
+import { getUser } from '@/lib/auth';
+import { isAssistant } from '@/lib/permissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
@@ -54,7 +56,11 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
       api.get(`/workspaces/${wsId}/approvals`).then(({ data }) => setApprovals(data.approvals?.data || data.approvals || [])),
       // 24 Sept 2026 — payments never appeared on this calendar at all,
       // unlike mobile's equivalent screen, which does show them.
-      api.get(`/workspaces/${wsId}/payments`).then(({ data }) => setPayments(data.payments?.data || data.payments || [])),
+      // Assistants never see money: the endpoint refuses them (403), which
+      // used to fail the whole calendar.
+      isAssistant(getUser())
+        ? Promise.resolve()
+        : api.get(`/workspaces/${wsId}/payments`).then(({ data }) => setPayments(data.payments?.data || data.payments || [])),
     ]).catch((err) => { reportError('CalendarTab.load', err); setLoadError(true); }).finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, [wsId]);

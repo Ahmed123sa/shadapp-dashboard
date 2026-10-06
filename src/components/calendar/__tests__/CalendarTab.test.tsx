@@ -120,4 +120,18 @@ describe('CalendarTab', () => {
 
     await waitFor(() => expect(screen.getAllByText('Design Phase', { exact: false }).length).toBe(2));
   });
+  it('an assistant never asks for payments and the calendar still loads', async () => {
+    window.localStorage.setItem('user', JSON.stringify({ id: 9, name: 'Sami', role: 'manager_assistant', assistant_permissions: {} }));
+    mock.onGet('/workspaces/9/meetings').reply(200, { meetings: [{ id: 1, title: 'Kickoff', status: 'scheduled', scheduled_at: '2026-12-01T10:00:00.000Z' }] });
+    mock.onGet('/workspaces/9/contracts').reply(200, { contracts: [] });
+    mock.onGet('/workspaces/9/approvals').reply(200, { approvals: [] });
+    // exactly what the backend does for an assistant
+    mock.onGet('/workspaces/9/payments').reply(403, { message: 'غير مصرح' });
+
+    renderWithIntl(<CalendarTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Kickoff')).toBeInTheDocument());
+    expect(mock.history.get.some((r) => r.url === '/workspaces/9/payments')).toBe(false);
+    window.localStorage.removeItem('user');
+  });
 });
