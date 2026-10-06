@@ -95,8 +95,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     amNavGroups[0].items.push({ href: '/dashboard/team', label: t('team_nav'), icon: UsersRound });
   }
 
-  // An assistant has no payments, audit log, settings or team: those groups
-  // (and the Payments entry) are simply not in their sidebar.
+  // An assistant has no payments, audit log, system settings or team: those
+  // are simply not in their sidebar. Settings is only their own profile.
   const assistantNavGroups: NavGroup[] = [
     {
       label: t('nav_group_main'),
@@ -112,6 +112,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { href: '/dashboard?view=contracts', label: t('contracts_nav'), icon: FileText },
         { href: '/dashboard?view=meetings', label: t('meetings_nav'), icon: Calendar },
         ...(canDo(user, 'can_view_files') ? [{ href: '/dashboard?view=files', label: t('files_nav'), icon: Folder }] : []),
+      ],
+    },
+    {
+      label: t('nav_group_system'),
+      items: [
+        { href: '/dashboard/settings', label: t('settings'), icon: Settings },
       ],
     },
   ];

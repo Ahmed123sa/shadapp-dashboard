@@ -15,7 +15,6 @@ const ASSISTANT_BLOCKED = [
   '/dashboard/finance',
   '/dashboard/reports',
   '/dashboard/account-managers',
-  '/dashboard/settings',
   '/dashboard/audit-log',
   '/dashboard/team',
 ];

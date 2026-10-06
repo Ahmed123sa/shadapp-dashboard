@@ -135,6 +135,15 @@ describe('DashboardLayout — manager assistant', () => {
     await waitFor(() => expect(screen.getAllByText('Files').length).toBeGreaterThan(0));
   });
 
+  it('gives an assistant a Settings entry for their own profile, but no audit log or managers', async () => {
+    asAssistant({ can_view_clients: true });
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+
+    await waitFor(() => expect(screen.getAllByText('Settings').length).toBeGreaterThan(0));
+    expect(screen.queryByText('Audit Log')).not.toBeInTheDocument();
+    expect(screen.queryByText('Account Managers')).not.toBeInTheDocument();
+  });
+
   it('gives an account manager the My Team entry', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager' } as any);
     renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
