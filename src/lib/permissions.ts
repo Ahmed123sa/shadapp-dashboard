@@ -37,6 +37,23 @@ export function isAssistant(user?: MaybeAssistant | null): boolean {
   return user?.role === ASSISTANT_ROLE;
 }
 
+// Company staff members (STAFF_TEAMS_PLAN.md): employees of the company
+// assigned to specific clients. Chat, approval requests and read-only
+// meetings only — the backend (restrict.roles) is the real gate.
+export const STAFF_ROLE = 'staff_member';
+
+export function isStaffMember(user?: { role?: string } | null): boolean {
+  return user?.role === STAFF_ROLE;
+}
+
+/**
+ * The old "My Team" (assistants) page is hidden while the feature is switched
+ * off (config team.assistants_enabled, sent to managers at login / on /auth/me).
+ */
+export function canUseAssistantsTeam(user?: { role?: string; team_assistants_enabled?: boolean } | null): boolean {
+  return user?.role === 'account_manager' && !!user.team_assistants_enabled;
+}
+
 /**
  * Whether the user may perform the action behind `key`. Anyone who is not an
  * assistant is never limited by assistant permissions (managers and super
@@ -44,6 +61,10 @@ export function isAssistant(user?: MaybeAssistant | null): boolean {
  * can_view_clients which is always on.
  */
 export function canDo(user: MaybeAssistant | null | undefined, key: AssistantPermissionKey): boolean {
+  // Company staff: may see their clients and chat; nothing that manages
+  // contracts, meetings, files or approvals on the manager's side. (Sending an
+  // approval *request* is allowed for them — ApprovalsTab checks isStaffMember.)
+  if (isStaffMember(user)) return key === 'can_view_clients' || key === 'can_chat';
   if (!isAssistant(user)) return true;
   if (key === 'can_view_clients') return true;
   return !!user?.assistant_permissions?.[key];
@@ -62,7 +83,7 @@ export async function refreshAssistantUser(): Promise<void> {
     const stored = raw ? JSON.parse(raw) : null;
     // Assistants (permissions) and account managers (can_approve_contracts)
     // both carry flags the super admin can change after they logged in.
-    if (!isAssistant(stored) && stored?.role !== 'account_manager') return;
+    if (!isAssistant(stored) && !isStaffMember(stored) && stored?.role !== 'account_manager') return;
     const { data } = await api.get('/auth/me');
     if (data?.user) {
       window.localStorage.setItem('user', JSON.stringify({ ...stored, ...data.user }));

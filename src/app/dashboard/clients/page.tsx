@@ -5,6 +5,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useEffect, useState, useId } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getUser } from '@/lib/auth';
+import { isStaffMember } from '@/lib/permissions';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -166,6 +167,8 @@ export default function ClientsPage() {
   if (clientsQuery.isError) return <ErrorState onRetry={() => clientsQuery.refetch()} />;
 
   const isSA = getUser()?.role === 'super_admin';
+  // Company staff only read their assigned clients: no create / archive / settings.
+  const isStaff = isStaffMember(getUser());
 
   const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) => {
     setForm(f => ({ ...f, [k]: v }));
@@ -182,11 +185,11 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">{t('clients')}</h2>
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          {!isStaff && <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             {t('client_show_archived')}
-          </label>
-          {!isSA && <button onClick={() => setShowCreate(true)} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)]">
+          </label>}
+          {!isSA && !isStaff && <button onClick={() => setShowCreate(true)} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)]">
             + {t('new_client')}
           </button>}
         </div>
@@ -359,8 +362,8 @@ export default function ClientsPage() {
                 <td className="p-4 text-center">{client.workspace ? (client.workspace.status === 'active' ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-green-400" /> {t('active')}</> : <><Clock size={14} strokeWidth={1.5} className="inline text-zinc-400" /> {t('inactive')}</>) : '—'}</td>
                 <td className="p-4 text-end whitespace-nowrap">
                   <div className="flex items-center justify-end gap-2">
-                    {!isSA && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
-                    {client.status === 'archived' ? (
+                    {!isSA && !isStaff && <Link href={`/dashboard/clients/${client.id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+                    {isStaff ? null : client.status === 'archived' ? (
                       <button
                         onClick={() => unarchiveClient(client)}
                         disabled={archiveBusyId === client.id}

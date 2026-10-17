@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getUser } from '@/lib/auth';
-import { canDo } from '@/lib/permissions';
+import { canDo, isStaffMember } from '@/lib/permissions';
 import { subscribeToWorkspace } from '@/lib/echo';
 import ChatContractCard from '@/components/chat/ChatContractCard';
 import ContractBuilder from '@/components/chat/ContractBuilder';
@@ -30,7 +30,8 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const locale = useLocale();
   const queryClient = useQueryClient();
   const chatQuery = useWorkspaceChat(wsId);
-  const contractsQuery = useWorkspaceContracts(wsId);
+  // Company staff may not read contracts (backend 403s) — skip the query.
+  const contractsQuery = useWorkspaceContracts(wsId, !isStaffMember(getUser()));
   const meetingsQuery = useWorkspaceMeetings(wsId);
   const currentUserId = getUser()?.id;
   const hostOf = (meetingId?: number) =>
@@ -130,7 +131,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
-  const canChat = wsActive !== false && !isSA && canDo(user, 'can_chat');
+  const canChat = wsActive !== false && !isSA && canDo(user, 'can_chat');
 
   if (!canChat) {
     return (

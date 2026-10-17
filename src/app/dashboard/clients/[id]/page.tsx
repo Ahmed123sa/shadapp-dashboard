@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
-import { canDo, isAssistant } from '@/lib/permissions';
+import { canDo, isAssistant, isStaffMember } from '@/lib/permissions';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import PaymentsTab from '@/components/payments/PaymentsTab';
 import ApprovalsTab from '@/components/approvals/ApprovalsTab';
 import MeetingsTab from '@/components/meetings/MeetingsTab';
 import CalendarTab from '@/components/calendar/CalendarTab';
+import ClientStaffTab from '@/components/staff/ClientStaffTab';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
 import { resolveFileUrl, clientHasSignedContract } from '@/lib/utils';
@@ -26,7 +27,7 @@ import api from '@/lib/api';
 import { reportError } from '@/lib/error-reporting';
 import type { Client, User } from '@/types';
 
-const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar'] as const;
+const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar', 'team'] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -38,7 +39,11 @@ const TAB_LABELS: Record<Tab, string> = {
   approvals: 'tab_approvals',
   meetings: 'tab_meetings',
   calendar: 'tab_calendar',
+  team: 'tab_team',
 };
+
+// Company staff work on a client through chat, approval requests and meetings only.
+const STAFF_TABS: Tab[] = ['chat', 'approvals', 'meetings'];
 
 export default function ClientWorkspace() {
   const t = useTranslations('dashboard');
@@ -48,7 +53,14 @@ export default function ClientWorkspace() {
   const [activeTab, setActiveTab] = useState<Tab>('chat');
   // Assistants never see money (payments) and only see files if allowed.
   const me = getUser();
-  const visibleTabs = TABS.filter((k) => !(isAssistant(me) && (k === 'payments' || (k === 'files' && !canDo(me, 'can_view_files')))));
+  // The "Team" tab (assign company staff to this client) is for the super
+  // admin and the client's account manager — not assistants or staff.
+  const canManageTeam = me?.role === 'super_admin' || me?.role === 'account_manager';
+  const visibleTabs = TABS.filter((k) => {
+    if (isStaffMember(me)) return STAFF_TABS.includes(k);
+    if (k === 'team') return canManageTeam;
+    return !(isAssistant(me) && (k === 'payments' || (k === 'files' && !canDo(me, 'can_view_files'))));
+  });
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -108,6 +120,7 @@ export default function ClientWorkspace() {
 
   const isSA = getUser()?.role === 'super_admin';
   const asst = isAssistant(getUser());
+  const staff = isStaffMember(getUser());
   const wsId = client.workspace?.id;
   const isArchived = client.status === 'archived';
 
@@ -180,17 +193,17 @@ export default function ClientWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isSA && !asst && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+            {!isSA && !asst && !staff && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
             {isArchived && <StatusBadge status="archived" />}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             {/* has_signed_contract, not signed_at — see client-signature-plan.md
                 ن1. signed_at only records a saved profile signature, which is
                 a different thing from having approved a contract; a paid,
                 active client used to show as "not signed" here. */}
-            <span className={`px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
+            {!staff && <span className={`px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {clientHasSignedContract(client) ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('contracted')}</> : t('not_contracted')}
-            </span>
-            {!asst && (isArchived ? (
+            </span>}
+            {!asst && !staff && (isArchived ? (
               <button
                 onClick={unarchiveClient}
                 disabled={unarchiveMutation.isPending}
@@ -276,5 +289,6 @@ function TabContent({ tab, wsId, client, onClientRefresh, onNavigate }: { tab: T
     case 'approvals': return <ApprovalsTab wsId={wsId} />;
     case 'meetings': return <MeetingsTab wsId={wsId} />;
     case 'calendar': return <CalendarTab wsId={wsId} />;
+    case 'team': return <ClientStaffTab wsId={wsId} />;
   }
 }

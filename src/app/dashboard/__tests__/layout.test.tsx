@@ -144,9 +144,43 @@ describe('DashboardLayout — manager assistant', () => {
     expect(screen.queryByText('Account Managers')).not.toBeInTheDocument();
   });
 
-  it('gives an account manager the My Team entry', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager' } as any);
+  it('gives an account manager the My Team entry while the assistants feature is on', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager', team_assistants_enabled: true } as any);
     renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
     await waitFor(() => expect(screen.getAllByText('My Team').length).toBeGreaterThan(0));
+  });
+
+  it('hides My Team from an account manager while the assistants feature is off', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager', team_assistants_enabled: false } as any);
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+    await waitFor(() => expect(screen.getAllByText('My Clients').length).toBeGreaterThan(0));
+    expect(screen.queryByText('My Team')).not.toBeInTheDocument();
+  });
+});
+
+describe('DashboardLayout — company staff', () => {
+  beforeEach(() => {
+    mock.onGet('/auth/me').reply(200, { user: {} });
+  });
+
+  it('gives the super admin a Teams entry', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', role: 'super_admin' } as any);
+    mock.onGet('/badge-counts').reply(200, { chat: 0, contracts: 0, approvals: 0, payments: 0, files: 0, notifications: 0 });
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+    const link = await screen.findByRole('link', { name: 'Teams' });
+    expect(link).toHaveAttribute('href', '/dashboard/staff');
+  });
+
+  it('shows a staff member only My Clients and Settings, and never asks for badge counts', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 30, name: 'Nour', role: 'staff_member' } as any);
+    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+
+    await waitFor(() => expect(screen.getAllByText('My Clients').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
+    expect(screen.getByText('Staff member')).toBeInTheDocument();
+    for (const hidden of ['Payments', 'Files', 'Contracts', 'Audit Log', 'Teams', 'My Team', 'Pending Approvals']) {
+      expect(screen.queryByText(hidden)).not.toBeInTheDocument();
+    }
+    expect(mock.history.get.some((r) => r.url === '/badge-counts')).toBe(false);
   });
 });

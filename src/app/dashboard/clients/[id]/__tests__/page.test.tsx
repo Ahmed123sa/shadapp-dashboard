@@ -231,3 +231,58 @@ describe('ClientWorkspace (characterization)', () => {
     });
   });
 });
+
+describe('ClientWorkspace — company staff and the Team tab', () => {
+  it('gives a staff member only Chat, Approvals and Meetings, with no settings, archive or contract badge', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 30, name: 'Nour', email: 'nour@example.com', role: 'staff_member' });
+    mockClient({ has_signed_contract: undefined });
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+    for (const name of ['Chat', 'Approvals', 'Meetings']) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    for (const name of ['Profile', 'Files', 'Contracts', 'Payments', 'Calendar', 'Team']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Not Contracted')).not.toBeInTheDocument();
+    expect(screen.queryByText('Contracted')).not.toBeInTheDocument();
+    // Staff may not read contracts, so the chat must not ask for them.
+    expect(mock.history.get.some((r) => /\/contracts$/.test(r.url ?? ''))).toBe(false);
+  });
+
+  it('shows the Team tab to an account manager and loads the staff list when opened', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockClient();
+    mock.onGet('/workspaces/22/staff').reply(200, { staff: [{ id: 30, name: 'Nour Staff', email: 'nour@example.com', avatar_url: null, assigned: true }] });
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Team' }));
+
+    expect(await screen.findByText('Nour Staff')).toBeInTheDocument();
+  });
+
+  it('shows the Team tab to the super admin too', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockClient();
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    expect(await screen.findByRole('button', { name: 'Team' })).toBeInTheDocument();
+  });
+
+  it('does not show the Team tab to an assistant', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 9, name: 'Sami', email: 's@example.com', role: 'manager_assistant', assistant_permissions: { can_view_clients: true } });
+    mockClient();
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Team' })).not.toBeInTheDocument();
+  });
+});
+

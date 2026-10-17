@@ -41,6 +41,13 @@ const ACTION_LABELS_FN = (t: (key: string) => string): Record<string, string> =>
   'meeting.deleted': t('audit_meeting_deleted'),
   'client.created': t('audit_client_created'),
   'client.deleted': t('audit_client_deleted'),
+  'staff.created': t('audit_staff_created'),
+  'staff.updated': t('audit_staff_updated'),
+  'staff.password_changed': t('audit_staff_password_changed'),
+  'staff.archived': t('audit_staff_archived'),
+  'staff.unarchived': t('audit_staff_unarchived'),
+  'staff.assigned': t('audit_staff_assigned'),
+  'staff.unassigned': t('audit_staff_unassigned'),
   'chat.responded.approved': t('audit_chat_responded_approved'),
   'chat.responded.edit_requested': t('audit_chat_responded_edit_requested'),
 });
@@ -104,6 +111,8 @@ function resolveEntityName(log: AuditLog, t: (key: string) => string): string {
   if (type.includes('Approval')) return `${t('request_hash')}${auditable.id}`;
   if (type.includes('FileEntry')) return auditable.file_name || t('file_label');
   if (type.includes('Workspace')) return `${t('space_hash')}${auditable.id}`;
+  // Staff / team events point at the person they are about.
+  if (type.endsWith('User') && auditable.name) return auditable.name;
   return `#${auditable.id || '?'}`;
 }
 
@@ -338,6 +347,7 @@ export default function AuditLogPage() {
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{actor.name}</span>
                               {log.user?.assistant_of && (<span className="text-[10px] text-[var(--color-text-secondary)]">({t('audit_assistant_of', { name: log.user.assistant_of })})</span>)}
+                              {log.user?.role === 'staff_member' && (<span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400 font-medium">{t('audit_staff_badge')}</span>)}
                               {actor.isClient && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
                                   {locale === 'ar' ? 'عميل' : 'Client'}

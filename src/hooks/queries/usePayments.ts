@@ -58,11 +58,15 @@ export function useWorkspacePayments(wsId: number) {
   });
 }
 
-export function useWorkspaceContracts(wsId: number) {
+// `enabled: false` is for company staff, who may not read contracts at all
+// (the backend answers 403) — the chat tab asks for them only to show the
+// contract cards above the messages.
+export function useWorkspaceContracts(wsId: number, enabled = true) {
   return useQuery({
     queryKey: contractKeys.workspace(wsId),
     queryFn: () => fetchWorkspaceContracts(wsId),
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: enabled ? POLL_INTERVAL_MS : false,
+    enabled,
   });
 }
 

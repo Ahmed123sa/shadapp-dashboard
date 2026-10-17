@@ -22,7 +22,8 @@ async function fetchBadgeCounts(): Promise<BadgeCounts> {
   return data;
 }
 
-export function useBadgeCounts() {
+// `enabled: false` for company staff (the endpoint is closed to them).
+export function useBadgeCounts(enabled = true) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function useBadgeCounts() {
   return useQuery({
     queryKey: badgeCountsKeys.all,
     queryFn: fetchBadgeCounts,
-    refetchInterval: 60000,
+    refetchInterval: enabled ? 60000 : false,
+    enabled,
   });
 }

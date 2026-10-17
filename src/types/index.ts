@@ -268,10 +268,12 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager' | 'manager_assistant';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member';
   // Only for assistants (see lib/permissions.ts).
   assistant_permissions?: Record<string, boolean> | null;
   can_approve_contracts?: boolean;
+  // Managers only: whether the old "My Team" (assistants) feature is on.
+  team_assistants_enabled?: boolean;
   parent_manager_id?: number | null;
   // Set on audit-log actors that are assistants: their manager's name.
   assistant_of?: string | null;

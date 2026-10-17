@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 import api from '@/lib/api';
-import { canDo, isAssistant, refreshAssistantUser, ASSISTANT_PERMISSION_KEYS } from '../permissions';
+import { canDo, canUseAssistantsTeam, isAssistant, isStaffMember, refreshAssistantUser, ASSISTANT_PERMISSION_KEYS } from '../permissions';
 
 const assistant = (perms: Record<string, boolean> = {}) => ({ role: 'manager_assistant', assistant_permissions: perms });
 
@@ -28,6 +28,30 @@ describe('permissions helpers', () => {
     expect(canDo(a, 'can_manage_contracts')).toBe(false);
     expect(canDo(a, 'can_manage_meetings')).toBe(false);
     expect(canDo(assistant(), 'can_edit_clients')).toBe(false);
+  });
+});
+
+describe('company staff helpers', () => {
+  it('isStaffMember is true only for the staff_member role', () => {
+    expect(isStaffMember({ role: 'staff_member' })).toBe(true);
+    expect(isStaffMember({ role: 'account_manager' })).toBe(false);
+    expect(isStaffMember({ role: 'manager_assistant' })).toBe(false);
+    expect(isStaffMember(null)).toBe(false);
+  });
+
+  it('a staff member may only view clients and chat', () => {
+    const staff = { role: 'staff_member' };
+    for (const key of ASSISTANT_PERMISSION_KEYS) {
+      expect(canDo(staff, key)).toBe(key === 'can_view_clients' || key === 'can_chat');
+    }
+  });
+
+  it('shows the assistants team only to a manager with the feature switched on', () => {
+    expect(canUseAssistantsTeam({ role: 'account_manager', team_assistants_enabled: true })).toBe(true);
+    expect(canUseAssistantsTeam({ role: 'account_manager', team_assistants_enabled: false })).toBe(false);
+    expect(canUseAssistantsTeam({ role: 'account_manager' })).toBe(false);
+    expect(canUseAssistantsTeam({ role: 'super_admin', team_assistants_enabled: true })).toBe(false);
+    expect(canUseAssistantsTeam(null)).toBe(false);
   });
 });
 

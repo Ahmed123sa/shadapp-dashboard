@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getUser } from '@/lib/auth';
-import { canDo } from '@/lib/permissions';
+import { canDo, isStaffMember } from '@/lib/permissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
@@ -11,7 +11,9 @@ import { useWorkspaceApprovals, useSendApproval } from '@/hooks/queries/useAppro
 
 export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';
-  const canWrite = !isSA && canDo(getUser(), 'can_manage_approvals');
+  // Company staff may send approval requests (to the client) even though they
+  // hold no manager-side approval permissions.
+  const canWrite = !isSA && (canDo(getUser(), 'can_manage_approvals') || isStaffMember(getUser()));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);

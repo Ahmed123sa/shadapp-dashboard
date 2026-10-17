@@ -4,7 +4,11 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager' | 'manager_assistant';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member';
+  // Managers only: whether the old "My Team" (assistants) feature is on.
+  team_assistants_enabled?: boolean;
+  // Managers only: the super admin let them company-approve contracts.
+  can_approve_contracts?: boolean;
   // Only for assistants (see lib/permissions.ts).
   assistant_permissions?: Record<string, boolean> | null;
   parent_manager_id?: number | null;

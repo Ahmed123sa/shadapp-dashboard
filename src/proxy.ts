@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE } from '@/lib/session';
 import { assertProductionEnv } from '@/lib/env-guard';
+import { staffMayOpen } from '@/lib/staff-paths';
 
 // Runs once, when this module is first loaded — which Next.js does before
 // serving any request. Throwing here means a misconfigured production
@@ -116,6 +117,18 @@ export async function proxy(request: NextRequest) {
     }
     if (pathname.startsWith('/dashboard/team') && role !== 'account_manager') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // The super admin's "Teams" page (company staff members).
+    if (pathname.startsWith('/dashboard/staff') && role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Company staff members (STAFF_TEAMS_PLAN.md): their world is "my clients"
+    // and their own settings — nothing else. The backend denies every other
+    // route by default; this just keeps those pages from being served.
+    if (role === 'staff_member' && !staffMayOpen(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard/clients', request.url));
     }
   }
 

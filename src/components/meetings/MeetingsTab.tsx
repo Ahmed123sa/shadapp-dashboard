@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
-import { canDo } from '@/lib/permissions';
+import { canDo, isStaffMember } from '@/lib/permissions';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
 import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -21,7 +21,9 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
   const tc = useTranslations('common');
 
   const meetingsQuery = useWorkspaceMeetings(wsId);
-  const contractsQuery = useWorkspaceContracts(wsId);
+  // Contracts only feed the "new meeting" form's picker; company staff can
+  // neither create meetings nor read contracts (backend 403s), so skip it.
+  const contractsQuery = useWorkspaceContracts(wsId, !isStaffMember(getUser()));
   const createMutation = useCreateMeeting(wsId);
   const completeMutation = useCompleteMeeting(wsId);
   const cancelMutation = useCancelMeeting(wsId);

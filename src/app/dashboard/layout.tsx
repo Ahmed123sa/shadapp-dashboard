@@ -14,7 +14,7 @@ import {
   Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
-import { canDo, isAssistant, refreshAssistantUser } from '@/lib/permissions';
+import { canDo, canUseAssistantsTeam, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
 
 interface NavItem {
   href: string;
@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const user = getUser();
   const isSA = user?.role === 'super_admin';
   const isAsst = isAssistant(user);
-  const isManager = user?.role === 'account_manager';
+  const isStaff = isStaffMember(user);
 
   const currentView = searchParams.get('view') || '';
 
@@ -57,7 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // dedicated "Pending Approvals" entry (?view=approvals) instead, so it now
   // sits there and Home carries no badge — same mapping the mobile app's
   // bottom nav uses (chat → Home tab, approvals → Approvals tab).
-  const { data: badgeCounts } = useBadgeCounts();
+  // Company staff may not call /badge-counts (backend gate), so no query for them.
+  const { data: badgeCounts } = useBadgeCounts(!isStaff);
 
   const amNavGroups: NavGroup[] = [
     {
@@ -90,8 +91,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ],
     },
   ];
-  // An account manager also gets "My Team" (their assistants).
-  if (isManager) {
+  // An account manager also gets "My Team" (their assistants) — only while the
+  // assistants feature is switched on (team_assistants_enabled).
+  if (canUseAssistantsTeam(user)) {
     amNavGroups[0].items.push({ href: '/dashboard/team', label: t('team_nav'), icon: UsersRound });
   }
 
@@ -122,6 +124,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
+  // A company staff member: their assigned clients and their own settings.
+  const staffNavGroups: NavGroup[] = [
+    {
+      label: t('nav_group_main'),
+      items: [
+        { href: '/dashboard/clients', label: t('my_clients'), icon: Users },
+        { href: '/dashboard/settings', label: t('settings'), icon: Settings },
+      ],
+    },
+  ];
+
   const saNavGroups: NavGroup[] = [
     {
       label: t('nav_group_admin'),
@@ -138,6 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       label: t('nav_group_team'),
       items: [
         { href: '/dashboard/account-managers', label: t('account_managers'), icon: UserCog },
+        { href: '/dashboard/staff', label: t('staff_nav'), icon: UsersRound },
       ],
     },
     {
@@ -148,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
-  const navGroups = isSA ? saNavGroups : isAsst ? assistantNavGroups : amNavGroups;
+  const navGroups = isSA ? saNavGroups : isStaff ? staffNavGroups : isAsst ? assistantNavGroups : amNavGroups;
 
   useEffect(() => {
     setMounted(true);
@@ -205,6 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/audit-log')) return t('audit_log');
     if (pathname.startsWith('/dashboard/settings')) return t('settings');
     if (pathname.startsWith('/dashboard/team')) return t('team_nav');
+    if (pathname.startsWith('/dashboard/staff')) return t('staff_nav');
     return t('title');
   };
 
@@ -257,7 +272,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div>
             <div className="text-xs font-bold">{user?.name}</div>
             <span className="inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] uppercase whitespace-nowrap rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
-              {isSA ? t('role_admin') : isAsst ? t('role_assistant') : t('role_am')}
+              {isSA ? t('role_admin') : isStaff ? t('role_staff') : isAsst ? t('role_assistant') : t('role_am')}
             </span>
           </div>
         </div>
