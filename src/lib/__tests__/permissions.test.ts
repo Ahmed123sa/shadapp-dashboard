@@ -45,8 +45,8 @@ describe('refreshAssistantUser', () => {
     expect(JSON.parse(window.localStorage.getItem('user')!).assistant_permissions.can_chat).toBe(true);
   });
 
-  it('does not call the API for a non-assistant', async () => {
-    window.localStorage.setItem('user', JSON.stringify({ id: 1, role: 'account_manager' }));
+  it('does not call the API for a super admin', async () => {
+    window.localStorage.setItem('user', JSON.stringify({ id: 1, role: 'super_admin' }));
     await refreshAssistantUser();
     expect(mock.history.get.length).toBe(0);
   });
@@ -59,5 +59,13 @@ describe('refreshAssistantUser', () => {
     await refreshAssistantUser();
 
     expect(JSON.parse(window.localStorage.getItem('user')!)).toEqual(stored);
+  });
+  it('refreshes an account manager so a newly granted contract approval shows up', async () => {
+    window.localStorage.setItem('user', JSON.stringify({ id: 2, role: 'account_manager', can_approve_contracts: false }));
+    mock.onGet('/auth/me').reply(200, { user: { id: 2, role: 'account_manager', can_approve_contracts: true } });
+
+    await refreshAssistantUser();
+
+    expect(JSON.parse(window.localStorage.getItem('user')!).can_approve_contracts).toBe(true);
   });
 });

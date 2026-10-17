@@ -19,6 +19,7 @@ export default function AccountManagersPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [canApprove, setCanApprove] = useState(false);
   const [password, setPassword] = useState('');
   const [autoPassword, setAutoPassword] = useState(true);
   const [sendEmail, setSendEmail] = useState(true);
@@ -60,6 +61,7 @@ export default function AccountManagersPage() {
     setDateOfBirth('');
     setPassword('');
     setAutoPassword(true);
+    setCanApprove(false);
     setSendEmail(true);
   };
 
@@ -93,8 +95,8 @@ export default function AccountManagersPage() {
     setError('');
     setSaving(true);
     try {
-      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string } =
-        { name, email, phone, date_of_birth: dateOfBirth || null };
+      const payload: { name: string; email: string; phone: string; date_of_birth: string | null; password?: string; can_approve_contracts: boolean } =
+        { name, email, phone, date_of_birth: dateOfBirth || null, can_approve_contracts: canApprove };
       if (password) payload.password = password;
       await api.put(`/account-managers/${editId}`, payload);
       load();
@@ -113,6 +115,7 @@ export default function AccountManagersPage() {
     setEmail(m.email);
     setPhone(m.phone || '');
     setDateOfBirth(m.date_of_birth ? String(m.date_of_birth).substring(0, 10) : '');
+    setCanApprove(!!m.can_approve_contracts);
     setPassword('');
     setAutoPassword(true);
   };
@@ -198,6 +201,12 @@ export default function AccountManagersPage() {
               <input id="am-dob" type="date" className="w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
             </div>
           </div>
+          {editId && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={canApprove} onChange={(e) => setCanApprove(e.target.checked)} />
+              {t('manager_can_approve_contracts')}
+            </label>
+          )}
           {!editId && (
             <div className="space-y-2">
               <label className="text-xs text-[var(--color-text-secondary)] block">{t('manager_password')}</label>
@@ -249,7 +258,12 @@ export default function AccountManagersPage() {
               const isActive = m.is_active !== false;
               return (
                 <tr key={m.id} className="border-b border-[var(--color-card-border)]">
-                  <td className="p-4 text-center">{m.name}</td>
+                  <td className="p-4 text-center">
+                    {m.name}
+                    {m.can_approve_contracts && (
+                      <span className="ms-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">{t('manager_can_approve_badge')}</span>
+                    )}
+                  </td>
                   <td className="p-4 text-center">{m.email}</td>
                   <td className="p-4 text-center">{m.phone || '—'}</td>
                   <td className="p-4 text-center">{m.managed_clients_count || 0}</td>

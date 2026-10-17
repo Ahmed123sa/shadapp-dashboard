@@ -132,6 +132,38 @@ describe('ContractsTab (characterization)', () => {
     });
   });
 
+  it('lets an account manager with the permission approve with the company signature, after a confirm', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager', can_approve_contracts: true } as any);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockLoad({ contracts: [{ ...draftContract, status: 'client_approved' }] });
+    mock.onPost('/contracts/601/company-approve').reply(200, { contract: { ...draftContract, status: 'company_approved' } });
+
+    const user = userEvent.setup();
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Company Approval')).toBeInTheDocument());
+    await user.click(screen.getByText('Company Approval'));
+
+    await waitFor(() => {
+      const call = mock.history.post.find((r) => r.url === '/contracts/601/company-approve');
+      expect(call).toBeTruthy();
+      // no signature of their own: the backend signs with the company one
+      expect(JSON.parse(call!.data)).toEqual({ use_saved_signature: true });
+    });
+    // no signature modal for a manager
+    expect(screen.queryByText('Company Contract Approval')).not.toBeInTheDocument();
+  });
+
+  it('shows no approve button to an account manager without the permission', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
+    mockLoad({ contracts: [{ ...draftContract, status: 'client_approved' }] });
+
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Retainer Agreement')).toBeInTheDocument());
+    expect(screen.queryByText('Company Approval')).not.toBeInTheDocument();
+  });
+
   it('displays client edit reason and lets a manager edit an edit_requested contract', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     const editRequestedContract = {

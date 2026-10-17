@@ -271,6 +271,7 @@ export interface User {
   role: 'super_admin' | 'account_manager' | 'manager_assistant';
   // Only for assistants (see lib/permissions.ts).
   assistant_permissions?: Record<string, boolean> | null;
+  can_approve_contracts?: boolean;
   parent_manager_id?: number | null;
   // Set on audit-log actors that are assistants: their manager's name.
   assistant_of?: string | null;

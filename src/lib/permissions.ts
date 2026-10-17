@@ -60,7 +60,9 @@ export async function refreshAssistantUser(): Promise<void> {
   try {
     const raw = window.localStorage.getItem('user');
     const stored = raw ? JSON.parse(raw) : null;
-    if (!isAssistant(stored)) return;
+    // Assistants (permissions) and account managers (can_approve_contracts)
+    // both carry flags the super admin can change after they logged in.
+    if (!isAssistant(stored) && stored?.role !== 'account_manager') return;
     const { data } = await api.get('/auth/me');
     if (data?.user) {
       window.localStorage.setItem('user', JSON.stringify({ ...stored, ...data.user }));

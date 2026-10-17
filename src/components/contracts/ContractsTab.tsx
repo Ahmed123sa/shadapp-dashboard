@@ -74,6 +74,9 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
 
   const user = getUser();
   const isSA = user?.role === 'super_admin';
+  // An account manager the super admin allowed approves with the company
+  // signature (the backend picks it), so no signature step for them.
+  const amCanApprove = user?.role === 'account_manager' && !!user?.can_approve_contracts;
   // Not SA, and an assistant needs can_manage_contracts to write.
   const canManage = !isSA && canDo(user, 'can_manage_contracts');
 
@@ -350,6 +353,19 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
                 {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('view_signed_contract')}</a>}
                 {isSA && (
                   <button onClick={() => openApproveSig(c.id)} className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700">{t('company_approve')}</button>
+                )}
+                {amCanApprove && (
+                  <button
+                    onClick={() => {
+                      if (!confirm(t('am_company_approve_confirm'))) return;
+                      companyApproveMutation.mutate({ id: c.id, payload: { use_saved_signature: true } }, {
+                        onError: (err) => notifyWriteError(tc, 'ContractsTab.amCompanyApprove', err),
+                      });
+                    }}
+                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700"
+                  >
+                    {t('company_approve')}
+                  </button>
                 )}
               </>
             )}
