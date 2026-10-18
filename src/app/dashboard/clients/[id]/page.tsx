@@ -168,11 +168,11 @@ export default function ClientWorkspace() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="lx-ws space-y-6">
       {archiveError && (
         <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg">{archiveError}</div>
       )}
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
+      <div className="lx-dossier bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-[var(--color-input-fill)] overflow-hidden border-2 border-[var(--color-card-border)] flex-shrink-0">
@@ -186,28 +186,28 @@ export default function ClientWorkspace() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold">{client.company_name}</h2>
+                <h2 className="lx-cname text-xl font-bold">{client.company_name}</h2>
                 <ClientTypeBadge clientType={client.client_type} />
               </div>
-              <p className="text-sm text-[var(--color-text-secondary)]">{client.contact_person} • {client.email}{client.country ? ` • ${client.country}` : ''}{client.industry ? ` • ${client.industry}` : ''}</p>
+              <p className="lx-meta text-sm text-[var(--color-text-secondary)]">{client.contact_person} • {client.email}{client.country ? ` • ${client.country}` : ''}{client.industry ? ` • ${client.industry}` : ''}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isSA && !asst && !staff && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /></Link>}
+            {!isSA && !asst && !staff && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="lx-btn inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /><span className="lx-only">{t('settings_title')}</span></Link>}
             {isArchived && <StatusBadge status="archived" />}
             <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
             {/* has_signed_contract, not signed_at — see client-signature-plan.md
                 ن1. signed_at only records a saved profile signature, which is
                 a different thing from having approved a contract; a paid,
                 active client used to show as "not signed" here. */}
-            {!staff && <span className={`px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
+            {!staff && <span data-tone={clientHasSignedContract(client) ? 'ok' : 'off'} className={`lx-status px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
               {clientHasSignedContract(client) ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('contracted')}</> : t('not_contracted')}
             </span>}
             {!asst && !staff && (isArchived ? (
               <button
                 onClick={unarchiveClient}
                 disabled={unarchiveMutation.isPending}
-                className="text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
+                className="lx-btn text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
               >
                 {t('client_unarchive')}
               </button>
@@ -215,7 +215,7 @@ export default function ClientWorkspace() {
               <button
                 onClick={archiveClient}
                 disabled={archiveMutation.isPending}
-                className="text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
+                className="lx-btn lx-btn-danger text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
               >
                 {t('client_archive')}
               </button>
@@ -223,7 +223,7 @@ export default function ClientWorkspace() {
             {isSA && (
               <button
                 onClick={openTransfer}
-                className="text-xs text-[var(--color-gold-text)] hover:underline border border-[var(--color-card-border)] rounded px-2 py-1"
+                className="lx-btn lx-btn-gold text-xs text-[var(--color-gold-text)] hover:underline border border-[var(--color-card-border)] rounded px-2 py-1"
               >
                 {t('client_transfer')}
               </button>
@@ -260,16 +260,16 @@ export default function ClientWorkspace() {
         )}
       </div>
 
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
-        <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
+      <div className="lx-wsbox bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
+        <div className="lx-tabs flex border-b border-[var(--color-card-border)] overflow-x-auto">
           {visibleTabs.map((tab) => (
             <button key={tab} ref={(el) => { tabRefs.current[tab] = el; }} onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
+              className={`lx-tab ${activeTab === tab ? 'lx-tab-on' : ''} px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
               {t(TAB_LABELS[tab])}
             </button>
           ))}
         </div>
-        <div className="p-5">
+        <div className="lx-panel p-5">
           {wsId ? <TabContent tab={activeTab} wsId={wsId} client={client} onClientRefresh={() => clientQuery.refetch()} onNavigate={(tab) => setActiveTab(tab)} /> :
             <NoWorkspace client={client} />}
         </div>

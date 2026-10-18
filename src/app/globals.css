@@ -527,3 +527,139 @@ html[data-ui="luxe"] .lx-wbadge {
   font-weight: 400;
   letter-spacing: 0.04em;
 }
+
+/* ---------- الـworkspace: الهيدر + التابات ---------- */
+/* lx-only = يظهر في Luxe بس. lx-classic-only = يظهر في القديم بس. */
+.lx-only { display: none; }
+html[data-ui="luxe"] .lx-only { display: inline-flex; }
+html[data-ui="luxe"] .lx-classic-only { display: none; }
+
+html[data-ui="luxe"] .lx-dossier {
+  background: transparent;
+  background-image: none;
+  border: 0 !important;
+  border-radius: 0;
+  padding: 20px 0 18px;
+}
+html[data-ui="luxe"] .lx-cname {
+  font-family: var(--font-display), serif;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+html[lang="ar"][data-ui="luxe"] .lx-cname { font-family: var(--font-tajawal), sans-serif; font-style: normal; font-size: 30px; }
+html[data-ui="luxe"] .lx-meta { font-size: 12.5px; margin-top: 8px; color: var(--color-text-secondary); }
+
+/* أزرار الأكشنز = pills 34px */
+html[data-ui="luxe"] .lx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  width: auto;
+  padding: 0 15px;
+  border: 1px solid var(--lx-line-2);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--lx-ink-2);
+  background: transparent;
+  text-decoration: none;
+}
+html[data-ui="luxe"] .lx-btn:hover { color: var(--color-foreground); border-color: rgba(240, 240, 240, 0.28); background: transparent; }
+html[data-ui="luxe"] .lx-btn svg { width: 14px; height: 14px; }
+html[data-ui="luxe"] .lx-btn-danger { color: #DD8888; border-color: var(--lx-line-2); }
+html[data-ui="luxe"] .lx-btn-gold { color: var(--lx-tuscan); border-color: rgba(168, 152, 106, 0.45); }
+html[data-ui="luxe"] .lx-status svg { display: none; }
+
+/* التابات: نص + نقطة حمرا تحت الـactive */
+html[data-ui="luxe"] .lx-wsbox {
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+html[data-ui="luxe"] .lx-tabs {
+  gap: 30px;
+  border-bottom: 1px solid var(--lx-line);
+  scrollbar-width: none;
+  overflow-y: hidden;
+}
+html[data-ui="luxe"] .lx-tabs::-webkit-scrollbar { display: none; }
+html[data-ui="luxe"] .lx-tab {
+  position: relative;
+  padding: 14px 0 22px;
+  font-size: 13.5px;
+  font-weight: 400;
+  border-bottom: 0 !important;
+  color: var(--color-text-secondary);
+}
+html[data-ui="luxe"] .lx-tab:hover { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-tab-on { color: var(--color-foreground) !important; }
+html[data-ui="luxe"] .lx-tab-on::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 50%;
+  bottom: 4px; /* جوه الـscroller عشان overflow ما يقصّهاش */
+  width: 6px;
+  height: 6px;
+  margin-inline-start: -3px;
+  border-radius: 50%;
+  background: #D24A4A;
+}
+html[data-ui="luxe"] .lx-panel { padding: 24px 0 0; }
+
+/* ---------- الشات ---------- */
+html[data-ui="luxe"] .lx-chat { display: flex; flex-direction: column; gap: 0; }
+html[data-ui="luxe"] .lx-chat > * + * { margin-top: 0; }
+html[data-ui="luxe"] .lx-stream {
+  height: calc(100vh - 26rem);
+  min-height: 18rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 28px 0 18px;
+}
+html[data-ui="luxe"] .lx-stream > * + * { margin-top: 22px; }
+html[data-ui="luxe"] .lx-msg { max-width: 72%; gap: 14px; }
+html[data-ui="luxe"] .lx-bubble {
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--color-foreground);
+  border: 1px solid var(--lx-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+html[data-ui="luxe"] .lx-bubble[data-mine="true"] {
+  background: linear-gradient(180deg, rgba(148, 20, 20, 0.22), rgba(148, 20, 20, 0.12));
+  border-color: rgba(148, 20, 20, 0.35);
+  color: var(--color-foreground);
+}
+html[data-ui="luxe"] .lx-who { font-size: 11px; color: var(--color-text-disabled); margin-bottom: 6px; }
+html[data-ui="luxe"] .lx-composer {
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 0 26px;
+  border-top: 1px solid var(--lx-line);
+}
+html[data-ui="luxe"] .lx-field {
+  border: 1px solid var(--lx-line-2);
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 14px;
+}
+html[data-ui="luxe"] .lx-field::placeholder { color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-field:focus { outline: 0; border-color: rgba(240, 240, 240, 0.3); }
+html[data-ui="luxe"] .lx-send {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+}
+html[data-ui="luxe"] .lx-attach { color: var(--color-text-secondary); display: inline-flex; align-items: center; }
+html[data-ui="luxe"] .lx-attach:hover { color: var(--color-foreground); }

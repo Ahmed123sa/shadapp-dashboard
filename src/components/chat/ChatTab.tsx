@@ -11,7 +11,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { Check, CheckCheck, Reply } from 'lucide-react';
+import { Check, CheckCheck, Paperclip, Reply } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
@@ -141,7 +141,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             third of the height and the rest sat empty. The box now grows with
             the viewport (never smaller than before), and the notice is a slim
             bar below it, where the composer would otherwise be. */}
-        <div className={`${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
+        <div className={`lx-stream ${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
           {contracts.length > 0 && contracts.map((c) => (
             <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={() => {}} />
           ))}
@@ -168,7 +168,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             const initial = ((m.sender?.name?.[0]) || '?').toUpperCase();
             return (
             <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-xs flex gap-2 items-start">
+              <div className="lx-msg max-w-xs flex gap-2 items-start">
                 {!isClientTeam && (
                   <div className="w-6 h-6 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
                     {m.sender?.avatar_url ? (
@@ -179,8 +179,8 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                   </div>
                 )}
                 <div>
-                  <div className={`px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
+                  <div data-mine={isClientTeam} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
+                    <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
                     {m.reply_to && (
                       <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                         <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -233,7 +233,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="lx-chat space-y-4">
       {!showBuilder ? (
         <button onClick={() => setShowBuilder(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
           {t('chat_send_extra_contract')}
@@ -242,7 +242,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         <ContractBuilder wsId={wsId} onCreated={onContractCreated} onCancel={() => setShowBuilder(false)} />
       )}
 
-      <div ref={chatRef} className={`${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
+      <div ref={chatRef} className={`lx-stream ${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
         {contracts.length > 0 && contracts.map((c) => (
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />
         ))}
@@ -274,7 +274,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
           <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
-            <div className="max-w-xs flex gap-2 items-start">
+            <div className="lx-msg max-w-xs flex gap-2 items-start">
               {!isClientTeam && (
                 <div className="w-7 h-7 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
                   {m.sender?.avatar_url ? (
@@ -285,8 +285,8 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 </div>
               )}
               <div>
-                <div className={`px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{senderLabel}</p>
+                <div data-mine={isClient} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
+                  <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{senderLabel}</p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                       <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -364,13 +364,13 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="lx-composer flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}>📎</button>
+        <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={18} strokeWidth={1.5} /></button>
         {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24">{uploadFile.name}</span>}
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
-          className="flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
-        <button onClick={send} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('chat_send_button')}</button>
+          className="lx-field flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
+        <button onClick={send} className="lx-send bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('chat_send_button')}</button>
       </div>
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
 
