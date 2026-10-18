@@ -374,25 +374,41 @@ html[data-ui="luxe"] .lx-logout { order: 3; }
 html[data-ui="luxe"] .lx-top {
   background: transparent;
   border-color: var(--lx-line);
-  padding: 22px 48px 18px;
+  padding: 18px 48px;
   gap: 18px;
-  align-items: flex-end;
+  align-items: center;
 }
-html[data-ui="luxe"] .lx-top-title { flex-direction: column-reverse; align-items: flex-start; gap: 10px; }
+html[data-ui="luxe"] .lx-top-title { flex-direction: row; align-items: baseline; gap: 10px; }
 html[data-ui="luxe"] .lx-top-title h2 {
-  font-size: 44px;
-  line-height: 1.05;
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-style: normal;
+  font-size: 12.5px;
   font-weight: 500;
-  letter-spacing: -0.01em;
-  font-style: italic;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--lx-ink-2);
 }
-html[lang="ar"][data-ui="luxe"] .lx-top-title h2 { font-style: normal; font-family: var(--font-tajawal), sans-serif; font-size: 36px; }
-html[data-ui="luxe"] .lx-top-title span {
+html[lang="ar"][data-ui="luxe"] .lx-top-title h2 { font-family: var(--font-tajawal), sans-serif; font-size: 12.5px; }
+html[data-ui="luxe"] .lx-top-title span { display: none; }
+/* عنوان الصفحة الكبير جوه الصفحة */
+html[data-ui="luxe"] .lx-ph { margin-bottom: 30px; }
+html[data-ui="luxe"] .lx-ph-eyebrow {
   font-size: 10.5px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--color-text-disabled);
+  margin-bottom: 10px;
 }
+html[data-ui="luxe"] .lx-ph-title {
+  font-family: var(--font-display), serif;
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-style: italic;
+  margin: 0;
+}
+html[lang="ar"][data-ui="luxe"] .lx-ph-title { font-family: var(--font-tajawal), sans-serif; font-style: normal; font-size: 36px; }
 html[data-ui="luxe"] .lx-top-actions { gap: 10px; }
 html[data-ui="luxe"] .lx-search {
   width: 280px;
@@ -787,19 +803,6 @@ html[data-ui="luxe"] button.hover\:underline:hover { text-decoration-color: #D24
 /* ارتفاع الشاشة كلها: الهيدر الصغير + التابات + الشات يملّوا الباقي */
 html[data-ui="luxe"] body:has(.lx-ws) .lx-shell { height: 100vh; min-height: 0; overflow: hidden; }
 html[data-ui="luxe"] body:has(.lx-ws) .lx-main { height: 100vh; min-height: 0; }
-html[data-ui="luxe"] body:has(.lx-ws) .lx-top { padding: 18px 44px; align-items: center; }
-html[data-ui="luxe"] body:has(.lx-ws) .lx-top-title { flex-direction: row; align-items: baseline; }
-html[data-ui="luxe"] body:has(.lx-ws) .lx-top-title h2 {
-  font-family: var(--font-archivo), system-ui, sans-serif;
-  font-style: normal;
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 1.5;
-  color: var(--lx-ink-2);
-}
-html[lang="ar"][data-ui="luxe"] body:has(.lx-ws) .lx-top-title h2 { font-family: var(--font-tajawal), sans-serif; font-size: 12.5px; }
-html[data-ui="luxe"] body:has(.lx-ws) .lx-top-title span { display: none; }
 html[data-ui="luxe"] body:has(.lx-ws) .lx-page {
   display: flex;
   flex-direction: column;
@@ -957,3 +960,25 @@ html[data-ui="luxe"] .lx-who[data-tag]::after {
   border-radius: 999px;
   padding: 1px 7px;
 }
+
+/* ---------- تفاصيل الشات والموافقات (مراجعة بالصور) ---------- */
+html[data-ui="luxe"] .lx-msg > .rounded-full { display: none; }
+html[data-ui="luxe"] .lx-who { font-size: 11px; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-who::first-line { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-bubble { font-size: 14px; }
+html[data-ui="luxe"] .lx-bubble .border-t { border-top: 0; margin-top: 4px; padding-top: 0; }
+html[data-ui="luxe"] .lx-bubble .border-t span { font-size: 10.5px; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-meet p { color: var(--color-text-secondary) !important; }
+html[data-ui="luxe"] .lx-meet .lx-card-t { color: var(--color-foreground) !important; }
+html[data-ui="luxe"] .lx-meet [class*="bg-gray"],
+html[data-ui="luxe"] .lx-meet [class*="1a5276"] { background: transparent !important; color: var(--lx-ink-2) !important; border: 0 !important; }
+
+/* موافقات: أحمر = مطلوب منك، أصفر = مستني العميل (ق٦) */
+html[data-ui="luxe"] .lx-bar[class*="--color-gold"] { background: #D24A4A; }
+html[data-ui="luxe"] .lx-bar[class*="--color-blue"] { background: var(--lx-wait); }
+html[data-ui="luxe"] .lx-wbadge[class*="gold"] { color: #D24A4A !important; }
+html[data-ui="luxe"] .lx-wbadge[class*="blue"] { color: var(--lx-wait) !important; }
+html[data-ui="luxe"] .lx-pillnum { background: transparent !important; color: var(--lx-ink-2) !important; padding: 0 !important; font-size: 14px; font-weight: 400; }
+
+html[data-ui="luxe"] .lx-ph-dot { font-style: normal; color: #D24A4A; }
+html[data-ui="luxe"] .lx-ph-sub { margin: 10px 0 0; color: var(--color-text-secondary); font-size: 14px; max-width: 620px; }

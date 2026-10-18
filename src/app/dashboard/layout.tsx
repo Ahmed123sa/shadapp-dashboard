@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
 import { canDo, canUseAssistantsTeam, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
-import { applyUiStyle, getStoredUiStyle, storeUiStyle, type UiStyle } from '@/lib/ui-style';
+import { applyUiStyle, getStoredUiStyle, storeUiStyle, useUiStyle, type UiStyle } from '@/lib/ui-style';
 
 interface NavItem {
   href: string;
@@ -46,6 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   // Staged redesign: classic (current look) vs luxe (new look). See lib/ui-style.ts.
   const [uiStyle, setUiStyle] = useState<UiStyle>('classic');
+  const luxeNow = useUiStyle() === 'luxe';
   const user = getUser();
   const isSA = user?.role === 'super_admin';
   const isAsst = isAssistant(user);
@@ -239,6 +240,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return t('title');
   };
 
+  // Home greeting (Luxe): follows the clock, uses the signed-in user's first name.
+  const isHome = pathname === '/dashboard' && !currentView;
+  const hour = new Date().getHours();
+  const greetingKey = hour < 12 ? 'greeting_morning' : hour < 17 && locale !== 'ar' ? 'greeting_afternoon' : 'greeting_evening';
+  const greeting = t(greetingKey, { name: (user?.name || '').trim().split(/\s+/)[0] || '' });
+
   const currentDate = new Date().toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -392,7 +399,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main data-theme={theme === 'light' ? 'light' : undefined} className="lx-page flex-1 p-5 overflow-auto">{children}</main>
+        <main data-theme={theme === 'light' ? 'light' : undefined} className="lx-page flex-1 p-5 overflow-auto">
+          {/* Luxe: the page title lives in the page body (big serif), the top bar only carries a small crumb. */}
+          {luxeNow && !/^\/dashboard\/clients\/[^/]+$/.test(pathname) && (
+            <div className="lx-ph">
+              <div className="lx-ph-eyebrow">{currentDate}</div>
+              {isHome ? (
+                <>
+                  <h1 className="lx-ph-title">{greeting}<i className="lx-ph-dot">.</i></h1>
+                  <p className="lx-ph-sub">{isSA ? t('home_subtitle_admin') : t('home_subtitle_manager')}</p>
+                </>
+              ) : (
+                <h1 className="lx-ph-title">{getPageTitle()}</h1>
+              )}
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

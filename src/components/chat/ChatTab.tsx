@@ -279,7 +279,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const senderTag = isClient ? t('client_label') : isSubUser ? t('team_member') : ((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label'));
           const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
-          <div key={m.id} data-day={luxe ? dayLabel : undefined} className={`lx-row flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
+          <div key={m.id} data-day={luxe ? dayLabel : undefined} className={`lx-row flex ${(luxe ? !isClientTeam : isClientTeam) ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
             <div className="lx-msg max-w-xs flex gap-2 items-start">
               {!isClientTeam && (
                 <div className="w-7 h-7 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
@@ -291,7 +291,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 </div>
               )}
               <div>
-                <div data-mine={isClient} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
+                <div data-mine={luxe ? !isClientTeam : isClient} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
                   <p data-tag={luxe ? senderTag : undefined} className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{luxe ? senderName : senderLabel}</p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">

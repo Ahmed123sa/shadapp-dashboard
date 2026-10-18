@@ -63,7 +63,7 @@ export default function ManagerTableRow({ manager, index, expanded, onToggle }: 
       </td>
       <td className="px-3.5 py-2.5 text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{manager.managed_clients_count}</td>
       <td className="px-3.5 py-2.5">
-        <span className="px-2 py-0.5 rounded-full text-[length:var(--fs-1)] font-semibold" style={{ background: badge.bg, color: badge.color }}>
+        <span className="lx-pillnum px-2 py-0.5 rounded-full text-[length:var(--fs-1)] font-semibold" style={{ background: badge.bg, color: badge.color }}>
           {pending}
         </span>
       </td>
