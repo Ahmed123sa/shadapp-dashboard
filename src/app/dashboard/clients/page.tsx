@@ -181,11 +181,11 @@ export default function ClientsPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="lx-clients">
+      <div className="lx-pagehead flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">{t('clients')}</h2>
         <div className="flex items-center gap-4">
-          {!isStaff && <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          {!isStaff && <label className="lx-switchlabel flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             {t('client_show_archived')}
           </label>}
@@ -203,7 +203,7 @@ export default function ClientsPage() {
           "search clients" box above an "add a new client" form made no
           sense and confused users into thinking it was part of the form. */}
       {!showCreate && (
-        <div className="mb-4 relative">
+        <div className="lx-searchwrap mb-4 relative">
           <input
             type="text"
             value={searchQuery}
@@ -336,8 +336,8 @@ export default function ClientsPage() {
         </form>
       )}
 
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="lx-tblbox bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
+        <table className="lx-ledger w-full text-sm">
           <thead className="bg-[var(--color-card-border)] border-b border-[var(--color-card-border)]">
             <tr>
               <th className="text-center p-4 font-medium">{t('col_company')}</th>
@@ -352,7 +352,7 @@ export default function ClientsPage() {
             {clients.map((client) => (
               <tr key={client.id} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-card-border)]">
                 <td className="p-4 text-center">
-                  <Link href={`/dashboard/clients/${client.id}`} className="text-[var(--color-gold-text)] hover:underline font-medium">{client.company_name}</Link>
+                  <Link href={`/dashboard/clients/${client.id}`} className="lx-tname text-[var(--color-gold-text)] hover:underline font-medium">{client.company_name}</Link>
                 </td>
                 <td className="p-4 text-center"><ClientTypeBadge clientType={client.client_type} /></td>
                 <td className="p-4 text-center text-[var(--color-text-secondary)]">{client.contact_person}</td>

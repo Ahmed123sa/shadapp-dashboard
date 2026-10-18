@@ -9,6 +9,8 @@ import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl } from '@/lib/utils';
 import PasswordField from '@/components/ui/PasswordField';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useUiStyle } from '@/lib/ui-style';
+import { Plus } from 'lucide-react';
 
 // "Teams" — the company's own staff members (STAFF_TEAMS_PLAN.md). Super admin
 // only: the backend answers 403 to everyone else and proxy.ts keeps the page
@@ -37,6 +39,7 @@ interface AssignedClient {
 
 export default function StaffPage() {
   const t = useTranslations('dashboard');
+  const luxe = useUiStyle() === 'luxe';
   const isSA = getUser()?.role === 'super_admin';
 
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -168,15 +171,15 @@ export default function StaffPage() {
   const inputCls = 'w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h2 className="text-xl font-semibold">{t('staff_title')}</h2>
+    <div className="lx-people">
+      <div className="lx-pagehead flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h2 className="lx-hide text-xl font-semibold">{t('staff_title')}</h2>
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <label className="lx-switchlabel flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
             {t('staff_show_archived')}
           </label>
-          <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">+ {t('staff_new')}</button>
+          <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{luxe ? <><Plus size={15} strokeWidth={1.5} className="inline me-2" />{t('staff_new')}</> : `+ ${t('staff_new')}`}</button>
         </div>
       </div>
 
@@ -242,7 +245,63 @@ export default function StaffPage() {
         <div className="text-center py-16 text-[var(--color-text-secondary)]">{t('staff_empty')}</div>
       )}
 
-      <div className="space-y-3">
+      {luxe && staff.length > 0 && (
+        <div className="lx-tblbox lx-ledger">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th>{t('manager_col_name')}</th>
+                <th>{t('staff_clients')}</th>
+                <th>{t('manager_col_status')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {staff.map((m) => {
+                const archived = !!m.archived_at;
+                return (
+                  <tr key={m.id}>
+                    <td>
+                      <div className="lx-who">
+                        <div className="lx-av-sm">
+                          {m.avatar_url ? <img src={resolveFileUrl(m.avatar_url)} alt="" className="w-full h-full object-cover" /> : (m.name?.[0] || '?')}
+                        </div>
+                        <div>
+                          <div className="lx-tname">{m.name}</div>
+                          <div className="lx-sub" dir="ltr">{m.email}{m.phone ? ` • ${m.phone}` : ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {m.assigned_clients_count > 0 ? (
+                        <button onClick={() => openClients(m)} className="lx-link-u">{t('staff_clients_count', { count: m.assigned_clients_count })}</button>
+                      ) : (
+                        <span className="lx-sub">{t('staff_no_clients')}</span>
+                      )}
+                    </td>
+                    <td><StatusBadge status={archived ? 'archived' : 'active'} /></td>
+                    <td>
+                      <div className="lx-rowacts">
+                        <button onClick={() => startEdit(m)} className="lx-btn-sm">{t('manager_edit')}</button>
+                        <button onClick={() => { setPwId(m.id); setShowForm(false); setFormError(''); }} className="lx-btn-sm lx-btn-quiet">{t('team_change_password')}</button>
+                        <button
+                          onClick={() => toggleArchive(m)}
+                          disabled={busyId === m.id}
+                          className={`lx-btn-sm lx-btn-quiet disabled:opacity-50 ${archived ? '' : 'lx-btn-danger'}`}
+                        >
+                          {archived ? t('staff_unarchive') : t('staff_archive')}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className={`space-y-3 ${luxe ? 'hidden' : ''}`}>
         {staff.map((m) => {
           const archived = !!m.archived_at;
           return (

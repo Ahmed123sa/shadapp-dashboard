@@ -399,8 +399,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold">{t('title')}</h1>
+    <div className="lx-settings max-w-2xl mx-auto space-y-8">
+      <h1 className="lx-hide text-2xl font-bold">{t('title')}</h1>
 
       {success && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('saved')}</div>
@@ -409,6 +409,7 @@ export default function SettingsPage() {
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('saved')}</div>
       )}
 
+      <div className="lx-profilegroup space-y-8" data-title={t('profile_section')} data-hint={t('profile_section_hint')}>
       <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
         <h2 className="text-lg font-semibold">{t('avatar')}</h2>
         <div className="flex items-center gap-4">
@@ -449,10 +450,11 @@ export default function SettingsPage() {
 
       {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
         <h2 className="text-lg font-semibold">{t('official_email')}</h2>
-        <p className="text-xs text-[var(--color-text-secondary)]">{t('official_email_hint')}</p>
+        <p className="lx-hide text-xs text-[var(--color-text-secondary)]">{t('official_email_hint')}</p>
         <input value={officialEmail} onChange={(e) => setOfficialEmail(e.target.value)}
           className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" type="email" placeholder={t('official_email')} dir="ltr" />
       </div>}
+      </div>
 
       {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
         <h2 className="text-lg font-semibold">{t('signature')}</h2>
@@ -462,12 +464,12 @@ export default function SettingsPage() {
           <div className="space-y-3">
             <p className="text-sm font-medium text-[var(--color-text-secondary)]">{t('saved_signature')}</p>
             {savedSignature.type === 'text' ? (
-              <p className="text-lg font-[cursive] border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] text-center">{savedSignature.data}</p>
+              <p className="lx-sig text-lg font-[cursive] border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] text-center">{savedSignature.data}</p>
             ) : (
-              <img src={savedSignature.url || resolveFileUrl(savedSignature.data)} alt={t('saved_signature')} className="max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
+              <img src={savedSignature.url || resolveFileUrl(savedSignature.data)} alt={t('saved_signature')} className="lx-sig lx-sigimg max-h-20 border border-[var(--color-card-border)] rounded-lg p-2 bg-[var(--color-card-border)]" />
             )}
             <button onClick={deleteSignature} disabled={deletingSig}
-              className="text-red-600 hover:text-red-700 text-xs underline disabled:opacity-50">
+              className="lx-sigdel text-red-600 hover:text-red-700 text-xs underline disabled:opacity-50">
               {deletingSig ? '...' : t('delete')}
             </button>
           </div>
@@ -475,7 +477,7 @@ export default function SettingsPage() {
           <p className="text-sm text-amber-600">{t('saved_signature')}</p>
         )}
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="lx-sigbtns flex gap-2 flex-wrap">
           <button onClick={() => { setSignatureType('draw'); setTypedSignature(''); setUploadedSignatureFile(null); setUploadedSignaturePreview(''); }}
             className={`px-4 py-2 rounded-lg text-sm border border-[var(--color-card-border)] transition-colors ${signatureType === 'draw' ? 'bg-blue-100 border-blue-300 text-blue-700' : 'hover:bg-[var(--color-card-border)]'}`}>
             {t('draw_signature')}
@@ -525,14 +527,15 @@ export default function SettingsPage() {
 
         {signatureType && (
           <button onClick={saveSignature} disabled={savingSig}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
+            className="lx-savebtn bg-purple-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
             {savingSig ? '...' : t('save')}
           </button>
         )}
       </div>}
 
+      {!isAM && <div className="lx-agency space-y-8" data-title={t('system_settings')} data-hint={t('system_settings_hint')}>
       {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
-        <h2 className="text-lg font-semibold">{t('system_settings')}</h2>
+        <h2 className="lx-hide text-lg font-semibold">{t('system_settings')}</h2>
         <p className="text-xs text-[var(--color-text-secondary)]">{t('tax_description')}</p>
         {taxSuccess && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">{t('tax_saved')}</div>
@@ -546,7 +549,7 @@ export default function SettingsPage() {
           </div>
           <span className="text-[var(--color-text-secondary)] mt-5">%</span>
           <button onClick={saveTax} disabled={savingTax}
-            className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50 mt-5">
+            className="lx-savebtn bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)] disabled:opacity-50 mt-5">
             {savingTax ? '...' : t('save')}
           </button>
         </div>
@@ -603,12 +606,14 @@ export default function SettingsPage() {
           </div>
         )}
       </div>}
+      </div>}
 
-      {!isAM && <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
-        <div>
+      {!isAM && <div className="lx-clausecard bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-4">
+        <div className="lx-clausehead">
           <h2 className="text-lg font-semibold">{t('contract_clauses')}</h2>
           <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('clauses_description')}</p>
         </div>
+        <div className="lx-clausebody space-y-4">
         {clausesMsg && (
           <div className={clausesMsgIsError
             ? 'bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-300 text-sm'
@@ -617,7 +622,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] space-y-3">
+        <div className="lx-clauseform border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)] space-y-3">
           <div className="flex gap-2 flex-wrap">
             <select value={clauseType} onChange={(e) => setClauseType(e.target.value as 'fixed' | 'optional')}
               className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm">
@@ -630,7 +635,7 @@ export default function SettingsPage() {
           <textarea value={clauseContent} onChange={(e) => setClauseContent(e.target.value)}
             className="border border-[var(--color-input-border)] bg-[var(--color-input-fill)] text-[var(--color-foreground)] rounded-lg px-3 py-2 text-sm w-full min-h-[70px]"
             placeholder={t('clause_content_ph')} />
-          <button onClick={addClause} className="bg-[var(--color-primary)] text-white px-5 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">
+          <button onClick={addClause} className="lx-addclause bg-[var(--color-primary)] text-white px-5 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">
             {t('add_clause')}
           </button>
         </div>
@@ -649,10 +654,10 @@ export default function SettingsPage() {
         ) : clauses.length === 0 ? (
           <p className="text-sm text-[var(--color-text-secondary)] py-4">{t('clauses_empty')}</p>
         ) : (
-          <div className="space-y-2">
+          <div className="lx-clauselist space-y-2">
             {clauses.map((cl, idx) => (
               <div key={cl.id} draggable onDragStart={() => onDragStart(idx)} onDragOver={onDragOver} onDrop={() => onDrop(idx)}
-                className={`border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)] transition ${dragIdx === idx ? 'opacity-50' : 'opacity-100'} ${editingClause?.id === cl.id ? 'ring-1 ring-[var(--color-primary)]' : ''}`}>
+                className={`lx-clause border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)] transition ${dragIdx === idx ? 'opacity-50' : 'opacity-100'} ${editingClause?.id === cl.id ? 'ring-1 ring-[var(--color-primary)]' : ''}`}>
                 {editingClause?.id === cl.id ? (
                   <div className="space-y-2">
                     <div className="flex gap-2 flex-wrap">
@@ -673,9 +678,9 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="flex items-start gap-2">
-                    <span className="cursor-grab text-[var(--color-text-disabled)] select-none" title={t('reorder_hint')}>⠿</span>
+                    <span className="lx-grip cursor-grab text-[var(--color-text-disabled)] select-none" title={t('reorder_hint')}>⠿</span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="lx-clause-meta flex items-center gap-2 flex-wrap">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${cl.type === 'fixed' ? 'bg-red-900/30 text-red-400' : 'bg-blue-900/30 text-blue-400'}`}>
                           {cl.type === 'fixed' ? t('clause_fixed') : t('clause_optional')}
                         </span>
@@ -684,9 +689,9 @@ export default function SettingsPage() {
                       </div>
                       {/* dir="auto": clause templates are authored content and
                           are usually Arabic even on an English-locale page. */}
-                      <p dir="auto" className="text-sm mt-1">{cl.content}</p>
+                      <p dir="auto" className="lx-clause-text text-sm mt-1">{cl.content}</p>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="lx-clause-acts flex items-center gap-1 flex-shrink-0">
                       <button onClick={() => moveClause(idx, -1)} disabled={idx === 0} aria-label={t('move_clause_up')}
                         className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] px-1 py-1 disabled:opacity-30 disabled:cursor-not-allowed">▲</button>
                       <button onClick={() => moveClause(idx, 1)} disabled={idx === clauses.length - 1} aria-label={t('move_clause_down')}
@@ -703,6 +708,7 @@ export default function SettingsPage() {
             ))}
           </div>
         )}
+        </div>
       </div>}
 
       <button onClick={saveProfile} disabled={saving}

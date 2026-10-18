@@ -91,15 +91,15 @@ export default function FinancePage() {
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'approved':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400"><CheckCircle2 size={12} /> {locale === 'ar' ? 'معتمدة' : 'Approved'}</span>;
+        return <span data-tone="ok" className="lx-status inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400"><CheckCircle2 size={12} /> {locale === 'ar' ? 'معتمدة' : 'Approved'}</span>;
       case 'pending':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400"><Clock size={12} /> {locale === 'ar' ? 'معلقة' : 'Pending'}</span>;
+        return <span data-tone="wait" className="lx-status inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400"><Clock size={12} /> {locale === 'ar' ? 'معلقة' : 'Pending'}</span>;
       case 'rejected':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400"><AlertCircle size={12} /> {locale === 'ar' ? 'مرفوضة' : 'Rejected'}</span>;
+        return <span data-tone="bad" className="lx-status inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400"><AlertCircle size={12} /> {locale === 'ar' ? 'مرفوضة' : 'Rejected'}</span>;
       case 'scheduled':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/15 text-blue-400"><Clock size={12} /> {locale === 'ar' ? 'مجدولة' : 'Scheduled'}</span>;
+        return <span data-tone="wait" className="lx-status inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/15 text-blue-400"><Clock size={12} /> {locale === 'ar' ? 'مجدولة' : 'Scheduled'}</span>;
       case 'overdue':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/15 text-rose-400"><AlertCircle size={12} /> {locale === 'ar' ? 'متأخرة' : 'Overdue'}</span>;
+        return <span data-tone="bad" className="lx-status inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/15 text-rose-400"><AlertCircle size={12} /> {locale === 'ar' ? 'متأخرة' : 'Overdue'}</span>;
       default:
         return <span className="px-2 py-0.5 rounded-full text-xs bg-zinc-800 text-zinc-400">{st}</span>;
     }
@@ -115,10 +115,10 @@ export default function FinancePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="lx-fin space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+      <div className="lx-pagehead lx-fin-head flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="lx-hide">
           <h1 className="text-2xl font-bold text-[var(--color-foreground)] flex items-center gap-2">
             <CreditCard className="text-[var(--color-gold-text)]" size={24} />
             {locale === 'ar' ? 'المالية والمدفوعات' : 'Finance & Payments'}
@@ -150,16 +150,16 @@ export default function FinancePage() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
+        <div className="lx-kpis grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lx-kpi bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'إجمالي العمليات' : 'Total Transactions'}</span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+              <span className="lx-kpi-l text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'إجمالي العمليات' : 'Total Transactions'}</span>
+              <div className="lx-kpi-icon w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
                 <CreditCard size={16} />
               </div>
             </div>
-            <p className="text-2xl font-bold mt-2 text-[var(--color-foreground)]">{stats.total_count || 0}</p>
-            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{stats.approved_count || 0} {locale === 'ar' ? 'عملية معتمدة' : 'approved'}</p>
+            <p className="lx-kpi-v text-2xl font-bold mt-2 text-[var(--color-foreground)]">{stats.total_count || 0}</p>
+            <p className="lx-kpi-sub text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{stats.approved_count || 0} {locale === 'ar' ? 'عملية معتمدة' : 'approved'}</p>
           </div>
 
           {/* Currency cards: one per currency that actually moved money
@@ -171,36 +171,36 @@ export default function FinancePage() {
             .filter(([, total]) => Number(total || 0) > 0)
             .sort(([, a], [, b]) => Number(b || 0) - Number(a || 0))
             .map(([cur, total]) => (
-              <div key={cur} className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
+              <div key={cur} className="lx-kpi bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? `المدفوعات المعتمدة (${cur})` : `Approved ${cur}`}</span>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <span className="lx-kpi-l text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? `المدفوعات المعتمدة (${cur})` : `Approved ${cur}`}</span>
+                  <div className="lx-kpi-icon w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                     <DollarSign size={16} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mt-2 text-emerald-400 font-display">
+                <p data-color="gold" className="lx-kpi-v text-2xl font-bold mt-2 text-emerald-400 font-display">
                   {Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   <span className="text-xs font-normal text-emerald-400/70 ms-1">{cur}</span>
                 </p>
-                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? `إجمالي الإيرادات بعملة ${cur}` : `Total ${cur} revenue`}</p>
+                <p className="lx-kpi-sub text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? `إجمالي الإيرادات بعملة ${cur}` : `Total ${cur} revenue`}</p>
               </div>
             ))}
 
-          <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
+          <div className="lx-kpi bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'مدفوعات معلقة للتدقيق' : 'Pending Review'}</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <span className="lx-kpi-l text-xs text-[var(--color-text-secondary)]">{locale === 'ar' ? 'مدفوعات معلقة للتدقيق' : 'Pending Review'}</span>
+              <div className="lx-kpi-icon w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
                 <Clock size={16} />
               </div>
             </div>
-            <p className="text-2xl font-bold mt-2 text-amber-400">{stats.pending_count || 0}</p>
-            <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'بحاجة للمراجعة والاعتماد' : 'Needs attention'}</p>
+            <p className="lx-kpi-v text-2xl font-bold mt-2 text-amber-400">{stats.pending_count || 0}</p>
+            <p data-color={(stats.pending_count || 0) > 0 ? 'red' : undefined} className="lx-kpi-sub text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{locale === 'ar' ? 'بحاجة للمراجعة والاعتماد' : 'Needs attention'}</p>
           </div>
         </div>
       )}
 
       {/* Filter Toolbar */}
-      <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4 space-y-3">
+      <div className="lx-finbar bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4 space-y-3">
         <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-2.5 items-center">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
@@ -312,7 +312,7 @@ export default function FinancePage() {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl overflow-hidden">
+      <div className="lx-tblbox lx-ledger bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl overflow-hidden">
         {loading ? (
           <TableSkeleton rows={8} />
         ) : payments.length === 0 ? (
@@ -348,7 +348,7 @@ export default function FinancePage() {
                       <td className="py-3 px-4 text-[var(--color-text-disabled)] font-mono text-[length:var(--fs-1)]">#{p.id}</td>
                       <td className="py-3 px-4">
                         {clientObj ? (
-                          <Link href={`/dashboard/clients/${clientObj.id}?tab=payments`} className="hover:text-[var(--color-gold-text)] font-medium">
+                          <Link href={`/dashboard/clients/${clientObj.id}?tab=payments`} className="lx-tname hover:text-[var(--color-gold-text)] font-medium">
                             {clientObj.company_name || clientObj.contact_person}
                           </Link>
                         ) : '—'}
@@ -359,7 +359,7 @@ export default function FinancePage() {
                       <td className="py-3 px-4 text-[var(--color-text-secondary)] max-w-[180px] truncate">
                         {p.contract?.title || '—'}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-[var(--color-foreground)]">
+                      <td className="lx-num py-3 px-4 font-semibold text-[var(--color-foreground)]">
                         {Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         <span className="ms-1 text-[length:var(--fs-1)] text-[var(--color-gold-text)] font-normal">{p.currency || 'SAR'}</span>
                       </td>
@@ -378,7 +378,7 @@ export default function FinancePage() {
                             href={proofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[length:var(--fs-1)] text-[var(--color-gold-text)] hover:underline"
+                            className="lx-proof inline-flex items-center gap-1 text-[length:var(--fs-1)] text-[var(--color-gold-text)] hover:underline"
                           >
                             <ExternalLink size={12} />
                             {locale === 'ar' ? 'عرض الإيصال' : 'View Proof'}

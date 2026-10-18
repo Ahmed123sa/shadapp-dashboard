@@ -9,6 +9,7 @@ import ErrorState from '@/components/ErrorState';
 import { buildPendingApprovalRows, PendingApprovalRowLink } from '@/components/dashboard/PendingApprovalsPanel';
 import type { TFunc } from '@/components/dashboard/types';
 import type { PendingApprovalItem } from '@/types';
+import { useUiStyle } from '@/lib/ui-style';
 
 // pending-approvals-plan.md ك4 — the full page behind PendingApprovalsPanel's
 // "view all" link (?view=approvals). Reads the same GET /dashboard/pending-
@@ -34,6 +35,7 @@ function filterFromUrl(type: string | null): FilterType {
 
 export default function PendingApprovalsListView({ t, locale }: { t: TFunc; locale: string }) {
   const { data, isLoading, isError, refetch } = usePendingApprovals(FULL_LIST_LIMIT);
+  const luxe = useUiStyle() === 'luxe';
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlFilter = filterFromUrl(searchParams.get('type'));
@@ -63,6 +65,64 @@ export default function PendingApprovalsListView({ t, locale }: { t: TFunc; loca
     { key: 'payment', label: t('payments_nav'), count: counts.pending_payments },
     { key: 'approval', label: t('pending_approvals_filter_approvals'), count: counts.pending_requests },
   ];
+
+  const kindLabel: Record<PendingApprovalItem['type'], string> = {
+    contract: t('contracts_nav'),
+    payment: t('payments_nav'),
+    approval: t('pending_approvals_filter_approvals'),
+  };
+
+  if (luxe) {
+    return (
+      <div className="lx-inbox">
+        <div className="lx-chips">
+          {filters.map((f) => (
+            <button key={f.key} onClick={() => setFilter(f.key)} className={`lx-chip ${filter === f.key ? 'lx-chip-on' : ''}`}>
+              {f.label}<b>{f.count}</b>
+            </button>
+          ))}
+        </div>
+        {isError && !data ? (
+          <ErrorState onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('paginated_loading')}</div>
+        ) : filteredRows.length === 0 ? (
+          <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('pending_approvals_empty')}</div>
+        ) : (
+          <div className="lx-tblbox">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="text-start">{t('col_item')}</th>
+                  <th className="text-start">{t('col_details')}</th>
+                  <th className="text-start">{t('col_status')}</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((row) => {
+                  const needsYou = row.waitingLabel === t('pending_approvals_on_you');
+                  return (
+                    <tr key={row.key}>
+                      <td>
+                        <div className="lx-kindtxt">{kindLabel[row.type]}</div>
+                        <div className="lx-tname">{row.title}</div>
+                      </td>
+                      <td className="lx-dim">{row.subtitle}</td>
+                      <td><span className="lx-status" data-tone={needsYou ? 'bad' : 'wait'}>{row.waitingLabel}</span></td>
+                      <td className="text-end">
+                        {row.href && <Link href={row.href} className="lx-btn">{t('open_item')}</Link>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>

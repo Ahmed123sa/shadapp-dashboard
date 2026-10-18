@@ -217,12 +217,12 @@ export default function AuditLogPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="lx-audit space-y-4">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="lx-audit-head flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold font-display">{t('audit_title')}</h2>
+          <h2 className="lx-hide text-lg font-bold font-display">{t('audit_title')}</h2>
           {tab === 'activity' && (
             <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('audit_total_events', { count: total })}</span>
           )}
@@ -230,12 +230,12 @@ export default function AuditLogPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[var(--color-card-border)]">
+      <div className="lx-audit-tabs flex gap-1 border-b border-[var(--color-card-border)]">
         {([['activity', t('audit_tab_activity')], ['attempts', t('audit_tab_attempts')]] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-4 py-2 text-[length:var(--fs-1)] font-medium cursor-pointer border-b-2 -mb-px transition-colors ${
+            className={`lx-chip ${tab === key ? 'lx-chip-on' : ''} px-4 py-2 text-[length:var(--fs-1)] font-medium cursor-pointer border-b-2 -mb-px transition-colors ${
               tab === key
                 ? 'border-[var(--color-gold)] text-[var(--color-foreground)]'
                 : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]'
@@ -251,7 +251,7 @@ export default function AuditLogPage() {
       {tab === 'activity' && (
       <>
       {/* Filters */}
-      <div className="flex gap-2 items-center flex-wrap">
+      <div className="lx-finbar flex gap-2 items-center flex-wrap">
         <div className="relative">
           <Search size={12} strokeWidth={1.5} className="absolute start-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
           <input
@@ -288,7 +288,7 @@ export default function AuditLogPage() {
       </div>
 
       {/* Table */}
-      <div className="audit-card">
+      <div className="audit-card lx-tblbox lx-ledger">
         {loading ? (
           <TableSkeleton rows={8} />
         ) : logs.length === 0 ? (

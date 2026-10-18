@@ -7,10 +7,13 @@ import { reportError } from '@/lib/error-reporting';
 import { useTranslations } from 'next-intl';
 import PasswordField from '@/components/ui/PasswordField';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useUiStyle } from '@/lib/ui-style';
+import { Plus } from 'lucide-react';
 import type { User } from '@/types';
 
 export default function AccountManagersPage() {
   const t = useTranslations('dashboard');
+  const luxe = useUiStyle() === 'luxe';
   const [managers, setManagers] = useState<User[]>([]);
   const [showInactive, setShowInactive] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -140,6 +143,25 @@ export default function AccountManagersPage() {
     }
   };
 
+  // Inline switch in the managers table (Luxe look). The backend's update
+  // accepts a partial body (`sometimes` on every field), so only the flag is
+  // sent. Optimistic: flips at once, rolls back and shows the error if the
+  // request fails.
+  const toggleApprove = async (m: User) => {
+    const next = !m.can_approve_contracts;
+    setStatusError('');
+    setStatusBusyId(m.id);
+    setManagers((prev) => prev.map((x) => (x.id === m.id ? { ...x, can_approve_contracts: next } : x)));
+    try {
+      await api.put(`/account-managers/${m.id}`, { can_approve_contracts: next });
+    } catch (err: any) {
+      setManagers((prev) => prev.map((x) => (x.id === m.id ? { ...x, can_approve_contracts: !next } : x)));
+      setStatusError(err?.response?.data?.message || t('manager_update_failed'));
+    } finally {
+      setStatusBusyId(null);
+    }
+  };
+
   const activateManager = async (m: User) => {
     if (!confirm(t('manager_activate_confirm'))) return;
     setStatusError('');
@@ -155,15 +177,15 @@ export default function AccountManagersPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">{t('managers_title')}</h2>
+    <div className="lx-people">
+      <div className="lx-pagehead flex items-center justify-between mb-6">
+        <h2 className="lx-hide text-xl font-semibold">{t('managers_title')}</h2>
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <label className="lx-switchlabel flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
             {t('manager_show_inactive')}
           </label>
-          <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">+ {t('manager_new')}</button>
+          <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{luxe ? <><Plus size={15} strokeWidth={1.5} className="inline me-2" />{t('manager_new')}</> : `+ ${t('manager_new')}`}</button>
         </div>
       </div>
 
@@ -241,16 +263,17 @@ export default function AccountManagersPage() {
         </form>
       )}
 
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
+      <div className="lx-tblbox lx-ledger bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[var(--color-card-border)] border-b border-[var(--color-card-border)]">
             <tr>
               <th className="text-center p-4 font-medium">{t('manager_col_name')}</th>
-              <th className="text-center p-4 font-medium">{t('manager_col_email')}</th>
+              {!luxe && <th className="text-center p-4 font-medium">{t('manager_col_email')}</th>}
               <th className="text-center p-4 font-medium">{t('manager_col_phone')}</th>
               <th className="text-center p-4 font-medium">{t('manager_col_clients')}</th>
+              {luxe && <th className="text-center p-4 font-medium">{t('manager_can_approve_contracts')}</th>}
               <th className="text-center p-4 font-medium">{t('manager_col_status')}</th>
-              <th className="text-center p-4 font-medium">{t('manager_col_actions')}</th>
+              <th className="text-center p-4 font-medium">{luxe ? '' : t('manager_col_actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -259,25 +282,50 @@ export default function AccountManagersPage() {
               return (
                 <tr key={m.id} className="border-b border-[var(--color-card-border)]">
                   <td className="p-4 text-center">
-                    {m.name}
-                    {m.can_approve_contracts && (
-                      <span className="ms-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">{t('manager_can_approve_badge')}</span>
+                    {luxe ? (
+                      <div className="lx-who">
+                        <div className="lx-av-sm">{m.name?.[0] || '?'}</div>
+                        <div>
+                          <div className="lx-tname">{m.name}</div>
+                          <div className="lx-sub">{m.email}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {m.name}
+                        {m.can_approve_contracts && (
+                          <span className="ms-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">{t('manager_can_approve_badge')}</span>
+                        )}
+                      </>
                     )}
                   </td>
-                  <td className="p-4 text-center">{m.email}</td>
-                  <td className="p-4 text-center">{m.phone || '—'}</td>
+                  {!luxe && <td className="p-4 text-center">{m.email}</td>}
+                  <td className="p-4 text-center lx-dim">{m.phone || '—'}</td>
                   <td className="p-4 text-center">{m.managed_clients_count || 0}</td>
+                  {luxe && (
+                    <td className="p-4 text-center">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!m.can_approve_contracts}
+                        aria-label={`${t('manager_can_approve_contracts')} — ${m.name}`}
+                        onClick={() => toggleApprove(m)}
+                        disabled={statusBusyId === m.id}
+                        className={`lx-sw ${m.can_approve_contracts ? 'on' : ''}`}
+                      />
+                    </td>
+                  )}
                   <td className="p-4 text-center">
                     <StatusBadge status={isActive ? 'active' : 'inactive'} />
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex gap-2 justify-center">
-                      <button onClick={() => startEdit(m)} className="text-xs text-[var(--color-gold-text)] hover:underline border border-blue-200 rounded px-2 py-1">{t('manager_edit')}</button>
+                      <button onClick={() => startEdit(m)} className="lx-btn-sm text-xs text-[var(--color-gold-text)] hover:underline border border-blue-200 rounded px-2 py-1">{t('manager_edit')}</button>
                       {isActive ? (
                         <button
                           onClick={() => deactivateManager(m)}
                           disabled={statusBusyId === m.id}
-                          className="text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
+                          className="lx-btn-sm lx-btn-quiet lx-btn-danger text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
                         >
                           {t('manager_deactivate')}
                         </button>
@@ -285,7 +333,7 @@ export default function AccountManagersPage() {
                         <button
                           onClick={() => activateManager(m)}
                           disabled={statusBusyId === m.id}
-                          className="text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
+                          className="lx-btn-sm lx-btn-quiet text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
                         >
                           {t('manager_activate')}
                         </button>

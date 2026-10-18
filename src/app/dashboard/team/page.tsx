@@ -8,6 +8,8 @@ import { reportError } from '@/lib/error-reporting';
 import { ASSISTANT_PERMISSION_KEYS, type AssistantPermissionKey } from '@/lib/permissions';
 import PasswordField from '@/components/ui/PasswordField';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useUiStyle } from '@/lib/ui-style';
+import { Plus } from 'lucide-react';
 
 // "My Team" — an account manager's own assistants (MANAGER_ASSISTANT_PLAN.md
 // §5). Account managers only: the backend answers 403 to everyone else (super
@@ -37,6 +39,7 @@ const emptyPermissions = (): Permissions =>
 
 export default function TeamPage() {
   const t = useTranslations('dashboard');
+  const luxe = useUiStyle() === 'luxe';
   const locale = useLocale();
   const user = getUser();
   const isManager = user?.role === 'account_manager';
@@ -184,10 +187,10 @@ export default function TeamPage() {
   const inputCls = 'w-full bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">{t('team_title')}</h2>
-        <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">+ {t('team_new')}</button>
+    <div className="lx-people">
+      <div className="lx-pagehead flex items-center justify-between mb-6">
+        <h2 className="lx-hide text-xl font-semibold">{t('team_title')}</h2>
+        <button onClick={openCreate} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{luxe ? <><Plus size={15} strokeWidth={1.5} className="inline me-2" />{t('team_new')}</> : `+ ${t('team_new')}`}</button>
       </div>
 
       {notice && (
@@ -267,7 +270,61 @@ export default function TeamPage() {
         <div className="text-center py-16 text-[var(--color-text-secondary)]">{t('team_empty')}</div>
       )}
 
-      <div className="space-y-3">
+      {luxe && assistants.length > 0 && (
+        <div className="lx-tblbox lx-ledger">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th>{t('manager_col_name')}</th>
+                <th>{t('team_permissions')}</th>
+                <th>{t('manager_col_status')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {assistants.map((a) => (
+                <tr key={a.id}>
+                  <td>
+                    <div className="lx-who">
+                      <div className="lx-av-sm">{a.name?.[0] || '?'}</div>
+                      <div>
+                        <div className="lx-tname">{a.name}</div>
+                        <div className="lx-sub" dir="ltr">{a.email}{a.phone ? ` • ${a.phone}` : ''}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="lx-perms">
+                      {ASSISTANT_PERMISSION_KEYS.filter((k) => a.permissions?.[k]).map((k) => (
+                        <span key={k}>{t(`team_perm_${k}`)}</span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <StatusBadge status={a.is_active ? 'active' : 'inactive'} />
+                    {!a.is_active && a.deactivated_by_parent && (
+                      <div className="lx-sub">{t('team_off_with_manager')}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="lx-rowacts">
+                      <button onClick={() => startEdit(a)} className="lx-btn-sm">{t('manager_edit')}</button>
+                      <button onClick={() => { setPwId(a.id); setShowForm(false); setFormError(''); }} className="lx-btn-sm lx-btn-quiet">{t('team_change_password')}</button>
+                      <button onClick={() => openActivity(a)} className="lx-btn-sm lx-btn-quiet">{t('team_activity')}</button>
+                      <button onClick={() => toggleActive(a)} disabled={busyId === a.id} className={`lx-btn-sm lx-btn-quiet disabled:opacity-50 ${a.is_active ? 'lx-btn-danger' : ''}`}>
+                        {a.is_active ? t('manager_deactivate') : t('manager_activate')}
+                      </button>
+                      <button onClick={() => removeAssistant(a)} disabled={busyId === a.id} className="lx-btn-sm lx-btn-quiet lx-btn-danger disabled:opacity-50">{t('team_remove')}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className={`lx-cardlist space-y-3 ${luxe ? 'hidden' : ''}`}>
         {assistants.map((a) => (
           <div key={a.id} className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4">
             <div className="flex items-start justify-between gap-4 flex-wrap">
