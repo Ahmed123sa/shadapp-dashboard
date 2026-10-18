@@ -1168,3 +1168,6 @@ html[data-ui="luxe"] [class*="border-r-2"][class*="pr-3"] { border-color: var(--
 html[data-ui="luxe"] [class*="border-r-2"] > div > span + span { margin-inline-start: 8px; margin-inline-end: 0; }
 html[data-ui="luxe"] .lx-status[class] { color: var(--lx-ink-2) !important; }
 html[data-ui="luxe"] .lx-status[data-tone="off"][class] { color: var(--color-text-disabled) !important; }
+
+/* زرار "إضافة عقد" = pill نحاسي زي Transfer */
+html[data-ui="luxe"] .lx-addbtn { align-self: flex-start; width: fit-content; text-decoration: none; }

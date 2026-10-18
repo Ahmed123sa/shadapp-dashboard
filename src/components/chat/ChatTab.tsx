@@ -12,7 +12,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { ArrowRight, Check, CheckCheck, Download, Paperclip, Reply } from 'lucide-react';
+import { ArrowRight, Check, CheckCheck, Download, Paperclip, Plus, Reply } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
@@ -277,8 +277,9 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   return (
     <div className="lx-chat space-y-4">
       {!showBuilder ? (
-        <button onClick={() => setShowBuilder(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
-          {t('chat_send_extra_contract')}
+        <button onClick={() => setShowBuilder(true)} className="lx-btn lx-btn-gold lx-addbtn text-sm text-[var(--color-gold-text)] hover:underline font-medium">
+          <Plus className="lx-only" size={14} strokeWidth={1.5} />
+          {luxe ? t('chat_send_extra_contract').replace(/^\+\s*/, '') : t('chat_send_extra_contract')}
         </button>
       ) : (
         <ContractBuilder wsId={wsId} onCreated={onContractCreated} onCancel={() => setShowBuilder(false)} />

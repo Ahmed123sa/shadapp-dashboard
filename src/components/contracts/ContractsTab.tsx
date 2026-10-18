@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { useUiStyle } from '@/lib/ui-style';
+import { Plus } from 'lucide-react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { canDo } from '@/lib/permissions';
@@ -201,9 +202,12 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               setShowForm(true);
             }
           }}
-          className="text-sm text-[var(--color-gold-text)] hover:underline font-medium"
+          className="lx-btn lx-btn-gold lx-addbtn text-sm text-[var(--color-gold-text)] hover:underline font-medium"
         >
-          {wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`}
+          <Plus className="lx-only" size={14} strokeWidth={1.5} />
+          {luxe
+            ? (wsActive ? t('chat_send_extra_contract') : t('new_contract')).replace(/^\+\s*/, '')
+            : (wsActive ? `+ ${t('chat_send_extra_contract')}` : `+ ${t('new_contract')}`)}
         </button>
       )}
       {canManage && showForm && (

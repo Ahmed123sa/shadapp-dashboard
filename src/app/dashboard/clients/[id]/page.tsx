@@ -6,7 +6,7 @@ import { canDo, isAssistant, isStaffMember } from '@/lib/permissions';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Settings, CheckCircle2 } from 'lucide-react';
+import { Settings, CheckCircle2, Archive, ArchiveRestore, ArrowLeftRight } from 'lucide-react';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -197,7 +197,7 @@ export default function ClientWorkspace() {
           disabled={unarchiveMutation.isPending}
           className="lx-btn text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
         >
-          {t('client_unarchive')}
+          <ArchiveRestore className="lx-only" size={14} strokeWidth={1.5} />{t('client_unarchive')}
         </button>
       ) : (
         <button
@@ -205,7 +205,7 @@ export default function ClientWorkspace() {
           disabled={archiveMutation.isPending}
           className="lx-btn lx-btn-danger text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
         >
-          {t('client_archive')}
+          <Archive className="lx-only" size={14} strokeWidth={1.5} />{t('client_archive')}
         </button>
       ))}
       {isSA && (
@@ -213,7 +213,7 @@ export default function ClientWorkspace() {
           onClick={openTransfer}
           className="lx-btn lx-btn-gold lx-first text-xs text-[var(--color-gold-text)] hover:underline border border-[var(--color-card-border)] rounded px-2 py-1"
         >
-          {t('client_transfer')}
+          <ArrowLeftRight className="lx-only" size={14} strokeWidth={1.5} />{t('client_transfer')}
         </button>
       )}
     </>
