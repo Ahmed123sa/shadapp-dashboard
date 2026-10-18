@@ -727,3 +727,58 @@ html[data-ui="luxe"] .lx-step[data-state="done"] .lx-step-dot::after,
 html[data-ui="luxe"] .lx-step[data-state="now"] .lx-step-dot::after { color: var(--lx-ink-2); }
 html[data-ui="luxe"] .lx-step-line { width: 64px; height: 1px; margin: 0; background: var(--lx-line-2); }
 html[data-ui="luxe"] .lx-step[data-state="done"] .lx-step-line { background: var(--lx-ink-2); }
+
+/* ---------- طبقة عامة لباقي التابات والصفحات ---------- */
+/* صناديق الصفوف (ملفات، دفعات، موافقات، اجتماعات…) */
+html[data-ui="luxe"] [class*="border-[var(--color-card-border)]"][class*="rounded-lg"]:not(input):not(select):not(textarea):not(button) {
+  border-radius: 14px;
+  border-color: var(--lx-line);
+}
+html[data-ui="luxe"] .lx-panel [class*="border-[var(--color-card-border)]"][class*="rounded-lg"]:not(input):not(select):not(textarea):not(button):not([class*="bg-"]) {
+  background-image: var(--lx-card);
+  padding: 18px 20px;
+}
+
+/* حقول الإدخال */
+html[data-ui="luxe"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+html[data-ui="luxe"] select,
+html[data-ui="luxe"] textarea {
+  border-radius: 12px;
+  border: 1px solid var(--lx-line-2);
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--color-foreground);
+  transition: border-color 0.15s;
+}
+html[data-ui="luxe"] input:focus,
+html[data-ui="luxe"] select:focus,
+html[data-ui="luxe"] textarea:focus {
+  outline: 0;
+  border-color: rgba(240, 240, 240, 0.3);
+}
+html[data-ui="luxe"] input::placeholder,
+html[data-ui="luxe"] textarea::placeholder { color: var(--color-text-disabled); }
+
+/* عناوين داخل التابات */
+html[data-ui="luxe"] .lx-panel h3 {
+  font-family: var(--font-display), serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+html[lang="ar"][data-ui="luxe"] .lx-panel h3 { font-family: var(--font-tajawal), sans-serif; font-size: 18px; font-weight: 500; }
+
+/* مودالات */
+html[data-ui="luxe"] .fixed.inset-0 > [class*="bg-[var(--color-card)]"] {
+  border-color: var(--lx-line-2);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+html[data-ui="luxe"] .fixed.inset-0[class*="bg-black"] { backdrop-filter: blur(4px); }
+
+/* جداول الصفحات: تباعد الدفتر */
+html[data-ui="luxe"] table th { padding: 12px 14px; }
+html[data-ui="luxe"] table td { padding: 16px 14px; }
+html[data-ui="luxe"] table th:first-child, html[data-ui="luxe"] table td:first-child { padding-inline-start: 24px; }
+html[data-ui="luxe"] table th:last-child, html[data-ui="luxe"] table td:last-child { padding-inline-end: 24px; }
+
+/* روابط الإجراءات الصغيرة (text-xs hover:underline) */
+html[data-ui="luxe"] a.hover\:underline:hover,
+html[data-ui="luxe"] button.hover\:underline:hover { text-decoration-color: #D24A4A; text-underline-offset: 5px; }
