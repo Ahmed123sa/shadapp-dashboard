@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, A
 import { Users, DollarSign, FileText, Clock, Building2, BarChart3, Settings, X } from 'lucide-react';
 import { ReportsSkeleton } from '@/components/ui/LoadingSkeleton';
 import { reportError } from '@/lib/error-reporting';
+import { useUiStyle } from '@/lib/ui-style';
 import type { ReportsData, Client, User } from '@/types';
 
 // ملحوظة: القيم دي hex حرفي مقصود مش توكن CSS — بتتبعت مباشرة لـ Recharts
@@ -23,6 +24,13 @@ const STATUS_COLORS: Record<string, string> = {
 // SAR/USD first (matches the Finance page's card order), rest alphabetical —
 // applied to whatever currencies actually show up in the data, not a fixed
 // list, so a currency this company has never been paid in never appears.
+// Luxe look: the same status → colour meaning, in the four-colour palette
+// (ok / wait / bad / neutral). Hex on purpose, for the same reason as above.
+const STATUS_COLORS_LUXE: Record<string, string> = {
+  draft: '#6a6a6a', sent: '#C9B27A', client_approved: '#C9B27A', client_rejected: '#D24A4A',
+  company_approved: '#8FB98B', completed: '#8FB98B', archived: '#6a6a6a', edit_requested: '#D24A4A',
+};
+
 const CURRENCY_ORDER = ['SAR', 'USD'];
 function sortCurrencies(currencies: string[]): string[] {
   return [...currencies].sort((a, b) => {
@@ -35,6 +43,7 @@ function sortCurrencies(currencies: string[]): string[] {
 
 export default function ReportsPage() {
   const t = useTranslations('dashboard');
+  const luxe = useUiStyle() === 'luxe';
 
   const STATUS_LABELS: Record<string, string> = {
     draft: t('label_draft'), sent: t('label_sent'), client_approved: t('label_client_approved'),
@@ -186,7 +195,7 @@ export default function ReportsPage() {
     .map(status => ({
       status: STATUS_LABELS[status] || status,
       count: Number(reports?.contracts_by_status?.[status]),
-      fill: STATUS_COLORS[status] || '#606060',
+      fill: (luxe ? STATUS_COLORS_LUXE : STATUS_COLORS)[status] || '#606060',
     }));
 
   // 21 Sept 2026 — this used to sum every currency into one `amount` per
@@ -222,9 +231,9 @@ export default function ReportsPage() {
 
   // نفس ملحوظة STATUS_COLORS فوق — hex بتطابق --color-success / --color-error / --color-gold
   const approvalData = [
-    { name: tApprovalAccepted, value: Number(approvalStats.approved), fill: '#22C55E' },
-    { name: tApprovalRejected, value: Number(approvalStats.rejected), fill: '#EF4444' },
-    { name: tApprovalPending, value: Number(approvalStats.pending), fill: '#D4AF37' },
+    { name: tApprovalAccepted, value: Number(approvalStats.approved), fill: luxe ? '#8FB98B' : '#22C55E' },
+    { name: tApprovalRejected, value: Number(approvalStats.rejected), fill: luxe ? '#D24A4A' : '#EF4444' },
+    { name: tApprovalPending, value: Number(approvalStats.pending), fill: luxe ? '#C9B27A' : '#D4AF37' },
   ];
 
   const totalContracts = contractsData.reduce((s, e) => s + e.count, 0);
@@ -269,12 +278,12 @@ export default function ReportsPage() {
   const managerStats = reports?.manager_stats || [];
 
   return (
-    <div className="space-y-4">
+    <div className="lx-reports space-y-4">
 
       {/* Topbar */}
-      <div className="flex items-center justify-between">
+      <div className="lx-rep-head flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold font-display">{t('reports_page_title')}</h2>
+          <h2 className="lx-hide text-lg font-bold font-display">{t('reports_page_title')}</h2>
           <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{t('reports_last_update')}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -291,12 +300,12 @@ export default function ReportsPage() {
       </div>
 
       {/* Advanced Filter Bar */}
-      <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-        <div className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] tracking-[1px] uppercase mb-2.5 flex items-center gap-1.5">
+      <div className="lx-filters bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
+        <div className="lx-hide text-[length:var(--fs-1)] text-[var(--color-gold-text)] tracking-[1px] uppercase mb-2.5 flex items-center gap-1.5">
           <Settings size={14} strokeWidth={1.5} className="text-[var(--color-gold-text)]" /> {t('filters_advanced')}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
-          <FilterGroup label={t('filter_period')}>
+        <div className="lx-fgrid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+          <FilterGroup dead label={t('filter_period')}>
             <select value={period} onChange={e => setPeriod(e.target.value)} className="fselect">
               {PERIOD_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
@@ -313,14 +322,14 @@ export default function ReportsPage() {
               {managerList.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </FilterGroup>
-          <FilterGroup label={t('filter_contract_status')}>
+          <FilterGroup dead label={t('filter_contract_status')}>
             <select value={contractStatus} onChange={e => setContractStatus(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option>
               <option>{t('filter_status_sent')}</option><option>{t('filter_status_client_approved')}</option><option>{t('filter_status_company_approved')}</option>
               <option>{t('filter_status_completed')}</option><option>{t('filter_status_archived')}</option>
             </select>
           </FilterGroup>
-          <FilterGroup label={t('filter_event_type')}>
+          <FilterGroup dead label={t('filter_event_type')}>
             <select value={eventType} onChange={e => setEventType(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option>
               <option>{t('filter_event_contracts')}</option><option>{t('filter_event_payments')}</option><option>{t('filter_event_approvals')}</option>
@@ -332,34 +341,34 @@ export default function ReportsPage() {
               <option value="">{t('all_option')}</option><option value="business">{t('filter_client_type_business')}</option><option value="individual">{t('filter_client_type_individual')}</option>
             </select>
           </FilterGroup>
-          <FilterGroup label={t('filter_space_status')}>
+          <FilterGroup dead label={t('filter_space_status')}>
             <select value={spaceStatus} onChange={e => setSpaceStatus(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option><option>{t('filter_space_active')}</option><option>{t('filter_space_inactive')}</option>
             </select>
           </FilterGroup>
-          <FilterGroup label={t('filter_min_value')}>
+          <FilterGroup dead label={t('filter_min_value')}>
             <input type="number" placeholder={t('filter_min_placeholder')} value={minValue} onChange={e => setMinValue(e.target.value)} className="finput" />
           </FilterGroup>
-          <FilterGroup label={t('filter_max_value')}>
+          <FilterGroup dead label={t('filter_max_value')}>
             <input type="number" placeholder={t('filter_max_placeholder')} value={maxValue} onChange={e => setMaxValue(e.target.value)} className="finput" />
           </FilterGroup>
-          <FilterGroup label={t('filter_country')}>
+          <FilterGroup dead label={t('filter_country')}>
             <select value={country} onChange={e => setCountry(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option><option>{t('filter_country_egypt')}</option><option>{t('filter_country_saudi')}</option><option>{t('filter_country_uae')}</option>
             </select>
           </FilterGroup>
-          <FilterGroup label={t('filter_sector')}>
+          <FilterGroup dead label={t('filter_sector')}>
             <select value={sector} onChange={e => setSector(e.target.value)} className="fselect">
               <option value="">{t('all_option')}</option><option>{t('filter_sector_logistics')}</option><option>{t('filter_sector_realestate')}</option><option>{t('filter_sector_tech')}</option><option>{t('filter_sector_consulting')}</option>
             </select>
           </FilterGroup>
         </div>
-        <div className="flex gap-2 mt-2.5">
+        <div className="lx-fbtns flex gap-2 mt-2.5">
           <button onClick={applyFilters} className="bg-[var(--color-primary)] text-white px-4 py-1.5 rounded-lg text-[length:var(--fs-1)] font-bold cursor-pointer hover:opacity-90 transition-opacity">{t('apply_filters')}</button>
           <button onClick={clearFilters} className="border border-[var(--border)] text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg text-[length:var(--fs-1)] cursor-pointer hover:bg-white/[0.03] transition-colors">{t('reset_filters')}</button>
         </div>
         {activeFilters.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mt-2">
+          <div className="lx-hide flex gap-1.5 flex-wrap mt-2">
             {activeFilters.map((chip, i) => (
               <span key={i} className="bg-[var(--color-gold-soft)] border border-[var(--color-gold-border)] text-[var(--color-gold-text)] px-2 py-0.5 rounded-[20px] text-[length:var(--fs-1)] flex items-center gap-1">
                 {chip}
@@ -371,20 +380,20 @@ export default function ReportsPage() {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="lx-kpis grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         {Object.entries(KPI_CONFIG).map(([key, cfg]) => {
           const kv = kpiValues[key] || { value: '0' };
           return (
-            <div key={key} className={`kpi ${cfg.accent}`}>
+            <div key={key} className={`lx-kpi kpi ${cfg.accent}`}>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{cfg.label}</span>
-                <div className={`kpi-icon ${cfg.accent}`}><cfg.icon size={18} strokeWidth={1.5} /></div>
+                <span className="lx-kpi-l text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{cfg.label}</span>
+                <div className={`lx-kpi-icon kpi-icon ${cfg.accent}`}><cfg.icon size={18} strokeWidth={1.5} /></div>
               </div>
-              <div className="text-[length:var(--fs-6)] font-bold leading-[1.1] font-display" style={{ color: kv.valueColor || 'var(--color-foreground)' }}>
+              <div className="lx-kpi-v text-[length:var(--fs-6)] font-bold leading-[1.1] font-display" style={{ color: kv.valueColor || 'var(--color-foreground)' }}>
                 {kv.value}
               </div>
               {!kv.hideDelta && (
-                <div className={`text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green-text)]' : 'text-[var(--color-red-accent-text)]'}`}>
+                <div data-up={cfg.deltaUp ? 'true' : 'false'} data-color={cfg.deltaUp ? undefined : 'red'} className={`lx-kpi-sub text-[length:var(--fs-1)] mt-1 ${cfg.deltaUp ? 'text-[var(--color-green-text)]' : 'text-[var(--color-red-accent-text)]'}`}>
                   {cfg.deltaUp ? '↑' : '↓'} {cfg.subtitle}
                 </div>
               )}
@@ -768,9 +777,12 @@ export default function ReportsPage() {
   );
 }
 
-function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+// `dead`: the backend's /reports ignores this filter (it is not sent, or is
+// sent and unused), so the Luxe look hides it rather than showing a control
+// that changes nothing. The classic look still shows every filter.
+function FilterGroup({ label, children, dead }: { label: string; children: React.ReactNode; dead?: boolean }) {
   return (
-    <div className="fgroup">
+    <div className={`fgroup ${dead ? 'lx-fg-dead' : ''}`} title={label}>
       <div className="flabel">{label}</div>
       {children}
     </div>

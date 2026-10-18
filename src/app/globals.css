@@ -1587,3 +1587,61 @@ html[data-ui="luxe"] .lx-perms span {
 html[data-ui="luxe"] button.lx-sw { cursor: pointer; padding: 0; }
 html[data-ui="luxe"] button.lx-sw:disabled { opacity: .5; cursor: wait; }
 html[data-ui="luxe"] button.lx-sw:focus-visible { outline: 2px solid #D24A4A; outline-offset: 3px; }
+
+/* ---------- Reports ---------- */
+html[data-ui="luxe"] .lx-rep-head { justify-content: flex-end; margin-bottom: 4px; }
+html[data-ui="luxe"] .lx-rep-head > div:first-child span { font-size: 12.5px; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-rep-head .export-btn, html[data-ui="luxe"] .lx-rep-head button {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 17px; border-radius: 999px;
+  background: transparent !important; border: 1px solid var(--lx-line-2) !important; color: var(--lx-ink-2) !important; font-size: 13px; font-weight: 400;
+}
+html[data-ui="luxe"] .lx-rep-head button:hover { color: var(--color-foreground) !important; border-color: rgba(240,240,240,.3) !important; }
+/* الفلاتر: سطر واحد pills، الباقي ورا More filters */
+html[data-ui="luxe"] .lx-filters {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  background: none; background-image: none; border: 0; padding: 0; margin-bottom: 8px;
+}
+html[data-ui="luxe"] .lx-fgrid { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+html[data-ui="luxe"] .lx-fgrid .fgroup { display: block; }
+html[data-ui="luxe"] .lx-fgrid .flabel { display: none; }
+html[data-ui="luxe"] .lx-fg-dead { display: none; }
+html[data-ui="luxe"] .lx-filters .fselect, html[data-ui="luxe"] .lx-filters .finput {
+  height: 40px; padding: 0 15px; border-radius: 999px; background: transparent; border: 1px solid var(--lx-line);
+  font-size: 13px; color: var(--lx-ink-2); width: auto; min-width: 150px; font-family: inherit;
+}
+html[data-ui="luxe"] .lx-filters .fselect:focus, html[data-ui="luxe"] .lx-filters .finput:focus { border-color: #D24A4A; }
+html[data-ui="luxe"] .lx-fbtns { margin: 0; align-items: center; }
+html[data-ui="luxe"] .lx-fbtns button { height: 36px; padding: 0 18px; border-radius: 999px; font-size: 13px; font-weight: 400; }
+html[data-ui="luxe"] .lx-filters > div:last-child:not(.lx-fgrid):not(.lx-fbtns) { flex-basis: 100%; }
+/* KPI */
+html[data-ui="luxe"] .lx-reports .lx-kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-top: 22px; margin-bottom: 28px; }
+html[data-ui="luxe"] .lx-reports .kpi { transform: none !important; background-image: var(--lx-card); }
+html[data-ui="luxe"] .lx-reports .kpi::after { display: none; }
+html[data-ui="luxe"] .lx-reports .lx-kpi-v { font-size: 36px; font-family: var(--font-display), serif; }
+html[data-ui="luxe"] .lx-reports .lx-kpi-v span { font-family: var(--font-archivo), sans-serif; font-size: 13px !important; color: var(--color-text-secondary); }
+html[data-ui="luxe"] .lx-reports .lx-kpi-v div { font-family: var(--font-archivo), sans-serif; font-size: 12px !important; color: var(--color-text-disabled) !important; }
+/* أسهم/ادعاءات "↑ هذا الشهر" مش مبنية على حساب: مخفية في الشكل الجديد، وبيفضل "يحتاج إجراء" */
+html[data-ui="luxe"] .lx-reports .lx-kpi-sub[data-up="true"] { display: none; }
+html[data-ui="luxe"] .lx-reports .lx-kpi-sub[data-up="false"] { color: #D24A4A !important; }
+/* الكروت والرسوم */
+html[data-ui="luxe"] .lx-reports .chart-card { border: 1px solid var(--lx-line); border-radius: 16px; background-image: var(--lx-card); padding: 24px; }
+html[data-ui="luxe"] .lx-reports .chart-title { font-family: var(--font-display), serif; font-size: 20px; font-weight: 500; }
+html[lang="ar"][data-ui="luxe"] .lx-reports .chart-title { font-family: var(--font-tajawal), sans-serif; font-size: 17px; }
+html[data-ui="luxe"] .lx-reports .chart-sub { font-size: 12.5px; color: var(--color-text-disabled); margin-top: 4px; }
+html[data-ui="luxe"] .lx-reports .cf-btn { height: 28px; padding: 0 12px; font-size: 11.5px; font-family: inherit; border-color: var(--lx-line-2); }
+html[data-ui="luxe"] .lx-reports .cf-btn.on { background: transparent; border-color: #D24A4A; color: var(--color-foreground); }
+/* لوحة المديرين */
+html[data-ui="luxe"] .lx-reports .lb-item { border-color: var(--lx-line); padding: 14px 0; }
+html[data-ui="luxe"] .lx-reports .lb-rank, html[data-ui="luxe"] .lx-reports .lb-rank.r1, html[data-ui="luxe"] .lx-reports .lb-rank.r2, html[data-ui="luxe"] .lx-reports .lb-rank.r3 {
+  background: transparent; border: 0; color: var(--color-text-disabled); font-weight: 400; font-size: 12px;
+}
+html[data-ui="luxe"] .lx-reports .lb-av {
+  width: 34px; height: 34px; background: #232323; border: 1px solid var(--lx-line-2); color: var(--lx-ink-2);
+  font-family: var(--font-display), serif; font-style: italic; font-size: 14px; font-weight: 400;
+}
+html[data-ui="luxe"] .lx-reports .lb-name { font-family: var(--font-display), serif; font-size: 16px; font-weight: 400; }
+html[lang="ar"][data-ui="luxe"] .lx-reports .lb-name { font-family: var(--font-tajawal), sans-serif; font-size: 14px; font-weight: 500; }
+html[data-ui="luxe"] .lx-reports .lb-sub { font-size: 12px; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-reports .lb-bar-wrap { background: rgba(240,240,240,.07); width: 90px; }
+html[data-ui="luxe"] .lx-reports .lb-bar { background: #D24A4A !important; }
+html[data-ui="luxe"] .lx-reports .lb-val { font-family: var(--font-display), serif; font-size: 17px; font-weight: 400; color: var(--lx-tuscan); }
