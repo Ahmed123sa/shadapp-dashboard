@@ -8,6 +8,8 @@
  * Kept separate from the light/dark `shadapp-theme` key: they are
  * independent choices.
  */
+import { useSyncExternalStore } from 'react';
+
 export type UiStyle = 'classic' | 'luxe';
 
 export const UI_STYLE_KEY = 'shadapp-ui';
@@ -34,4 +36,20 @@ export function applyUiStyle(style: UiStyle): void {
   if (typeof document === 'undefined') return;
   if (style === 'luxe') document.documentElement.dataset.ui = 'luxe';
   else delete document.documentElement.dataset.ui;
+}
+
+function subscribe(cb: () => void): () => void {
+  if (typeof document === 'undefined') return () => {};
+  const obs = new MutationObserver(cb);
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-ui'] });
+  return () => obs.disconnect();
+}
+
+/** Reactive current style, for the few places where the markup (not just the CSS) differs. */
+export function useUiStyle(): UiStyle {
+  return useSyncExternalStore(
+    subscribe,
+    () => (document.documentElement.dataset.ui === 'luxe' ? 'luxe' : 'classic'),
+    () => 'classic',
+  );
 }

@@ -17,17 +17,17 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
       client_rejected: t('label_client_rejected_badge'), company_approved: t('label_company_approved_badge'),
       completed: t('label_completed'), archived: t('label_archived'),
     };
-    return <span className={`px-2 py-0.5 rounded-full text-xs ${m[s] || 'bg-zinc-700/30 text-zinc-400'}`}>{l[s] || s}</span>;
+    return <span data-tone={({ draft: 'off', sent: 'wait', client_approved: 'wait', client_rejected: 'bad', company_approved: 'ok', completed: 'ok', archived: 'off' } as Record<string, string>)[s] || 'off'} className={`lx-status px-2 py-0.5 rounded-full text-xs ${m[s] || 'bg-zinc-700/30 text-zinc-400'}`}>{l[s] || s}</span>;
   };
 
   return (
-    <div className="border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card)] overflow-hidden">
-      <div className="bg-[var(--color-card-border)] px-4 py-2 border-b border-[var(--color-card-border)] flex items-center justify-between">
-        <span className="text-xs font-bold text-[var(--color-gold-text)]">{t('contract_card_service')}</span>
+    <div className="lx-card border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card)] overflow-hidden">
+      <div className="lx-card-k bg-[var(--color-card-border)] px-4 py-2 border-b border-[var(--color-card-border)] flex items-center justify-between">
+        <span className="lx-card-kt text-xs font-bold text-[var(--color-gold-text)]">{t('contract_card_service')}</span>
         {statusBadge(contract.status)}
       </div>
-      <div className="p-4 space-y-2">
-        <h4 className="font-bold text-[var(--color-foreground)]">{contract.title}</h4>
+      <div className="lx-card-b p-4 space-y-2">
+        <h4 className="lx-card-t font-bold text-[var(--color-foreground)]">{contract.title}</h4>
         {/* The currency used to be the literal string "SAR" here, so a contract
             priced in any other currency (EGP, USD...) was displayed as riyals
             while the generated PDF - which reads contract.currency - showed the

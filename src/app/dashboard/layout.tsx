@@ -249,7 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!mounted) return <div className="min-h-screen flex items-center justify-center text-[var(--color-text-secondary)]">{c('loading')}</div>;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="lx-shell flex min-h-screen">
       <ToastNotification />
 
       {/* Sidebar */}
@@ -340,7 +340,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="lx-main flex-1 flex flex-col min-w-0">
         {/* Topbar */}
         <header className="lx-top bg-[rgba(13,13,13,0.9)] border-b border-[var(--border)] px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">

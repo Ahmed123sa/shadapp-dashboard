@@ -25,6 +25,7 @@ import { resolveFileUrl, clientHasSignedContract } from '@/lib/utils';
 import { useArchiveClient, useClient, useTransferClient, useUnarchiveClient } from '@/hooks/queries/useClients';
 import api from '@/lib/api';
 import { reportError } from '@/lib/error-reporting';
+import { useUiStyle } from '@/lib/ui-style';
 import type { Client, User } from '@/types';
 
 const TABS = ['profile', 'chat', 'files', 'contracts', 'payments', 'approvals', 'meetings', 'calendar', 'team'] as const;
@@ -48,6 +49,7 @@ const STAFF_TABS: Tab[] = ['chat', 'approvals', 'meetings'];
 export default function ClientWorkspace() {
   const t = useTranslations('dashboard');
   const { id } = useParams();
+  const luxe = useUiStyle() === 'luxe';
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
@@ -167,6 +169,56 @@ export default function ClientWorkspace() {
     }
   };
 
+  const ownerName = client.workspace?.manager?.name;
+
+  const settingsLink = (!isSA && !asst && !staff) ? (
+    <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="lx-btn inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /><span className="lx-only">{t('settings_title')}</span></Link>
+  ) : null;
+
+  const statusGroup = (
+    <>
+      {isArchived && <StatusBadge status="archived" />}
+      <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
+      {/* has_signed_contract, not signed_at — see client-signature-plan.md
+          ن1. signed_at only records a saved profile signature, which is
+          a different thing from having approved a contract; a paid,
+          active client used to show as "not signed" here. */}
+      {!staff && <span data-tone={clientHasSignedContract(client) ? 'ok' : 'off'} className={`lx-status px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
+        {clientHasSignedContract(client) ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('contracted')}</> : t('not_contracted')}
+      </span>}
+    </>
+  );
+
+  const actionButtons = (
+    <>
+      {!asst && !staff && (isArchived ? (
+        <button
+          onClick={unarchiveClient}
+          disabled={unarchiveMutation.isPending}
+          className="lx-btn text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
+        >
+          {t('client_unarchive')}
+        </button>
+      ) : (
+        <button
+          onClick={archiveClient}
+          disabled={archiveMutation.isPending}
+          className="lx-btn lx-btn-danger text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
+        >
+          {t('client_archive')}
+        </button>
+      ))}
+      {isSA && (
+        <button
+          onClick={openTransfer}
+          className="lx-btn lx-btn-gold lx-first text-xs text-[var(--color-gold-text)] hover:underline border border-[var(--color-card-border)] rounded px-2 py-1"
+        >
+          {t('client_transfer')}
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div className="lx-ws space-y-6">
       {archiveError && (
@@ -175,7 +227,7 @@ export default function ClientWorkspace() {
       <div className="lx-dossier bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-5 border-e-2 border-e-[var(--color-primary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-input-fill)] overflow-hidden border-2 border-[var(--color-card-border)] flex-shrink-0">
+            <div className="lx-avatar w-12 h-12 rounded-full bg-[var(--color-input-fill)] overflow-hidden border-2 border-[var(--color-card-border)] flex-shrink-0">
               {client.avatar_url ? (
                 <img src={resolveFileUrl(client.avatar_url)} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -185,49 +237,30 @@ export default function ClientWorkspace() {
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="lx-name-row flex items-center gap-2">
                 <h2 className="lx-cname text-xl font-bold">{client.company_name}</h2>
                 <ClientTypeBadge clientType={client.client_type} />
               </div>
               <p className="lx-meta text-sm text-[var(--color-text-secondary)]">{client.contact_person} • {client.email}{client.country ? ` • ${client.country}` : ''}{client.industry ? ` • ${client.industry}` : ''}</p>
+              {luxe && <div className="lx-state flex items-center flex-wrap">{statusGroup}</div>}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!isSA && !asst && !staff && <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="lx-btn inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /><span className="lx-only">{t('settings_title')}</span></Link>}
-            {isArchived && <StatusBadge status="archived" />}
-            <StatusBadge status={client.workspace?.status === 'active' ? 'active' : 'inactive'} />
-            {/* has_signed_contract, not signed_at — see client-signature-plan.md
-                ن1. signed_at only records a saved profile signature, which is
-                a different thing from having approved a contract; a paid,
-                active client used to show as "not signed" here. */}
-            {!staff && <span data-tone={clientHasSignedContract(client) ? 'ok' : 'off'} className={`lx-status px-2.5 py-1 rounded-full text-xs ${clientHasSignedContract(client) ? 'bg-purple-900/30 text-purple-400' : 'bg-[var(--color-input-fill)] text-[var(--color-text-secondary)]'}`}>
-              {clientHasSignedContract(client) ? <><CheckCircle2 size={14} strokeWidth={1.5} className="inline text-purple-400" /> {t('contracted')}</> : t('not_contracted')}
-            </span>}
-            {!asst && !staff && (isArchived ? (
-              <button
-                onClick={unarchiveClient}
-                disabled={unarchiveMutation.isPending}
-                className="lx-btn text-xs text-green-400 hover:underline border border-green-900/30 rounded px-2 py-1 disabled:opacity-50"
-              >
-                {t('client_unarchive')}
-              </button>
-            ) : (
-              <button
-                onClick={archiveClient}
-                disabled={archiveMutation.isPending}
-                className="lx-btn lx-btn-danger text-xs text-red-400 hover:underline border border-red-900/30 rounded px-2 py-1 disabled:opacity-50"
-              >
-                {t('client_archive')}
-              </button>
-            ))}
-            {isSA && (
-              <button
-                onClick={openTransfer}
-                className="lx-btn lx-btn-gold text-xs text-[var(--color-gold-text)] hover:underline border border-[var(--color-card-border)] rounded px-2 py-1"
-              >
-                {t('client_transfer')}
-              </button>
+          <div className="lx-side flex items-center gap-2">
+            {luxe && ownerName && !(me?.role === 'account_manager') && (
+              <div className="lx-owner flex items-center gap-2.5">
+                <div className="lx-owner-av w-[34px] h-[34px] rounded-full flex items-center justify-center text-xs">{ownerName[0]}</div>
+                <div className="leading-tight">
+                  <span className="lx-owner-k block">{t('role_am')}</span>
+                  <b className="lx-owner-n block">{ownerName}</b>
+                </div>
+              </div>
             )}
+            {!luxe && settingsLink}
+            {!luxe && statusGroup}
+            <div className="lx-actions flex items-center gap-2">
+              {luxe && settingsLink}
+              {actionButtons}
+            </div>
           </div>
         </div>
 

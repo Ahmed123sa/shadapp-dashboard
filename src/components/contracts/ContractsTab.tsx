@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
+import { useUiStyle } from '@/lib/ui-style';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { canDo } from '@/lib/permissions';
@@ -34,6 +35,7 @@ function isImageSignature(val: string | null | undefined) {
 export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const luxe = useUiStyle() === 'luxe';
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFixed, setEditFixed] = useState<string[]>([]);
@@ -307,13 +309,19 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       {contracts.length === 0 ? <EmptyState message={t('no_contracts')} /> : null}
       {contracts.map((c) => (
         <div key={c.id} className="lx-lrow border border-[var(--color-card-border)] rounded-lg p-4">
-          <div className="flex justify-between items-start">
-            <div><h3 className="lx-ltitle font-medium">{c.title}</h3>
-              {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
-              {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
-              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents?.length}{t('doc_required_suffix')}</p>}
+          <div className="lx-lhead flex justify-between items-start">
+            <div className="lx-ltb"><h3 className="lx-ltitle font-medium">{c.title}</h3>
+              {c.value ? <p className="lx-lsub text-xs text-[var(--color-text-secondary)]">{luxe ? '' : `${c.value} ${c.currency || 'SAR'}`}{c.start_date ? `${luxe ? '' : ' • '}${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
+              {clientType === 'business' && !luxe && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
+              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">{luxe ? '' : '📎 '}{c.required_documents?.length}{t('doc_required_suffix')}</p>}
             </div>
-            <div className="flex items-center gap-2">
+            {luxe && c.value ? (
+              <div className="lx-amt">
+                {Number(c.value).toLocaleString()}<small>{c.currency || 'SAR'}</small>
+                {clientType === 'business' && <span className="lx-amt-ex">{t('contract_value_excl_vat')}</span>}
+              </div>
+            ) : null}
+            <div className="lx-lbadges flex items-center gap-2">
               <span className={`lx-kind px-2 py-0.5 rounded-full text-[9px] font-semibold ${
                 c.contract_type === 'main' || c.contract_type === null
                   ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] border border-[var(--color-gold-border)]'

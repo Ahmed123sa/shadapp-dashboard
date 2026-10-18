@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
+import { useUiStyle } from '@/lib/ui-style';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getUser } from '@/lib/auth';
 import { canDo, isStaffMember } from '@/lib/permissions';
@@ -11,7 +12,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { Check, CheckCheck, Paperclip, Reply } from 'lucide-react';
+import { ArrowRight, Check, CheckCheck, Paperclip, Reply } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
@@ -28,6 +29,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
+  const luxe = useUiStyle() === 'luxe';
   const queryClient = useQueryClient();
   const chatQuery = useWorkspaceChat(wsId);
   // Company staff may not read contracts (backend 403s) — skip the query.
@@ -247,7 +249,9 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />
         ))}
         {messages.length === 0 && contracts.length === 0 ? <EmptyState message={t('chat_no_messages')} /> : null}
-        {messages.map((m) => {
+        {messages.map((m, mi) => {
+          const dayOf = (x?: string) => (x ? new Date(x).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : '');
+          const dayLabel = dayOf(m.created_at) !== dayOf(messages[mi - 1]?.created_at) ? dayOf(m.created_at) : undefined;
           const isClient = m.sender_type === 'App\\Models\\Client';
           const isSubUser = m.sender_type === 'App\\Models\\SubUser';
           const isClientTeam = isClient || isSubUser;
@@ -255,7 +259,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             const hostId = hostOf(m.metadata.meeting_id);
             const isHost = !hostId || hostId === currentUserId;
             return (
-              <div key={m.id} className="flex justify-start">
+              <div key={m.id} data-day={luxe ? dayLabel : undefined} className="lx-row flex justify-start">
                 <MeetingChip
                   metadata={m.metadata}
                   staffEntry={true}
@@ -271,9 +275,11 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const isPending = m.requires_action && !m.action_taken;
           const isResponded = m.action_taken;
           const initial = ((m.sender?.name?.[0]) || '?').toUpperCase();
+          const senderName = m.sender?.name || (isClient ? t('client_label') : isSubUser ? t('team_member') : '');
+          const senderTag = isClient ? t('client_label') : isSubUser ? t('team_member') : ((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label'));
           const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
-          <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
+          <div key={m.id} data-day={luxe ? dayLabel : undefined} className={`lx-row flex ${isClientTeam ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
             <div className="lx-msg max-w-xs flex gap-2 items-start">
               {!isClientTeam && (
                 <div className="w-7 h-7 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
@@ -286,7 +292,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
               )}
               <div>
                 <div data-mine={isClient} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                  <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{senderLabel}</p>
+                  <p data-tag={luxe ? senderTag : undefined} className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{luxe ? senderName : senderLabel}</p>
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                       <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -366,11 +372,13 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
 
       <div className="lx-composer flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={18} strokeWidth={1.5} /></button>
-        {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24">{uploadFile.name}</span>}
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
-          className="lx-field flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
-        <button onClick={send} className="lx-send bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('chat_send_button')}</button>
+        <div className="lx-fieldwrap flex flex-1 gap-2">
+          <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={18} strokeWidth={1.5} /></button>
+          {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24">{uploadFile.name}</span>}
+          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
+            className="lx-field flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
+        </div>
+        <button onClick={send} aria-label={t('chat_send_button')} className="lx-send bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]"><span className="lx-classic-only">{t('chat_send_button')}</span><ArrowRight className="lx-only rtl:rotate-180" size={17} strokeWidth={1.6} /></button>
       </div>
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
 

@@ -54,13 +54,13 @@ export default function MeetingChip({
   };
 
   return (
-    <div className="max-w-xs border border-[#1a5276]/30 rounded-lg p-3 bg-[#0d2137]">
+    <div className="lx-card lx-meet max-w-xs border border-[#1a5276]/30 rounded-lg p-3 bg-[#0d2137]">
       <div className="flex items-start gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-[#1a5276]/30 border border-[#1a5276]/40 flex items-center justify-center flex-shrink-0">
+        <div className="lx-meet-ic w-8 h-8 rounded-lg bg-[#1a5276]/30 border border-[#1a5276]/40 flex items-center justify-center flex-shrink-0">
           <span className="text-sm">📹</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-white truncate">{title}</p>
+          <p className="lx-card-t text-xs font-bold text-white truncate">{title}</p>
           {/* The backend posts a fresh card flagged metadata.rescheduled
               when a meeting's time changes, so the client notices. */}
           {metadata.rescheduled && status === 'scheduled' && (
