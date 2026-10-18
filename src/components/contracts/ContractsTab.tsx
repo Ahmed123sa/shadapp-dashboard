@@ -344,11 +344,22 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               container is ltr, so they rendered left-aligned with the full stop
               landing at the start of the line. */}
           {c.clauses?.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {c.clauses.map((cl) => (
-                <p key={cl.id} dir="auto" className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
-              ))}
-            </div>
+            luxe ? (
+              <details className="lx-clauses">
+                <summary>{t('clauses_toggle', { count: c.clauses.length })}</summary>
+                <div className="mt-2 space-y-1">
+                  {c.clauses.map((cl) => (
+                    <p key={cl.id} dir="auto" className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
+                  ))}
+                </div>
+              </details>
+            ) : (
+              <div className="mt-2 space-y-1">
+                {c.clauses.map((cl) => (
+                  <p key={cl.id} dir="auto" className="text-xs text-[var(--color-text-secondary)] pr-2 border-r-2 border-[var(--color-card-border)]">{cl.content}</p>
+                ))}
+              </div>
+            )
           )}
           <div className="lx-acts mt-2 flex gap-2 flex-wrap">
             {canManage && (c.status === 'draft' || c.status === 'edit_requested') && (

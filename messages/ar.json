@@ -66,6 +66,7 @@
     "ui_style_classic": "الشكل القديم",
     "ui_style_luxe": "الشكل الجديد",
     "ui_style_hint": "التبديل بين الشكل القديم والشكل الجديد",
+    "clauses_toggle": "البنود ({count})",
     "greeting_morning": "صباح الخير، {name}",
     "greeting_afternoon": "مساء الخير، {name}",
     "greeting_evening": "مساء الخير، {name}",

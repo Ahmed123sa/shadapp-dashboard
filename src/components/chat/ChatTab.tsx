@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { useUiStyle } from '@/lib/ui-style';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { Fragment, useEffect, useState, useRef, useCallback } from 'react';
 import { getUser } from '@/lib/auth';
 import { canDo, isStaffMember } from '@/lib/permissions';
 import { subscribeToWorkspace } from '@/lib/echo';
@@ -12,7 +12,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { ArrowRight, Check, CheckCheck, Paperclip, Reply } from 'lucide-react';
+import { ArrowRight, Check, CheckCheck, Download, Paperclip, Reply } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
@@ -135,19 +135,34 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const isSA = user?.role === 'super_admin';
   const canChat = wsActive !== false && !isSA && canDo(user, 'can_chat');
 
+  const contractsByDate = [...contracts].sort((a, b) => (a.created_at ? new Date(a.created_at).getTime() : 0) - (b.created_at ? new Date(b.created_at).getTime() : 0));
+  const contractRow = (c: (typeof contracts)[number]) => (
+    <div key={`contract-${c.id}`} className="lx-row flex justify-end">
+      <div className="lx-msg">
+        <ChatContractCard contract={c} clientType={clientType} onAction={canChat ? doContractAction : () => {}} />
+      </div>
+    </div>
+  );
+
   if (!canChat) {
     return (
-      <div className="space-y-2">
+      <div className="lx-chat space-y-2">
         {/* 23 Sept 2026 — was a fixed h-72 (288px) box under a ~124px
             eye-emoji banner, so on a large screen the messages got about a
             third of the height and the rest sat empty. The box now grows with
             the viewport (never smaller than before), and the notice is a slim
             bar below it, where the composer would otherwise be. */}
         <div className={`lx-stream ${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
-          {contracts.length > 0 && contracts.map((c) => (
+          {!luxe && contracts.length > 0 && contracts.map((c) => (
             <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={() => {}} />
           ))}
-          {messages.map((m) => {
+          {messages.map((m, mi) => {
+            const at = (x?: string) => (x ? new Date(x).getTime() : 0);
+            const leadContracts = luxe
+              ? contractsByDate.filter((c) => at(c.created_at) <= at(m.created_at) && at(c.created_at) > at(messages[mi - 1]?.created_at))
+              : [];
+            const dayOf = (x?: string) => (x ? new Date(x).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : '');
+            const dayLabel = dayOf(m.created_at) !== dayOf(messages[mi - 1]?.created_at) ? dayOf(m.created_at) : undefined;
             const isClient = m.sender_type === 'App\\Models\\Client';
             const isSubUser = m.sender_type === 'App\\Models\\SubUser';
             const isClientTeam = isClient || isSubUser;
@@ -155,7 +170,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
               const hostId = hostOf(m.metadata.meeting_id);
               const isHost = !hostId || hostId === currentUserId;
               return (
-                <div key={m.id} className="flex justify-start">
+                <Fragment key={m.id}>
+                {luxe && dayLabel && <div className="lx-day">{dayLabel}</div>}
+                {leadContracts.map(contractRow)}
+                <div className="lx-row flex justify-start">
                   <MeetingChip
                     metadata={m.metadata}
                     staffEntry={true}
@@ -165,11 +183,17 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                     }}
                   />
                 </div>
+                </Fragment>
               );
             }
             const initial = ((m.sender?.name?.[0]) || '?').toUpperCase();
+            const senderName = m.sender?.name || (isClient ? t('client_label') : isSubUser ? t('team_member') : '');
+            const senderTag = isClient ? t('client_label') : isSubUser ? t('team_member') : ((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label'));
             return (
-            <div key={m.id} className={`flex ${isClientTeam ? 'justify-end' : 'justify-start'}`}>
+            <Fragment key={m.id}>
+            {luxe && dayLabel && <div className="lx-day">{dayLabel}</div>}
+            {leadContracts.map(contractRow)}
+            <div className={`lx-row flex ${(luxe ? !isClientTeam : isClientTeam) ? 'justify-end' : 'justify-start'}`}>
               <div className="lx-msg max-w-xs flex gap-2 items-start">
                 {!isClientTeam && (
                   <div className="w-6 h-6 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
@@ -181,8 +205,14 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                   </div>
                 )}
                 <div>
-                  <div data-mine={isClientTeam} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                    <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>
+                  {luxe && (
+                    <div className={`lx-wholine ${!isClientTeam ? 'lx-end' : ''}`}>
+                      <b>{senderName}</b><span className="lx-tag">{senderTag}</span>
+                      <span>{m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    </div>
+                  )}
+                  <div data-mine={luxe ? !isClientTeam : isClientTeam} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
+                    {!luxe && <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (t('team_member_prefix') + (m.sender?.name || '')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''))}</p>}
                     {m.reply_to && (
                       <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                         <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -193,6 +223,12 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                       <div className="mb-1">
                         {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
                           <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
+                        ) : luxe ? (
+                          <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="lx-file">
+                            <span className="lx-file-ic">{(m.file_url.split('?')[0].split('.').pop() || 'file').slice(0, 4)}</span>
+                            <span className="lx-file-n">{decodeURIComponent(m.file_url.split('?')[0].split('/').pop() || '')}</span>
+                            <span className="lx-file-open"><Download size={14} strokeWidth={1.5} />{t('view_attachment')}</span>
+                          </a>
                         ) : (
                           <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
                         )}
@@ -218,10 +254,14 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 )}
               </div>
             </div>
+            </Fragment>
             );
           })}
+          {luxe && contractsByDate
+            .filter((c) => !messages.length || (c.created_at ? new Date(c.created_at).getTime() : 0) > (messages[messages.length - 1].created_at ? new Date(messages[messages.length - 1].created_at as string).getTime() : 0))
+            .map(contractRow)}
         </div>
-        <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-[var(--color-card-border)] text-xs text-[var(--color-text-secondary)]">
+        <div className="lx-viewonly flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-[var(--color-card-border)] text-xs text-[var(--color-text-secondary)]">
           <span aria-hidden="true">{!wsActive ? '🔒' : '👁️'}</span>
           <span>{!wsActive ? t('chat_unavailable') : t('chat_view_only')}</span>
         </div>
@@ -245,11 +285,17 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
       )}
 
       <div ref={chatRef} className={`lx-stream ${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
-        {contracts.length > 0 && contracts.map((c) => (
+        {!luxe && contracts.length > 0 && contracts.map((c) => (
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />
         ))}
         {messages.length === 0 && contracts.length === 0 ? <EmptyState message={t('chat_no_messages')} /> : null}
         {messages.map((m, mi) => {
+          // Luxe: contracts sit in the timeline by date (like the mockup)
+          // instead of being pinned above the first message.
+          const at = (x?: string) => (x ? new Date(x).getTime() : 0);
+          const leadContracts = luxe
+            ? contractsByDate.filter((c) => at(c.created_at) <= at(m.created_at) && at(c.created_at) > at(messages[mi - 1]?.created_at))
+            : [];
           const dayOf = (x?: string) => (x ? new Date(x).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : '');
           const dayLabel = dayOf(m.created_at) !== dayOf(messages[mi - 1]?.created_at) ? dayOf(m.created_at) : undefined;
           const isClient = m.sender_type === 'App\\Models\\Client';
@@ -259,7 +305,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             const hostId = hostOf(m.metadata.meeting_id);
             const isHost = !hostId || hostId === currentUserId;
             return (
-              <div key={m.id} data-day={luxe ? dayLabel : undefined} className="lx-row flex justify-start">
+              <Fragment key={m.id}>
+              {luxe && dayLabel && <div className="lx-day">{dayLabel}</div>}
+              {leadContracts.map(contractRow)}
+              <div className="lx-row flex justify-start">
                 <MeetingChip
                   metadata={m.metadata}
                   staffEntry={true}
@@ -269,6 +318,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                   }}
                 />
               </div>
+              </Fragment>
             );
           }
           const approval = m.approval;
@@ -279,7 +329,10 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           const senderTag = isClient ? t('client_label') : isSubUser ? t('team_member') : ((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label'));
           const senderLabel = isClient ? (m.sender?.name || t('client_label')) : isSubUser ? (m.sender?.name || t('team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('supervisor_label') : t('account_manager_label')) + ': ' + (m.sender?.name || ''));
           return (
-          <div key={m.id} data-day={luxe ? dayLabel : undefined} className={`lx-row flex ${(luxe ? !isClientTeam : isClientTeam) ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
+          <Fragment key={m.id}>
+          {luxe && dayLabel && <div className="lx-day">{dayLabel}</div>}
+          {leadContracts.map(contractRow)}
+          <div className={`lx-row flex ${(luxe ? !isClientTeam : isClientTeam) ? 'justify-end' : 'justify-start'}`} onContextMenu={(e) => handleContextMenu(e, m)}>
             <div className="lx-msg max-w-xs flex gap-2 items-start">
               {!isClientTeam && (
                 <div className="w-7 h-7 rounded-full bg-blue-200 overflow-hidden flex-shrink-0 mt-1">
@@ -291,8 +344,14 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                 </div>
               )}
               <div>
+                {luxe && (
+                  <div className={`lx-wholine ${!isClientTeam ? 'lx-end' : ''}`}>
+                    <b>{senderName}</b><span className="lx-tag">{senderTag}</span>
+                    <span>{m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                  </div>
+                )}
                 <div data-mine={luxe ? !isClientTeam : isClient} className={`lx-bubble px-3 py-2 rounded-lg text-sm ${isClient ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-input-fill)] text-[var(--color-foreground)]'}`}>
-                  <p data-tag={luxe ? senderTag : undefined} className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{luxe ? senderName : senderLabel}</p>
+                  {!luxe && <p className="lx-who text-xs text-[var(--color-text-secondary)] mb-0.5">{senderLabel}</p>}
                   {m.reply_to && (
                     <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
                       <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
@@ -303,6 +362,12 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                     <div className="mb-1">
                       {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
                         <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
+                      ) : luxe ? (
+                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="lx-file">
+                          <span className="lx-file-ic">{(m.file_url.split('?')[0].split('.').pop() || 'file').slice(0, 4)}</span>
+                          <span className="lx-file-n">{decodeURIComponent(m.file_url.split('?')[0].split('/').pop() || '')}</span>
+                          <span className="lx-file-open"><Download size={14} strokeWidth={1.5} />{t('view_attachment')}</span>
+                        </a>
                       ) : (
                         <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
                       )}
@@ -318,7 +383,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                     </a>
                   )}
                   <div className="flex items-center justify-between gap-3 mt-1.5 pt-0.5 border-t border-white/5">
-                    <span className="text-[9px] text-[var(--color-text-disabled)]">
+                    <span className="lx-time text-[9px] text-[var(--color-text-disabled)]">
                       {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
@@ -355,8 +420,12 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
               </div>
             </div>
           </div>
+          </Fragment>
           );
         })}
+        {luxe && contractsByDate
+          .filter((c) => !messages.length || (c.created_at ? new Date(c.created_at).getTime() : 0) > (messages[messages.length - 1].created_at ? new Date(messages[messages.length - 1].created_at as string).getTime() : 0))
+          .map(contractRow)}
         <div ref={bottomRef} />
       </div>
 

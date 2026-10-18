@@ -66,6 +66,7 @@
     "ui_style_classic": "Classic",
     "ui_style_luxe": "New look",
     "ui_style_hint": "Switch between the classic and the new look",
+    "clauses_toggle": "Clauses ({count})",
     "greeting_morning": "Good morning, {name}",
     "greeting_afternoon": "Good afternoon, {name}",
     "greeting_evening": "Good evening, {name}",

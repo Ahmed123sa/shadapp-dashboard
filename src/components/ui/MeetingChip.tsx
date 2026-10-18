@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { getMeetingJoinStatus, formatMeetingDate, notifyWriteError } from '@/lib/utils';
 import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useUiStyle } from '@/lib/ui-style';
 
 interface MeetingChipProps {
   metadata: {
@@ -29,6 +30,7 @@ export default function MeetingChip({
   onEntered,
 }: MeetingChipProps) {
   const [entering, setEntering] = useState(false);
+  const luxe = useUiStyle() === 'luxe';
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -56,10 +58,18 @@ export default function MeetingChip({
   return (
     <div className="lx-card lx-meet max-w-xs border border-[#1a5276]/30 rounded-lg p-3 bg-[#0d2137]">
       <div className="flex items-start gap-2.5">
-        <div className="lx-meet-ic w-8 h-8 rounded-lg bg-[#1a5276]/30 border border-[#1a5276]/40 flex items-center justify-center flex-shrink-0">
-          <span className="text-sm">📹</span>
-        </div>
+        {luxe && metadata.scheduled_at ? (
+          <div className="lx-cal">
+            <div className="lx-cal-m">{new Date(metadata.scheduled_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short' })}</div>
+            <div className="lx-cal-d">{new Date(metadata.scheduled_at).getDate()}</div>
+          </div>
+        ) : (
+          <div className="lx-meet-ic w-8 h-8 rounded-lg bg-[#1a5276]/30 border border-[#1a5276]/40 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm">📹</span>
+          </div>
+        )}
         <div className="flex-1 min-w-0">
+          {luxe && <p className="lx-meet-k">{t('meeting_chip_title')}</p>}
           <p className="lx-card-t text-xs font-bold text-white truncate">{title}</p>
           {/* The backend posts a fresh card flagged metadata.rescheduled
               when a meeting's time changes, so the client notices. */}

@@ -209,13 +209,13 @@ function MeetingCard({
                 disabled={isEntering}
                 className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
               >
-                🎥 {isEntering ? t('meeting_opening') : isHost ? t('meeting_start_as_host') : t('meeting_join')}
+                <span className="lx-classic-only">🎥 </span>{isEntering ? t('meeting_opening') : isHost ? t('meeting_start_as_host') : t('meeting_join')}
               </button>
             ) : (
-              <a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">🎥 {t('meeting_chip_join_now')}</a>
+              <a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700"><span className="lx-classic-only">🎥 </span>{t('meeting_chip_join_now')}</a>
             )
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-600/40 text-gray-400 px-3 py-1.5 rounded-lg">⏳ {joinStatus.label}</span>
+            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-600/40 text-gray-400 px-3 py-1.5 rounded-lg"><span className="lx-classic-only">⏳ </span>{joinStatus.label}</span>
           )}
         </div>
       )}

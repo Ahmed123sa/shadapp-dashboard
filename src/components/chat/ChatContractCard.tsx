@@ -2,9 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import type { Contract } from '@/types';
+import { useUiStyle } from '@/lib/ui-style';
 
 export default function ChatContractCard({ contract, clientType, onAction }: { contract: Contract; clientType?: string; onAction?: (id: number, action: string) => void }) {
   const t = useTranslations('dashboard');
+  const luxe = useUiStyle() === 'luxe';
   const statusBadge = (s: string) => {
     const m: Record<string, string> = {
       draft: 'bg-zinc-700/30 text-zinc-400', sent: 'bg-blue-900/30 text-blue-400',
@@ -33,8 +35,12 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
             while the generated PDF - which reads contract.currency - showed the
             real one. Same `currency || 'SAR'` fallback the other contract views
             already use. */}
-        {contract.value && <p className="text-sm text-[var(--color-text-secondary)]">{contract.value} {contract.currency || 'SAR'}</p>}
-        {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_card_excl_vat')}</p>}
+        {contract.value && (luxe ? (
+          <p className="lx-cv"><b>{Number(contract.value).toLocaleString()}</b>{contract.currency || 'SAR'}{clientType === 'business' ? ` · ${t('contract_card_excl_vat')}` : ''}</p>
+        ) : (
+          <p className="text-sm text-[var(--color-text-secondary)]">{contract.value} {contract.currency || 'SAR'}</p>
+        ))}
+        {clientType === 'business' && !luxe && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_card_excl_vat')}</p>}
         {(contract.start_date || contract.end_date) && (
           <p className="text-xs text-[var(--color-text-disabled)]">
             {contract.start_date && contract.end_date
@@ -44,7 +50,7 @@ export default function ChatContractCard({ contract, clientType, onAction }: { c
               : t('contract_card_ends', { end: contract.end_date ?? '' })}
           </p>
         )}
-        {contract.clauses?.length > 0 && (
+        {!luxe && contract.clauses?.length > 0 && (
           <div className="mt-2 space-y-1 border-t border-[var(--color-card-border)] pt-2">
             {/* dir="auto" below: see the matching note in ContractsTab. */}
             {contract.clauses.map((cl) => (

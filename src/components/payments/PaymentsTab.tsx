@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CreditCard, FileText, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { getUser } from '@/lib/auth';
 import type { Client, Workspace } from '@/types';
@@ -198,7 +199,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         {isFullyPaid ? (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-green-400 text-lg">✅</span>
+              <span className="lx-classic-only text-green-400 text-lg">✅</span>
               <p className="text-sm font-bold text-green-400">{t('fully_paid')}</p>
             </div>
             <p className="text-2xl font-bold text-[var(--color-gold-text)] font-display">
@@ -297,19 +298,19 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             <div className="px-5 py-4 space-y-2">
               {p.method_type && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs">💳</span>
+                  <span className="text-xs"><span className="lx-classic-only">💳</span><CreditCard className="lx-only" size={14} strokeWidth={1.5} /></span>
                   <span className="text-xs text-[var(--color-text-secondary)]">{methodLabels[p.method_type] || p.method_type}</span>
                 </div>
               )}
               {p.contract?.title && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs">📄</span>
+                  <span className="text-xs"><span className="lx-classic-only">📄</span><FileText className="lx-only" size={14} strokeWidth={1.5} /></span>
                   <span className="text-xs text-[var(--color-text-secondary)]">{p.contract.title}</span>
                 </div>
               )}
               {p.proof_file_url && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs">📎</span>
+                  <span className="text-xs"><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={14} strokeWidth={1.5} /></span>
                   <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('view_proof')}</a>
                 </div>
               )}
