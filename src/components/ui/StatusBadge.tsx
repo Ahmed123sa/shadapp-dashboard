@@ -20,6 +20,14 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-900/30 text-red-400',
 }
 
+// Luxe look (ق٦): status = dot + word. Tone drives the dot colour in CSS.
+const statusTone: Record<string, 'ok' | 'wait' | 'bad' | 'off'> = {
+  draft: 'off', sent: 'wait', client_approved: 'wait', client_rejected: 'bad',
+  edit_requested: 'bad', company_approved: 'ok', completed: 'ok', archived: 'off',
+  pending: 'wait', approved: 'ok', rejected: 'bad', active: 'ok', inactive: 'off',
+  scheduled: 'wait', cancelled: 'bad',
+};
+
 export function StatusBadge({ status, className = '' }: { status: string; className?: string }) {
   const t = useTranslations('dashboard');
   const statusLabels: Record<string, string> = {
@@ -40,7 +48,7 @@ export function StatusBadge({ status, className = '' }: { status: string; classN
     cancelled: t('label_cancelled_badge'),
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || 'bg-zinc-700/30 text-zinc-400'} ${className}`}>
+    <span data-tone={statusTone[status] || 'off'} className={`lx-status px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || 'bg-zinc-700/30 text-zinc-400'} ${className}`}>
       {statusLabels[status] || status}
     </span>
   );
