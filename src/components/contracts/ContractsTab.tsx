@@ -306,15 +306,15 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
       )}
       {contracts.length === 0 ? <EmptyState message={t('no_contracts')} /> : null}
       {contracts.map((c) => (
-        <div key={c.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
+        <div key={c.id} className="lx-lrow border border-[var(--color-card-border)] rounded-lg p-4">
           <div className="flex justify-between items-start">
-            <div><h3 className="font-medium">{c.title}</h3>
+            <div><h3 className="lx-ltitle font-medium">{c.title}</h3>
               {c.value ? <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}{c.start_date ? ` • ${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
               {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">📎 {c.required_documents?.length}{t('doc_required_suffix')}</p>}
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${
+              <span className={`lx-kind px-2 py-0.5 rounded-full text-[9px] font-semibold ${
                 c.contract_type === 'main' || c.contract_type === null
                   ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] border border-[var(--color-gold-border)]'
                   : 'bg-blue-900/30 text-blue-400'
@@ -342,17 +342,17 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               ))}
             </div>
           )}
-          <div className="mt-2 flex gap-2 flex-wrap">
+          <div className="lx-acts mt-2 flex gap-2 flex-wrap">
             {canManage && (c.status === 'draft' || c.status === 'edit_requested') && (
-              <button onClick={() => startEdit(c)} className="text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
+              <button onClick={() => startEdit(c)} className="lx-btn text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
             )}
-            {canManage && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
-            {canManage && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
+            {canManage && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="lx-btn text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
+            {canManage && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="lx-btn text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
             {c.status === 'client_approved' && (
               <>
-                {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('view_signed_contract')}</a>}
+                {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="lx-btn text-xs text-emerald-600 hover:underline">{t('view_signed_contract')}</a>}
                 {isSA && (
-                  <button onClick={() => openApproveSig(c.id)} className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700">{t('company_approve')}</button>
+                  <button onClick={() => openApproveSig(c.id)} className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700">{t('company_approve')}</button>
                 )}
                 {amCanApprove && (
                   <button
@@ -362,7 +362,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
                         onError: (err) => notifyWriteError(tc, 'ContractsTab.amCompanyApprove', err),
                       });
                     }}
-                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700"
+                    className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700"
                   >
                     {t('company_approve')}
                   </button>
@@ -371,12 +371,12 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
             )}
             {c.status === 'company_approved' && (
               <>
-                {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('download_final_contract')}</a>}
-                {canManage && <button onClick={() => doAction(c.id, 'archive')} className="text-xs text-[var(--color-text-secondary)] hover:underline">{t('archive_contract')}</button>}
+                {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="lx-btn text-xs text-emerald-600 hover:underline">{t('download_final_contract')}</a>}
+                {canManage && <button onClick={() => doAction(c.id, 'archive')} className="lx-btn text-xs text-[var(--color-text-secondary)] hover:underline">{t('archive_contract')}</button>}
               </>
             )}
             {c.status === 'completed' && (
-              <>{c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">{t('download_final_contract')}</a>}</>
+              <>{c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="lx-btn text-xs text-emerald-600 hover:underline">{t('download_final_contract')}</a>}</>
             )}
           </div>
         </div>

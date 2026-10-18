@@ -16,11 +16,11 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
 
   if (compact) {
     return (
-      <div className="flex items-center gap-1.5 mt-2">
+      <div className="lx-steps flex items-center gap-1.5 mt-2">
         {STATUS_STEPS.map((step, i) => (
-          <div key={step.key} className="flex items-center">
-            <div className={`
-              w-6 h-6 rounded-full flex items-center justify-center text-[length:var(--fs-1)] font-medium
+          <div key={step.key} className="lx-step flex items-center" data-state={i < current ? 'done' : i === current ? 'now' : 'todo'}>
+            <div data-label={step.label} className={`
+              lx-step-dot w-6 h-6 rounded-full flex items-center justify-center text-[length:var(--fs-1)] font-medium
               ${i < current ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : ''}
               ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold-text)]' : ''}
               ${i > current ? 'bg-[var(--color-card-border)] text-[var(--color-text-disabled)]' : ''}
@@ -28,7 +28,7 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
               {i < current ? '✓' : i + 1}
             </div>
             {i < STATUS_STEPS.length - 1 && (
-              <div className={`w-5 h-0.5 mx-0.5 ${i < current ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`} />
+              <div className={`lx-step-line w-5 h-0.5 mx-0.5 ${i < current ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`} />
             )}
           </div>
         ))}

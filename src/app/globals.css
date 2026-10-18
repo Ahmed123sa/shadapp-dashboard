@@ -663,3 +663,67 @@ html[data-ui="luxe"] .lx-send {
 }
 html[data-ui="luxe"] .lx-attach { color: var(--color-text-secondary); display: inline-flex; align-items: center; }
 html[data-ui="luxe"] .lx-attach:hover { color: var(--color-foreground); }
+
+/* ---------- العقود: دفتر ---------- */
+html[data-ui="luxe"] .lx-lrow {
+  border: 1px solid var(--lx-line);
+  border-radius: 16px;
+  background-image: var(--lx-card);
+  padding: 22px 26px;
+}
+html[data-ui="luxe"] .lx-ltitle {
+  font-family: var(--font-display), serif;
+  font-size: 23px;
+  font-weight: 400;
+}
+html[lang="ar"][data-ui="luxe"] .lx-ltitle { font-family: var(--font-tajawal), sans-serif; font-size: 19px; font-weight: 500; }
+html[data-ui="luxe"] .lx-kind {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-text-disabled) !important;
+}
+html[data-ui="luxe"] .lx-acts { margin-top: 18px; gap: 8px; }
+html[data-ui="luxe"] .lx-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+html[data-ui="luxe"] .lx-btn-primary:hover { background: #A51A1A; border-color: #A51A1A; color: #fff; }
+
+/* خطوات العقد: نقاط + اسم تحتها، الحالية حمرا */
+html[data-ui="luxe"] .lx-steps { gap: 0; margin: 20px 0 26px; }
+html[data-ui="luxe"] .lx-step-dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  font-size: 0;
+  border: 1px solid var(--color-text-disabled);
+  background: var(--color-background);
+  color: transparent;
+}
+html[data-ui="luxe"] .lx-step[data-state="done"] .lx-step-dot { background: var(--lx-ink-2); border-color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-step[data-state="now"] .lx-step-dot {
+  background: #D24A4A;
+  border: 1px solid #D24A4A;
+  box-shadow: 0 0 0 4px rgba(148, 20, 20, 0.28);
+}
+html[data-ui="luxe"] .lx-step-dot::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 18px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  white-space: nowrap;
+  color: var(--color-text-disabled);
+}
+html[dir="rtl"][data-ui="luxe"] .lx-step-dot::after { transform: translateX(50%); }
+html[data-ui="luxe"] .lx-step[data-state="done"] .lx-step-dot::after,
+html[data-ui="luxe"] .lx-step[data-state="now"] .lx-step-dot::after { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-step-line { width: 64px; height: 1px; margin: 0; background: var(--lx-line-2); }
+html[data-ui="luxe"] .lx-step[data-state="done"] .lx-step-line { background: var(--lx-ink-2); }
