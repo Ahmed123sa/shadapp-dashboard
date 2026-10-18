@@ -211,7 +211,7 @@ export default function ClientsPage() {
             placeholder={t('client_search')}
             className="w-full bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl px-4 py-2.5 pe-10 text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-gold)] focus:outline-none"
           />
-          <Search size={16} strokeWidth={2} className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+          <Search size={16} strokeWidth={2} className="lx-searchicon absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
         </div>
       )}
 

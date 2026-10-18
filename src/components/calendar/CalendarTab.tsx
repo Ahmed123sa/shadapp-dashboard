@@ -163,19 +163,19 @@ export default function CalendarTab({ wsId }: { wsId: number }) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="lx-calendar space-y-3">
       {Object.keys(grouped).length === 0 ? <EmptyState message={t('no_events')} /> : null}
       {Object.entries(grouped).map(([date, entries]) => (
         <div key={date}>
-          <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+          <h4 className="lx-caldate text-sm font-medium text-[var(--color-text-secondary)] mb-1">
             {new Date(date + 'T12:00:00').toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </h4>
-          <div className="space-y-1 mr-4">
+          <div className="lx-calrows space-y-1 mr-4">
             {entries.map((i, idx) => (
-              <div key={`${i.type}-${i.id}-${idx}`} className={`flex items-center justify-between gap-2 text-sm border-r-2 ${typeStyles[i.type] || 'border-zinc-300'} pr-3 py-1`}>
+              <div key={`${i.type}-${i.id}-${idx}`} className={`lx-calrow flex items-center justify-between gap-2 text-sm border-r-2 ${typeStyles[i.type] || 'border-zinc-300'} pr-3 py-1`}>
                 <div>
-                  <span className="font-medium">{i.title}</span>
-                  <span className={`text-xs mr-2 ${i.type === 'deadline' ? 'text-red-500' : 'text-[var(--color-text-disabled)]'}`}>{typeLabels[i.type] || i.type}</span>
+                  <span className="lx-caltitle font-medium">{i.title}</span>
+                  <span className={`lx-caltype text-xs mr-2 ${i.type === 'deadline' ? 'text-red-500' : 'text-[var(--color-text-disabled)]'}`}>{typeLabels[i.type] || i.type}</span>
                 </div>
                 {renderStatus(i)}
               </div>

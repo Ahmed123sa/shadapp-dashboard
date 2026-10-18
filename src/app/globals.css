@@ -246,7 +246,7 @@ html[data-ui="luxe"] {
   --border: rgba(240, 240, 240, 0.07);
   --color-card-border: var(--border);
   --color-text-secondary: #8E8E8E;
-  --color-text-disabled: #5E5E5E;
+  --color-text-disabled: #808080; /* AA (4.5:1) على #141313 */
   --color-input-fill: #1B1A19;
   --color-input-border: rgba(240, 240, 240, 0.13);
   --color-input-focused: #D24A4A;
@@ -1645,3 +1645,54 @@ html[data-ui="luxe"] .lx-reports .lb-sub { font-size: 12px; color: var(--color-t
 html[data-ui="luxe"] .lx-reports .lb-bar-wrap { background: rgba(240,240,240,.07); width: 90px; }
 html[data-ui="luxe"] .lx-reports .lb-bar { background: #D24A4A !important; }
 html[data-ui="luxe"] .lx-reports .lb-val { font-family: var(--font-display), serif; font-size: 17px; font-weight: 400; color: var(--lx-tuscan); }
+
+/* ---------- Calendar tab ---------- */
+html[data-ui="luxe"] .lx-calendar { display: flex; flex-direction: column; gap: 26px; }
+html[data-ui="luxe"] .lx-caldate {
+  font-size: 11px; font-weight: 400; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--color-text-disabled); margin-bottom: 4px;
+}
+html[data-ui="luxe"] .lx-calrows { margin: 0; display: flex; flex-direction: column; gap: 0; }
+html[data-ui="luxe"] .lx-calrow {
+  border: 0 !important; border-bottom: 1px solid var(--lx-line) !important; padding: 14px 0 !important; font-size: 14px;
+}
+html[data-ui="luxe"] .lx-calrows > .lx-calrow:last-child { border-bottom: 0 !important; }
+html[data-ui="luxe"] .lx-caltitle { font-weight: 400; color: var(--color-foreground); }
+html[data-ui="luxe"] .lx-caltype {
+  margin: 0; margin-inline-start: 12px; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--color-text-disabled);
+}
+html[data-ui="luxe"] .lx-caltype[class*="red"] { color: #D24A4A; }
+
+/* أيقونة البحث جوه الخانة مش على طرف الصفحة */
+html[data-ui="luxe"] .lx-searchwrap { max-width: 420px; }
+html[data-ui="luxe"] .lx-searchwrap input { max-width: none; width: 100%; padding-inline-start: 42px; padding-inline-end: 16px; }
+html[data-ui="luxe"] .lx-searchicon { inset-inline-start: 16px; inset-inline-end: auto; width: 15px; height: 15px; }
+
+/* ---------- Responsive (Luxe) ---------- */
+@media (max-width: 1024px) {
+  html[data-ui="luxe"] .lx-page { padding: 28px 24px 64px; }
+  html[data-ui="luxe"] .lx-ph-title { font-size: 36px; }
+  /* الإعدادات: العنوان فوق والمحتوى تحته */
+  html[data-ui="luxe"] .lx-settings > [class*="rounded-xl"]:has(> h2) { grid-template-columns: 1fr; }
+  html[data-ui="luxe"] .lx-settings > [class*="rounded-xl"]:has(> h2) > h2 { grid-row: auto; }
+  html[data-ui="luxe"] .lx-settings > [class*="rounded-xl"]:has(> h2) > h2 + p { grid-row: auto; grid-column: 1; margin-top: 0; }
+  html[data-ui="luxe"] .lx-settings > [class*="rounded-xl"]:has(> h2) > :not(h2):not(h2 + p) { grid-column: 1; }
+  html[data-ui="luxe"] .lx-profilegroup, html[data-ui="luxe"] .lx-agency { grid-template-columns: 1fr; }
+  html[data-ui="luxe"] .lx-profilegroup::before, html[data-ui="luxe"] .lx-agency::before { grid-row: auto; grid-column: 1; order: -2; }
+  html[data-ui="luxe"] .lx-profilegroup::after, html[data-ui="luxe"] .lx-agency::after { grid-row: auto; grid-column: 1; margin-top: 0; order: -1; }
+  html[data-ui="luxe"] .lx-profilegroup > div, html[data-ui="luxe"] .lx-agency > div { grid-column: 1 !important; }
+}
+@media (max-width: 640px) {
+  html[data-ui="luxe"] .lx-page { padding: 20px 16px 56px; }
+  html[data-ui="luxe"] .lx-ph-title { font-size: 30px; }
+  html[data-ui="luxe"] .lx-top .lx-search { display: none; }
+  /* الجداول العريضة تتحرك أفقيًا بدل ما تخرج برا الشاشة */
+  html[data-ui="luxe"] .lx-tblbox { overflow-x: auto; padding: 6px 16px; }
+  html[data-ui="luxe"] .lx-tblbox table { min-width: 640px; }
+  html[data-ui="luxe"] .lx-finbar input[type="text"], html[data-ui="luxe"] .lx-audit .lx-finbar input[type="text"] { width: 100%; }
+  html[data-ui="luxe"] .lx-clausecard { padding: 20px; }
+}
+
+/* Luxe غامق بس (زي الموك اب): زرار الثيم الفاتح مخفي، والقديم محتفظ بيه */
+html[data-ui="luxe"] .lx-themebtn { display: none; }

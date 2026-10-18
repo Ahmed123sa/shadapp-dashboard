@@ -382,7 +382,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? t('switch_to_light') : t('switch_to_dark')}
-              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition"
+              className="lx-themebtn p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition"
             >
               {theme === 'dark' ? <Sun size={17} strokeWidth={1.5} /> : <Moon size={17} strokeWidth={1.5} />}
             </button>
@@ -399,7 +399,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main data-theme={theme === 'light' ? 'light' : undefined} className="lx-page flex-1 p-5 overflow-auto">
+        <main data-theme={theme === 'light' && !luxeNow ? 'light' : undefined} className="lx-page flex-1 p-5 overflow-auto">
           {/* Luxe: the page title lives in the page body (big serif), the top bar only carries a small crumb. */}
           {luxeNow && !/^\/dashboard\/clients\/[^/]+$/.test(pathname) && (
             <div className="lx-ph">
