@@ -93,9 +93,9 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
-      <div className="p-5">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+    <div className="lx-home rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
+      <div className="lx-home-in p-5">
+        <div className="lx-kpis grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           {/* The "+6" / "+3" that used to be here were literal strings, not a
               computed delta — they showed the same growth figures no matter
               what the data was. Dropped rather than faked; a real
@@ -125,11 +125,11 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
           <DashboardStatCard label={t('pending_approvals')} value={pendingApprovalsTotal} icon={Clock} color="red" subtitle={t('subtitle_urgent')} href="/dashboard?view=approvals" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
-          <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[length:var(--fs-2)] font-bold">{t('managers')}</span>
-              <Link href="/dashboard/account-managers" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('manage')}</Link>
+        <div className="lx-cols grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
+          <div className="lx-box bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
+            <div className="lx-sh flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <span className="lx-sh-t text-[length:var(--fs-2)] font-bold">{t('managers')}</span>
+              <Link href="/dashboard/account-managers" className="lx-more text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('manage')}</Link>
             </div>
             <table className="w-full">
               <thead>
@@ -177,7 +177,7 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
                                     {c.company_name?.slice(0, 2) || '?'}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[length:var(--fs-2)] font-bold truncate">{c.company_name}</div>
+                                    <div className="lx-tname text-[length:var(--fs-2)] font-bold truncate">{c.company_name}</div>
                                     <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
                                       {c.contact_person}
                                       <ClientTypeBadge clientType={c.client_type} compact />
@@ -200,9 +200,9 @@ export default function SAManagersView({ t, locale, managers, allContracts, allP
           <div className="flex flex-col gap-3.5">
             <PendingApprovalsPanel t={t} locale={locale} />
 
-            <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
-              <div className="px-4 py-3 border-b border-[var(--border)]">
-                <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
+            <div className="lx-box bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
+              <div className="lx-sh px-4 py-3 border-b border-[var(--border)]">
+                <span className="lx-sh-t text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
               </div>
               <ActivityFeed items={activityItems} />
             </div>

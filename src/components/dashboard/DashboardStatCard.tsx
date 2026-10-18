@@ -34,18 +34,18 @@ const colorMap = {
 export default function DashboardStatCard({ label, value, icon, color = 'default', subtitle, href }: DashboardStatCardProps) {
   const c = colorMap[color] || colorMap.default;
   const Icon = icon;
-  const className = 'bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl p-3.5 stat-card-hover block';
+  const className = 'lx-kpi bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl p-3.5 stat-card-hover block';
   const content = (
     <>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{label}</span>
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-gold-soft)] flex items-center justify-center"><Icon size={16} strokeWidth={1.5} /></div>
+        <span className="lx-kpi-l text-[length:var(--fs-1)] text-[var(--color-text-secondary)]">{label}</span>
+        <div className="lx-kpi-icon w-7 h-7 rounded-lg bg-[var(--color-gold-soft)] flex items-center justify-center"><Icon size={16} strokeWidth={1.5} /></div>
       </div>
-      <div className="text-[length:var(--fs-6)] font-bold font-display" style={{ color: c.val || undefined }}>
+      <div data-color={color} className="lx-kpi-v text-[length:var(--fs-6)] font-bold font-display" style={{ color: c.val || undefined }}>
         {value}
       </div>
-      <div className="h-[2.5px] w-[45%] rounded-[3px] mt-2" style={{ background: c.bar }} />
-      {subtitle && <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] mt-1">{subtitle}</div>}
+      <div className="lx-kpi-bar h-[2.5px] w-[45%] rounded-[3px] mt-2" style={{ background: c.bar }} />
+      {subtitle && <div data-color={color} className="lx-kpi-sub text-[length:var(--fs-1)] text-[var(--color-text-secondary)] mt-1">{subtitle}</div>}
     </>
   );
 

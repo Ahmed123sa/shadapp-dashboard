@@ -107,17 +107,17 @@ export function buildPendingApprovalRows(data: PendingApprovalsResponse, t: TFun
 export function PendingApprovalRowLink({ row }: { row: PendingApprovalRow }) {
   const content = (
     <>
-      <div className={`w-[3px] h-9 rounded-sm flex-shrink-0 ${row.accentClass}`} />
+      <div className={`lx-bar w-[3px] h-9 rounded-sm flex-shrink-0 ${row.accentClass}`} />
       <div className="flex-1 min-w-0">
-        <div className="text-[length:var(--fs-2)] font-bold truncate">{row.title}</div>
+        <div className="lx-tname text-[length:var(--fs-2)] font-bold truncate">{row.title}</div>
         <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">{row.subtitle}</div>
       </div>
-      <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${row.badgeClass}`}>
+      <span className={`lx-wbadge px-2 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${row.badgeClass}`}>
         {row.waitingLabel}
       </span>
     </>
   );
-  const rowClass = 'flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0';
+  const rowClass = 'lx-li flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0';
 
   if (!row.href) {
     return <div className={`${rowClass} opacity-60`}>{content}</div>;
@@ -141,11 +141,11 @@ export default function PendingApprovalsPanel({ t, locale, limit = 5 }: { t: TFu
   const rows = data ? buildPendingApprovalRows(data, t, locale).slice(0, limit) : [];
 
   return (
-    <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-        <span className="text-[length:var(--fs-2)] font-bold">{t('pending_approvals')}</span>
+    <div className="lx-box bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
+      <div className="lx-sh flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+        <span className="lx-sh-t text-[length:var(--fs-2)] font-bold">{t('pending_approvals')}</span>
         {total > 0 && (
-          <Link href="/dashboard?view=approvals" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">
+          <Link href="/dashboard?view=approvals" className="lx-more text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">
             {t('pending_approvals_view_all', { count: total })}
           </Link>
         )}

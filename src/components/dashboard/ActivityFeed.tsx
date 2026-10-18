@@ -23,7 +23,7 @@ export default function ActivityFeed({ items }: { items: ActivityItem[] }) {
   return (
     <div>
       {items.map((item, i) => (
-        <div key={i} className="flex items-start gap-2.5 px-3.5 py-2.5 border-b border-white/[0.04] last:border-0 row-slide" style={{ animationDelay: `${(i + 1) * 50}ms` }}>
+        <div key={i} className="lx-li flex items-start gap-2.5 px-3.5 py-2.5 border-b border-white/[0.04] last:border-0 row-slide" style={{ animationDelay: `${(i + 1) * 50}ms` }}>
           <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: dotColors[item.color] }} />
           <div>
             <div className="text-[length:var(--fs-2)] leading-relaxed">{item.text}</div>

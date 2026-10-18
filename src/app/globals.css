@@ -473,3 +473,57 @@ html[data-ui="luxe"] .ui-style-switch::before {
   border-radius: 50%;
   background: #D24A4A;
 }
+
+/* ---------- الهوم (SA + AM) ---------- */
+html[data-ui="luxe"] .lx-home { border: 0; overflow: visible; border-radius: 0; min-height: 0 !important; }
+html[data-ui="luxe"] .lx-home-in { padding: 0; }
+html[data-ui="luxe"] .lx-kpis { gap: 14px; margin-bottom: 40px; }
+html[data-ui="luxe"] .lx-cols { gap: 14px; }
+
+/* KPI */
+html[data-ui="luxe"] .lx-kpi { padding: 22px 24px; border-color: var(--lx-line); }
+html[data-ui="luxe"] .lx-kpi-l { font-size: 12.5px; color: var(--color-text-secondary); }
+html[data-ui="luxe"] .lx-kpi-icon { display: none; }
+html[data-ui="luxe"] .lx-kpi-v {
+  font-size: 44px;
+  line-height: 1.1;
+  font-weight: 400;
+  margin-top: 10px;
+  font-variant-numeric: lining-nums;
+}
+html[data-ui="luxe"] .lx-kpi-v:not([data-color="gold"]) { color: var(--color-foreground) !important; }
+html[data-ui="luxe"] .lx-kpi-v[data-color="gold"] { color: var(--lx-tuscan) !important; }
+html[data-ui="luxe"] .lx-kpi-bar { display: none; }
+html[data-ui="luxe"] .lx-kpi-sub { font-size: 12px; color: var(--color-text-disabled); margin-top: 6px; }
+html[data-ui="luxe"] .lx-kpi-sub[data-color="red"] { color: #D24A4A; }
+
+/* صناديق الأقسام */
+html[data-ui="luxe"] .lx-box { padding: 6px 24px 10px; border-color: var(--lx-line); }
+html[data-ui="luxe"] .lx-sh { padding: 18px 0 8px; border: 0; align-items: baseline; }
+html[data-ui="luxe"] .lx-sh-t { font-family: var(--font-display), serif; font-size: 24px; font-weight: 500; }
+html[lang="ar"][data-ui="luxe"] .lx-sh-t { font-family: var(--font-tajawal), sans-serif; font-size: 20px; }
+html[data-ui="luxe"] .lx-more {
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--lx-line-2);
+  padding: 0;
+  margin: 0;
+}
+html[data-ui="luxe"] .lx-more:hover { color: var(--color-foreground); }
+html[data-ui="luxe"] .lx-tname { font-family: var(--font-display), serif; font-size: 18px; font-weight: 400; color: var(--color-foreground); }
+html[lang="ar"][data-ui="luxe"] .lx-tname { font-family: var(--font-tajawal), sans-serif; font-size: 15px; font-weight: 500; }
+html[data-ui="luxe"] .lx-box table th { padding: 12px 14px 12px 0; }
+html[data-ui="luxe"] .lx-box table td { padding: 16px 14px 16px 0; }
+html[dir="rtl"][data-ui="luxe"] .lx-box table th { padding: 12px 0 12px 14px; }
+html[dir="rtl"][data-ui="luxe"] .lx-box table td { padding: 16px 0 16px 14px; }
+
+/* قوائم (موافقات / نشاط) */
+html[data-ui="luxe"] .lx-li { padding: 15px 0; border-color: var(--lx-line) !important; }
+html[data-ui="luxe"] .lx-bar { width: 2px; border-radius: 2px; }
+html[data-ui="luxe"] .lx-wbadge {
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}

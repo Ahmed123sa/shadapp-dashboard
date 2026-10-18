@@ -65,9 +65,9 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
   activityItems.sort((a, b) => 0).slice(0, 5);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
-      <div className="p-5">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+    <div className="lx-home rounded-xl border border-[var(--border)] overflow-hidden" style={{ minHeight: '640px' }}>
+      <div className="lx-home-in p-5">
+        <div className="lx-kpis grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           {/* "+2" here was a literal, not a computed delta — same note as
               SAManagersView. */}
           <DashboardStatCard label={t('my_clients')} value={totalClients} icon={Users} color="crimson" />
@@ -76,11 +76,11 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
           <DashboardStatCard label={t('unread_messages')} value={unreadCount} icon={MessageCircle} color="crimson" subtitle={t('subtitle_from_clients', { count: unreadClientsCount })} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
-          <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-              <span className="text-[length:var(--fs-2)] font-bold">{t('my_clients')}</span>
-              <Link href="/dashboard/clients" className="text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('view_all')}</Link>
+        <div className="lx-cols grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
+          <div className="lx-box bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden">
+            <div className="lx-sh flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <span className="lx-sh-t text-[length:var(--fs-2)] font-bold">{t('my_clients')}</span>
+              <Link href="/dashboard/clients" className="lx-more text-[length:var(--fs-1)] text-[var(--color-gold-text)] py-2.5 -my-2.5 inline-block">{t('view_all')}</Link>
             </div>
             <table className="w-full">
               <thead>
@@ -116,7 +116,7 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
                           </div>
                         )}
                         <div>
-                          <div className="text-[length:var(--fs-2)] font-bold">{c.company_name}</div>
+                          <div className="lx-tname text-[length:var(--fs-2)] font-bold">{c.company_name}</div>
                           <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] flex items-center gap-1.5">
                             {c.contact_person}
                             <ClientTypeBadge clientType={c.client_type} compact />
@@ -139,9 +139,9 @@ export default function AMView({ t, locale, clients, allContracts, allPayments, 
           <div className="flex flex-col gap-3.5">
             <PendingApprovalsPanel t={t} locale={locale} />
 
-            <div className="bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
-              <div className="px-4 py-3 border-b border-[var(--border)]">
-                <span className="text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
+            <div className="lx-box bg-[var(--color-card-bg)] border border-[var(--border)] rounded-xl overflow-hidden flex-1">
+              <div className="lx-sh px-4 py-3 border-b border-[var(--border)]">
+                <span className="lx-sh-t text-[length:var(--fs-2)] font-bold">{t('recent_activity')}</span>
               </div>
               <ActivityFeed items={activityItems} />
             </div>

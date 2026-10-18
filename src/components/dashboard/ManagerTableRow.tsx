@@ -53,7 +53,7 @@ export default function ManagerTableRow({ manager, index, expanded, onToggle }: 
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[length:var(--fs-2)] font-bold truncate">{manager.name}</div>
+            <div className="lx-tname text-[length:var(--fs-2)] font-bold truncate">{manager.name}</div>
             {manager.email && <div className="text-[length:var(--fs-1)] text-[var(--color-text-secondary)] truncate">{manager.email}</div>}
           </div>
           <svg className={`w-3.5 h-3.5 text-[var(--color-text-secondary)] transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
