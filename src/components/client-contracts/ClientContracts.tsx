@@ -14,7 +14,7 @@ import { canDo } from '@/lib/client-auth';
 import { Btn, Icon } from '@/components/client-portal/ui';
 import type { Contract } from '@/types';
 
-/** Where a contract sits on the four-step line: Sent · You approved · Company approved · In force. */
+/** Where a contract sits on the four-step line: Sent · You approved · Company approved · Active. */
 export function contractStepIndex(status: Contract['status']): number {
   switch (status) {
     case 'client_approved': return 2;
@@ -153,8 +153,13 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
                   </Btn>
                 </>
               ) : null}
-              {c.status === 'company_approved' && c.pdf_url && (
-                <a className="lnk" href={resolveFileUrl(c.pdf_url)} target="_blank" rel="noopener noreferrer">{tp('c_final_pdf')}</a>
+              {/* Same rule as the admin ContractsTab: any contract that has a
+                  generated PDF can be downloaded once the client has signed. */}
+              {c.pdf_url && ['client_approved', 'company_approved', 'completed', 'archived'].includes(c.status) && (
+                <a className="lnk" href={resolveFileUrl(c.pdf_url)} target="_blank" rel="noopener noreferrer">
+                  <Icon name="down" />
+                  {c.status === 'client_approved' ? t('view_signed_contract').replace('📄 ', '') : tp('c_final_pdf')}
+                </a>
               )}
               {c.status === 'company_approved' && onGoToPayments && (
                 <Btn variant="primary" onClick={onGoToPayments}>{tp('c_go_pay')}</Btn>

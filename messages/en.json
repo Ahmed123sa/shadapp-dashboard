@@ -1347,7 +1347,7 @@
     "nav_settings": "Settings",
     "ws_eyebrow": "Your workspace",
     "ws_active": "Workspace active",
-    "ws_contract": "Contract in force",
+    "ws_contract": "Active contract",
     "ws_since": "Client since {date}",
     "type_business": "Company",
     "type_individual": "Individual",
@@ -1368,7 +1368,7 @@
     "cstep_sent": "Sent",
     "cstep_you": "You approved",
     "cstep_company": "Company approved",
-    "cstep_force": "In force",
+    "cstep_force": "Active",
     "c_sent": "Sent {date}",
     "c_await": "awaiting your approval",
     "c_docs_missing": "{count, plural, one {# document} other {# documents}} still needed",
@@ -1424,6 +1424,8 @@
     "set_profile_h": "Profile",
     "set_profile_p": "Your photo and the details your team sees.",
     "set_lang_h": "Language",
-    "set_lang_p": "The page reloads in the language you pick."
+    "set_lang_p": "The page reloads in the language you pick.",
+    "f_amount": "Amount",
+    "m_ended": "Ended"
   }
 }

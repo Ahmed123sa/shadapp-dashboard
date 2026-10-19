@@ -36,7 +36,7 @@ export default function WorkspaceHeader({ client, workspace }: { client: Client;
         </div>
         <div className="state">
           <span><StatusDot tone="ok" />{t('ws_active')}</span>
-          {contractInForce && <span><StatusDot tone="crimson" />{t('ws_contract')}</span>}
+          {contractInForce && <span><StatusDot tone="ok" />{t('ws_contract')}</span>}
           {since && <span style={{ color: 'var(--faint)' }}>{t('ws_since', { date: since })}</span>}
         </div>
       </div>

@@ -44,9 +44,12 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
     s === 'approved' || s === 'verified' ? t('file_approved_status') : s === 'rejected' ? t('file_rejected_status') : t('file_pending_review');
   const sharedBy = (type: string) => (/User$/.test(type) ? tp('f_by_team') : tp('f_by_you'));
 
-  const head = (
+  const cols = (
+    <colgroup><col /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 130 }} /><col style={{ width: 110 }} /></colgroup>
+  );
+  const head = (last: string) => (
     <thead>
-      <tr><th>{tp('f_name')}</th><th>{tp('f_by')}</th><th>{tp('f_date')}</th><th>{tp('f_size')}</th><th></th></tr>
+      <tr><th>{tp('f_name')}</th><th>{tp('f_by')}</th><th>{tp('f_date')}</th><th>{last}</th><th></th></tr>
     </thead>
   );
 
@@ -78,7 +81,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
       {files.length > 0 && (
         <div className="tblbox">
           <table className="tbl2">
-            {head}
+            {cols}{head(tp('f_size'))}
             <tbody>
               {files.map((f) => (
                 <tr key={f.id}>
@@ -88,7 +91,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
                       <div>
                         <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{f.name}</div>
                         <div className="e">
-                          {f.tag && <span style={{ color: 'var(--crimson-ink)', marginInlineEnd: 8 }}>{f.tag}</span>}
+                          {f.tag && <span className="tagr" style={{ marginInlineEnd: 8 }}>{f.tag}</span>}
                           {f.document_definition?.name ? `${f.document_definition.name} · ` : ''}
                           <StatusDot tone={TONE[f.status] ?? 'faint'}>{statusLabel(f.status)}</StatusDot>
                         </div>
@@ -119,7 +122,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
           <div className="section-h">{t('file_payment_proofs')}</div>
           <div className="tblbox">
             <table className="tbl2">
-              {head}
+              {cols}{head(tp('f_amount'))}
               <tbody>
                 {paymentFiles.map((pf) => (
                   <tr key={pf.id}>

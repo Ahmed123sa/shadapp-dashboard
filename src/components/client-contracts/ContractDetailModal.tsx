@@ -7,6 +7,7 @@ import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { useTranslations } from 'next-intl';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { canDo } from '@/lib/client-auth';
+import { resolveFileUrl } from '@/lib/utils';
 import type { Contract } from '@/types';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
@@ -152,6 +153,15 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
             </div>
           </div>
         )}
+        {contract.pdf_url && ['client_approved', 'company_approved', 'completed', 'archived'].includes(contract.status) && (
+          <div className="mt-4 text-center">
+            <a href={resolveFileUrl(contract.pdf_url)} target="_blank" rel="noopener noreferrer"
+              className="inline-block px-4 py-2 rounded-lg border border-[var(--color-card-border)] text-sm text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)]">
+              {contract.status === 'client_approved' ? t('view_signed_contract').replace('📄 ', '') : t('download_final_contract').replace('📄 ', '')}
+            </a>
+          </div>
+        )}
+
         {canAct && !canDo('can_approve_contracts') && (
           <p className="mt-4 text-sm text-[var(--color-text-disabled)] text-center">{t('subuser_action_needs_owner')}</p>
         )}

@@ -99,7 +99,7 @@ export default function ClientMeetings({ wsId }: { wsId: number }) {
                 {m.passcode && <div className="sub">{t('meeting_passcode', { code: m.passcode })}</div>}
               </div>
               <span />
-              <span className="st2"><StatusDot tone={TONE[m.status] ?? 'faint'} />{statusLabel(m.status)}</span>
+              <span className="st2"><StatusDot tone={m.status === 'scheduled' ? 'faint' : (TONE[m.status] ?? 'faint')} />{m.status === 'scheduled' ? tp('m_ended') : statusLabel(m.status)}</span>
               <div className="acts" />
             </div>
           ))}

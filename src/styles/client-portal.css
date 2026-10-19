@@ -500,3 +500,17 @@ html[dir="rtl"] .cx-root .lg-card h1{font-family:var(--ar);font-style:normal}
   .cx-root .msg{max-width:92%}
   .cx-root .lg-card{padding:30px 22px 24px}
 }
+
+/* ---- fixes from first visual review ---- */
+/* contract step line: labels must not collide */
+.cx-root .step{width:92px}
+.cx-root .step span{font-size:10.5px;white-space:normal;text-align:center;line-height:1.25}
+.cx-root .lrow{grid-template-columns:1.3fr .8fr auto auto;gap:22px}
+/* payment/approval/meeting rows: fixed action column so every row lines up
+   whether or not it has a proof link or buttons */
+.cx-root .rowx{grid-template-columns:1.6fr 1fr 1fr 190px}
+.cx-root .tbl2{table-layout:fixed}
+.cx-root .tbl2 td{overflow-wrap:anywhere}
+.cx-root .tagr{letter-spacing:.04em;text-transform:none;color:var(--muted)}
+@media (max-width:1180px){.cx-root .rowx{grid-template-columns:1fr auto}.cx-root .lrow{grid-template-columns:1fr auto}}
+@media (max-width:640px){.cx-root .rowx,.cx-root .lrow{grid-template-columns:1fr}}
