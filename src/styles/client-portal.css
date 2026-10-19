@@ -461,3 +461,42 @@ html[dir="rtl"] .cx-root .step+.step::before{right:auto;left:50%}
 .cx-root .lg-card .lg-links{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;font-size:12.5px}
 .cx-root .lg-card .lg-btn{width:100%;justify-content:center}
 html[dir="rtl"] .cx-root .lg-card h1{font-family:var(--ar);font-style:normal}
+
+/* ---- ع٧: contrast, small screens, legacy modals ---- */
+/* AA for dim text (was #5C5C5C ≈ 2.7:1 on the page colour). */
+.cx-root{--faint:#808080}
+
+/* Shared modals/dialogs (ConfirmDialog, ContractDetailModal, UploadFileModal,
+   UploadProofModal) are built on the global --color-* tokens. Inside the
+   client portal those tokens are remapped to the Luxe palette, so they match
+   without touching admin screens. */
+.cx-root{
+  --color-card:#1B1A19;
+  --color-card-bg:#1B1A19;
+  --color-card-border:rgba(240,240,240,.10);
+  --color-input-fill:rgba(255,255,255,.04);
+  --color-input-border:rgba(240,240,240,.14);
+  --color-gold:#A8986A;
+  --color-gold-text:#C2B27E;
+  --color-text-secondary:#B9B9B9;
+  --color-text-disabled:#808080;
+  --color-foreground:#F0F0F0;
+}
+
+@media (max-width:640px){
+  .cx-root .tblbox{overflow-x:auto;padding:6px 14px}
+  .cx-root .tbl2{min-width:560px}
+  .cx-root .page{padding:0 18px 40px}
+  .cx-root .ph2{flex-wrap:wrap}
+  .cx-root .ph2 h1{font-size:32px}
+  .cx-root .fgrid2{grid-template-columns:1fr}
+  .cx-root .pgroups{grid-template-columns:1fr}
+  .cx-root .drawer{padding:18px}
+  .cx-root .sum{flex-wrap:wrap;gap:20px}
+  .cx-root .lrow,.cx-root .rowx{grid-template-columns:1fr;padding:18px}
+  .cx-root .lrow .acts,.cx-root .rowx .acts{justify-content:flex-start;flex-wrap:wrap}
+  .cx-root .meetbig{flex-wrap:wrap;padding:18px}
+  .cx-root .meetbig .acts{margin-inline-start:0;width:100%}
+  .cx-root .msg{max-width:92%}
+  .cx-root .lg-card{padding:30px 22px 24px}
+}
