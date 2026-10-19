@@ -6,6 +6,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { reportError } from '@/lib/error-reporting';
+import { Btn, Icon } from '@/components/client-portal/ui';
+import '@/styles/client-portal.css';
+
+function Brand() {
+  return (
+    <div className="brand">
+      <span className="d">d<i>.</i></span>
+      <span className="word">Shad</span>
+    </div>
+  );
+}
 
 export default function ClientLoginPage() {
   const [email, setEmail] = useState('');
@@ -21,22 +32,22 @@ export default function ClientLoginPage() {
   if (existing) {
     const subName = isSubUser() ? getSubUser()?.name : null;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 text-center border border-[var(--color-gold)]/20">
-          <h1 className="text-2xl font-bold mb-2 text-white">
-            {subName ? t('client_greeting', { name: subName }) : t('client_greeting', { name: existing.contact_person })}
-          </h1>
-          <p className="text-[var(--color-gold)] mb-4">
-            {subName ? t('client_sub_user_label') : existing.company_name}
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Link href="/client-dashboard" className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg text-sm hover:bg-[#7a1010]">
-              {t('client_enter_dashboard')}
-            </Link>
-            <button onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch (err) { reportError('client-login.logout', err); } window.location.reload(); }}
-              className="bg-white/10 text-white/70 px-6 py-2 rounded-lg text-sm hover:bg-white/20">
-              {t('client_logout_btn')}
-            </button>
+      <div className="cx-root cx-login" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="glow" />
+        <div className="grain" />
+        <div className="lg-wrap">
+          <div className="lg-card" style={{ textAlign: 'center' }}>
+            <Brand />
+            <h1>
+              {subName ? t('client_greeting', { name: subName }) : t('client_greeting', { name: existing.contact_person })}
+            </h1>
+            <p className="lg-sub">{subName ? t('client_sub_user_label') : existing.company_name}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <Link href="/client-dashboard" className="btn primary lg">{t('client_enter_dashboard')}</Link>
+              <Btn size="lg" onClick={async () => { localStorage.removeItem('client'); localStorage.removeItem('sub_user'); localStorage.removeItem('sub_user_client'); try { await fetch('/api/session/logout', { method: 'POST' }); } catch (err) { reportError('client-login.logout', err); } window.location.reload(); }}>
+                {t('client_logout_btn')}
+              </Btn>
+            </div>
           </div>
         </div>
       </div>
@@ -59,66 +70,40 @@ export default function ClientLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-sidebar-hover)] px-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md bg-[#1E1E1E] rounded-2xl shadow-2xl p-8 border border-[var(--color-gold)]/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--color-gold)]/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+    <div className="cx-root cx-login" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="glow" />
+      <div className="grain" />
+      <div className="lg-wrap">
+        <div className="lg-card">
+          <Brand />
+          <h1>{t('login_client_link')}<i>.</i></h1>
+          <p className="lg-sub">ShadApp</p>
 
-        <div className="relative">
-          <div className="flex justify-center mb-4">
-            <img src="/logo.jpg" alt="ShadApp" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
-          </div>
-          <h1 className="text-2xl font-bold text-center mb-1 text-white font-display">ShadApp</h1>
-          <p className="text-[var(--color-gold)] text-center text-sm mb-6">{t('login_client_link')}</p>
+          <form onSubmit={handleSubmit}>
+            {error && <div className="lg-err" role="alert">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-[var(--color-primary)]/20 text-[var(--color-gold)] text-sm p-3 rounded-lg border border-[var(--color-primary)]/30">{error}</div>
-            )}
-
-            <div>
-              <label htmlFor="client-login-email" className="block text-sm font-medium text-white/80 mb-1">{t('login_email_label')}</label>
-              <input id="client-login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30"
-                required dir="ltr" />
+            <div className="f2">
+              <label htmlFor="client-login-email">{t('login_email_label')}</label>
+              <input id="client-login-email" className="in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required dir="ltr" autoComplete="username" />
             </div>
 
-            <div>
-              <label htmlFor="client-login-password" className="block text-sm font-medium text-white/80 mb-1">{t('login_password_label')}</label>
-              <div className="relative">
-                <input id="client-login-password" type={visible ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] bg-white/5 text-white placeholder-white/30 pe-10"
-                  required dir="ltr" autoComplete="new-password" />
-                <button type="button" onClick={() => setVisible(!visible)}
-                  className="absolute top-1/2 -translate-y-1/2 end-0 flex items-center px-3 text-white/40 hover:text-white/60 h-10"
-                  aria-label={visible ? t('pw_hide') : t('pw_show')}>
-                  {visible ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+            <div className="f2">
+              <label htmlFor="client-login-password">{t('login_password_label')}</label>
+              <input id="client-login-password" className="in" type={visible ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required dir="ltr" autoComplete="new-password" style={{ paddingInlineEnd: 32 }} />
+              <button type="button" className="eye" onClick={() => setVisible(!visible)} aria-label={visible ? t('pw_hide') : t('pw_show')}>
+                <Icon name="eye" />
+              </button>
             </div>
 
-            <button type="submit" disabled={loading}
-              className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#7a1010] disabled:opacity-50 transition-colors">
+            <Btn type="submit" variant="primary" size="lg" className="lg-btn" disabled={loading}>
               {loading ? t('login_loading') : t('login_submit')}
-            </button>
+            </Btn>
           </form>
 
-          <p className="text-center text-sm text-white/50 mt-4">
-            <Link href="/forgot-password?type=client" className="text-[var(--color-gold)] hover:underline">{t('forgot_link')}</Link>
-          </p>
-
-          <p className="text-center text-sm text-white/50 mt-3">
-            <Link href="/login" className="text-[var(--color-gold)] hover:underline">{t('client_admin_login_link')}</Link>
-          </p>
+          <div className="lg-links">
+            <Link href="/forgot-password?type=client" className="lnk">{t('forgot_link')}</Link>
+            <Link href="/login" className="lnk">{t('client_admin_login_link')}</Link>
+          </div>
         </div>
       </div>
     </div>

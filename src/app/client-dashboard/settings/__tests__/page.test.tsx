@@ -13,8 +13,9 @@ import api from '@/lib/api';
 // with email locked and a note to contact the account owner.
 
 const push = vi.fn();
+const replace = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, replace }),
 }));
 
 let mock: MockAdapter;
@@ -103,4 +104,15 @@ describe('ClientSettingsPage — sub-user branch (م٤ characterization)', () =>
     expect(screen.queryByLabelText('Phone')).not.toBeInTheDocument();
     expect(screen.queryByText('To change your email or password, contact the account owner')).not.toBeInTheDocument();
   });
+
+  it('has a language switch and no password section (decision ف-١)', async () => {
+    setPrimaryClientSession();
+    mock.onGet('/clients/7').reply(200, { client: { id: 7, contact_person: 'Jane', email: 'jane@acme.com' } });
+    renderWithIntl(<ClientSettingsPage />);
+
+    expect(await screen.findByRole('tab', { name: 'English' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'العربية' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+  });
 });
+

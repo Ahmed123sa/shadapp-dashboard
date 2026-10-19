@@ -1419,6 +1419,11 @@
     "g_payments": "Payments",
     "g_approvals": "Approvals",
     "g_files": "Files",
-    "g_meetings": "Meetings"
+    "g_meetings": "Meetings",
+    "set_desc": "Your profile and language.",
+    "set_profile_h": "Profile",
+    "set_profile_p": "Your photo and the details your team sees.",
+    "set_lang_h": "Language",
+    "set_lang_p": "The page reloads in the language you pick."
   }
 }

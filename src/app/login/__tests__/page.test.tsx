@@ -63,9 +63,9 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument();
   });
 
-  it('links to forgot-password, and no longer surfaces a client-login link (clients use the mobile app now)', () => {
+  it('links to forgot-password and to the client login (ف-٨)', () => {
     renderWithIntl(<LoginPage />);
     expect(screen.getByText('Forgot your password?').closest('a')).toHaveAttribute('href', '/forgot-password');
-    expect(screen.queryByText('Client Login')).not.toBeInTheDocument();
+    expect(screen.getByText('Client Login').closest('a')).toHaveAttribute('href', '/client-login');
   });
 });
