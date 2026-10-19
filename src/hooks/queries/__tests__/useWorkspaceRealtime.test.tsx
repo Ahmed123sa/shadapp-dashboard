@@ -81,6 +81,8 @@ describe('useWorkspaceRealtime', () => {
     onContractStatusChanged!();
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: contractKeys.workspace(9) });
+    // onboarding stage reads contracts from the workspace detail
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceKeys.detail(9) });
   });
 
   it('invalidates the payments query cache when a payment status changes', () => {
@@ -91,6 +93,7 @@ describe('useWorkspaceRealtime', () => {
     onPaymentStatusChanged!({});
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: paymentKeys.workspace(9) });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceKeys.detail(9) });
   });
 
   it('invalidates the workspace detail query cache when the workspace status changes', () => {

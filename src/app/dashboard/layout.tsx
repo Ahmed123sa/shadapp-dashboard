@@ -410,7 +410,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p className="lx-ph-sub">{isSA ? t('home_subtitle_admin') : t('home_subtitle_manager')}</p>
                 </>
               ) : (
-                <h1 className="lx-ph-title">{getPageTitle()}</h1>
+                <h1 className="lx-ph-title">{getPageTitle()}<i className="lx-ph-dot">.</i></h1>
               )}
             </div>
           )}

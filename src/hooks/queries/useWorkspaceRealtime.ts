@@ -36,8 +36,17 @@ export function useWorkspaceRealtime(wsId: number | undefined): void {
     const unsub = subscribeToWorkspace(wsId, {
       onMessageSent: () => queryClient.invalidateQueries({ queryKey: chatKeys.workspace(wsId) }),
       onMessageUpdated: () => queryClient.invalidateQueries({ queryKey: chatKeys.workspace(wsId) }),
-      onContractStatusChanged: () => queryClient.invalidateQueries({ queryKey: contractKeys.workspace(wsId) }),
-      onPaymentStatusChanged: () => queryClient.invalidateQueries({ queryKey: paymentKeys.workspace(wsId) }),
+      // The onboarding stage is computed from the contracts/payments inside the
+      // workspace detail record, so those events must refresh it as well —
+      // otherwise a client sitting on "waiting for contract" never moves on.
+      onContractStatusChanged: () => {
+        queryClient.invalidateQueries({ queryKey: contractKeys.workspace(wsId) });
+        queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wsId) });
+      },
+      onPaymentStatusChanged: () => {
+        queryClient.invalidateQueries({ queryKey: paymentKeys.workspace(wsId) });
+        queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wsId) });
+      },
       onWorkspaceStatusChanged: () => queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wsId) }),
     });
 

@@ -17,20 +17,18 @@ async function fetchWorkspace(wsId: number): Promise<Workspace> {
   return data.workspace;
 }
 
-// No refetchInterval here (unlike usePayments/useChat's 30s/60s polls,
-// which stay as a safety net per REALTIME_PLAN.md section 6 risk 1). This
-// query started out with the old manual `setInterval(..., 10000)` behavior
-// during Stage 3's hook migration, then had that poll removed in the same
-// stage once client-dashboard/page.tsx's `useWorkspaceRealtime` call was
-// verified to invalidate `workspaceKeys.detail` on every
-// `WorkspaceStatusChanged`/`ContractStatusChanged` broadcast (see
-// useWorkspaceRealtime.ts) — the poll's entire purpose (catching the
-// activation moment + first-contract stage updates, REALTIME_PLAN.md
-// section 1.3) is now covered by those events instead.
+// While the workspace is not active yet the client is walking through
+// onboarding, and every step there (contract sent, approved by the company,
+// payment reviewed...) lives in this record. A missed or absent realtime
+// event (no socket in local dev, a dropped connection) would leave the client
+// stuck on the old step, so it polls every 4s — the same rule useClient uses
+// — and stops as soon as the workspace is active, where realtime events and
+// the per-tab queries take over.
 export function useWorkspace(wsId: number | undefined) {
   return useQuery({
     queryKey: workspaceKeys.detail(wsId ?? 0),
     queryFn: () => fetchWorkspace(wsId as number),
     enabled: !!wsId,
+    refetchInterval: (query) => (query.state.data && query.state.data.status !== 'active' ? 4000 : false),
   });
 }
