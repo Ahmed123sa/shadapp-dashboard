@@ -1,4 +1,6 @@
 import ToastNotification from '@/components/ToastNotification';
+// Scoped under .cx-root — inert until a client-portal screen mounts that root.
+import '@/styles/client-portal.css';
 
 // The AM/SA dashboard mounts <ToastNotification /> once in dashboard/layout.tsx
 // so showToast() works from any component under /dashboard. The client portal
