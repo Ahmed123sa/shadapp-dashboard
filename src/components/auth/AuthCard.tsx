@@ -17,7 +17,6 @@ export default function AuthCard({ children }: { children: ReactNode }) {
         <div className="lg-card">
           <div className="brand">
             <span className="d">d<i>.</i></span>
-            <span className="word">Shad</span>
           </div>
           {children}
         </div>

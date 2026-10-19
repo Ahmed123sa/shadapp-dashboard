@@ -70,8 +70,8 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
 
   return (
     <AuthCard>
-      <h1>{mode === 'client' ? t('login_client_link') : 'ShadApp'}<i>.</i></h1>
-      <p className="lg-sub">{mode === 'client' ? 'ShadApp' : 'Shorter Road.'}</p>
+      <h1 style={mode === 'client' ? { marginBottom: 28 } : undefined}>Shad<i>.</i></h1>
+      {mode === 'staff' && <p className="lg-sub">Shorter Road.</p>}
 
       <form onSubmit={handleSubmit}>
         {error && <div className="lg-err" role="alert">{error}</div>}
