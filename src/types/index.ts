@@ -108,6 +108,7 @@ export interface Payment {
   // (see PaymentsTab.tsx / FinancePage), not just the client-submitted flow.
   status: 'pending' | 'approved' | 'rejected' | 'scheduled' | 'overdue';
   due_date?: string | null;
+  installment_label?: string | null;
   requested_by_manager?: boolean;
   notes?: string;
   rejection_reason?: string | null;
@@ -216,6 +217,7 @@ export interface FileEntry {
   document_definition?: DocumentDefinition;
   uploaded_by_type: string;
   uploaded_by_id: number;
+  created_at?: string;
 }
 
 // A payment's proof-of-payment file, shaped by FileController::index() as a

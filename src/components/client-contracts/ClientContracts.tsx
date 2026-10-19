@@ -1,22 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
+import { useLocale, useTranslations } from 'next-intl';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from './ContractDetailModal';
-import { useTranslations } from 'next-intl';
-import { notifyWriteError, getErrorCode, getErrorMessage } from '@/lib/utils';
+import { notifyWriteError, getErrorCode, getErrorMessage, resolveFileUrl } from '@/lib/utils';
+import { formatNumber, formatShortDate } from '@/lib/client-format';
 import { showToast } from '@/components/ToastNotification';
 import { reportError } from '@/lib/error-reporting';
 import { useWorkspaceContracts, useClientContractAction } from '@/hooks/queries/useContracts';
 import { canDo } from '@/lib/client-auth';
+import { Btn, Icon } from '@/components/client-portal/ui';
+import type { Contract } from '@/types';
+
+/** Where a contract sits on the four-step line: Sent · You approved · Company approved · In force. */
+export function contractStepIndex(status: Contract['status']): number {
+  switch (status) {
+    case 'client_approved': return 2;
+    case 'company_approved': return 3;
+    case 'completed':
+    case 'archived': return 4;
+    default: return 1; // draft / sent / edit_requested: waiting on the client
+  }
+}
+
+const STEP_KEYS = ['cstep_sent', 'cstep_you', 'cstep_company', 'cstep_force'] as const;
 
 export default function ClientContracts({ wsId, clientType, onGoToPayments }: { wsId: number; clientType?: string; onGoToPayments?: () => void }) {
   const t = useTranslations('dashboard');
+  const tp = useTranslations('client_portal');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const [viewContractId, setViewContractId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: number; action: string } | null>(null);
   const [editReason, setEditReason] = useState('');
@@ -32,6 +47,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   // reflects the latest fetched contract automatically — including after
   // the refetch triggered by a document upload — without a manual re-sync.
   const viewContract = contracts.find((c) => c.id === viewContractId) ?? null;
+  const canApprove = canDo('can_approve_contracts');
 
   const doAction = (id: number, action: string, reason?: string) => {
     clientActionMutation.mutate({ id, action, ...(reason?.trim() ? { reason: reason.trim() } : {}) }, {
@@ -44,7 +60,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
         // (ك3) means the client reached the approve button without a saved
         // profile signature (e.g. cleared it after this contract was sent).
         // notifyWriteError's generic "فشلت العملية" gives no clue why, so
-        // surface the real reason and point them at the signature tab.
+        // surface the real reason and point them at the signature page.
         if (getErrorCode(err) === 'signature_required') {
           reportError('ClientContracts.doAction', err);
           showToast({
@@ -75,77 +91,79 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
   };
 
   if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (error) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{error}</p>;
 
   return (
-    <div className="space-y-3">
-      {contracts.length === 0 ? <EmptyState message={t('contract_no_contracts')} /> : null}
+    <div className="ledger">
+      {contracts.length === 0 ? (
+        <p className="locked" style={{ padding: '48px 0', justifyContent: 'center', width: '100%' }}>{t('contract_no_contracts')}</p>
+      ) : null}
       {contracts.map((c) => {
         const missingDocs = (c.required_documents ?? []).filter(
           (d) => !(d.files ?? []).some((f) => f.status !== 'rejected')
         );
         const hasMissingDocs = missingDocs.length > 0;
+        const awaiting = c.status === 'sent';
+        const cur = contractStepIndex(c.status);
+        const value = Number(c.value);
+        const sentOn = formatShortDate(c.created_at, locale);
+        const sub = [
+          sentOn ? tp('c_sent', { date: sentOn }) : null,
+          awaiting && canApprove ? tp('c_await') : null,
+          (c.required_documents?.length ?? 0) > 0 ? t('contract_docs_required', { count: c.required_documents?.length ?? 0 }) : null,
+        ].filter(Boolean).join(' · ');
+
         return (
-        <div key={c.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
-          <div className="flex justify-between items-start">
+          <div key={c.id} className={`lrow ${awaiting ? 'apcard' : ''}`.trim()}>
             <div>
-              <h4 className="font-medium">{c.title}</h4>
-              {Number(c.value) > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{c.value} {c.currency || 'SAR'}</p>}
-              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">{t('contract_docs_required', { count: c.required_documents?.length ?? 0 })}</p>}
+              <div className="kind">{c.contract_type === 'additional' ? tp('kind_extra') : tp('kind_main')}</div>
+              <div className="title">{c.title}</div>
+              {sub && <div className="sub">{sub}</div>}
+              {c.status === 'company_approved' && <div className="sub">{tp('c_company_ok')}</div>}
+              {awaiting && !canApprove && <div className="sub">{t('subuser_action_needs_owner')}</div>}
+              {awaiting && canApprove && hasMissingDocs && (
+                <div className="sub">{t('contract_upload_required_first', { docs: missingDocs.map((d) => d.name).join('، ') })}</div>
+              )}
             </div>
-            <StatusBadge status={c.status} />
-          </div>
-          <ContractStatusStepper status={c.status} compact />
-          <div className="mt-2 flex gap-2">
-            <button onClick={() => setViewContractId(c.id)} className="text-xs text-[var(--color-gold-text)] hover:underline">
-              {t('contract_view_details')}
-            </button>
-            {/* subuser-review-plan.md م٦ — the tab was already gated on
-                can_view_contracts, but the approve/edit buttons themselves
-                were not gated on can_approve_contracts, so a sub-user with
-                view-only access saw them and only found out they were
-                forbidden after a raw 403 on click. */}
-            {c.status === 'sent' && canDo('can_approve_contracts') && (
-              <>
-                <button
-                  onClick={() => setConfirmAction({ id: c.id, action: 'approved' })}
-                  disabled={hasMissingDocs}
-                  className={`text-xs ${hasMissingDocs ? 'text-[var(--color-text-disabled)] cursor-not-allowed' : 'text-emerald-600 hover:underline'}`}
-                >
-                  {t('contract_approve_action')}
-                </button>
-                <button
-                  onClick={() => setConfirmAction({ id: c.id, action: 'edit_requested' })}
-                  className="text-xs text-amber-600 hover:underline"
-                >
-                  {t('contract_edit_action')}
-                </button>
-              </>
-            )}
-          </div>
-          {c.status === 'sent' && !canDo('can_approve_contracts') && (
-            <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('subuser_action_needs_owner')}</p>
-          )}
-          {c.status === 'sent' && hasMissingDocs && (
-            <p className="text-xs text-amber-600 mt-1">
-              {t('contract_upload_required_first', { docs: missingDocs.map((d) => d.name).join('، ') })}
-            </p>
-          )}
-            {c.status === 'company_approved' && (
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-emerald-600">{t('contract_company_approved_badge')}</p>
-                {c.pdf_url && (
-                  <a href={c.pdf_url} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-emerald-600 hover:underline block">{t('contract_download_final')}</a>
-                )}
-                {onGoToPayments && (
-                  <button onClick={onGoToPayments}
-                    className="text-xs bg-[var(--color-primary)] text-white px-3 py-1.5 rounded-lg hover:bg-[var(--color-primary-dark)] mt-1">
-                    {t('contract_go_to_payment')}
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="amt">
+              {value > 0 ? (
+                <span className="num-ltr">{formatNumber(value, locale)}<small>{c.currency || 'SAR'}</small></span>
+              ) : null}
+              {value > 0 && clientType === 'business' && <div className="sub" style={{ fontSize: 11 }}>{tp('excl_vat')}</div>}
+            </div>
+            <div className="steps">
+              {STEP_KEYS.map((key, i) => (
+                <div key={key} className={`step ${i < cur ? 'done' : i === cur ? 'now' : ''}`.trim()}>
+                  <span className="b" />
+                  <span>{tp(key)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="acts">
+              {/* subuser-review-plan.md م٦ — the tab was already gated on
+                  can_view_contracts, but the approve/edit buttons themselves
+                  were not gated on can_approve_contracts, so a sub-user with
+                  view-only access saw them and only found out they were
+                  forbidden after a raw 403 on click. */}
+              {awaiting && canApprove ? (
+                <>
+                  <Btn onClick={() => setConfirmAction({ id: c.id, action: 'edit_requested' })}>{t('contract_edit_action')}</Btn>
+                  <Btn variant="primary" disabled={hasMissingDocs} onClick={() => setConfirmAction({ id: c.id, action: 'approved' })}>
+                    {t('contract_approve_action')}
+                  </Btn>
+                </>
+              ) : null}
+              {c.status === 'company_approved' && c.pdf_url && (
+                <a className="lnk" href={resolveFileUrl(c.pdf_url)} target="_blank" rel="noopener noreferrer">{tp('c_final_pdf')}</a>
+              )}
+              {c.status === 'company_approved' && onGoToPayments && (
+                <Btn variant="primary" onClick={onGoToPayments}>{tp('c_go_pay')}</Btn>
+              )}
+              <Btn onClick={() => setViewContractId(c.id)}>
+                <Icon name="eye" />
+                {tp('preview_short')}
+              </Btn>
+            </div>
           </div>
         );
       })}

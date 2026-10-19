@@ -90,8 +90,8 @@ describe('ClientContracts (characterization)', () => {
     const user = userEvent.setup();
     renderWithIntl(<ClientContracts wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('View Details')).toBeInTheDocument());
-    await user.click(screen.getByText('View Details'));
+    await waitFor(() => expect(screen.getByText('Preview')).toBeInTheDocument());
+    await user.click(screen.getByText('Preview'));
 
     await waitFor(() => expect(screen.getByText('Required Documents')).toBeInTheDocument());
     expect(screen.getByText('ID Card')).toBeInTheDocument();
@@ -196,8 +196,8 @@ describe('ClientContracts (characterization)', () => {
     const user = userEvent.setup();
     renderWithIntl(<ClientContracts wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('View Details')).toBeInTheDocument());
-    await user.click(screen.getByText('View Details'));
+    await waitFor(() => expect(screen.getByText('Preview')).toBeInTheDocument());
+    await user.click(screen.getByText('Preview'));
 
     await waitFor(() => expect(screen.getByText('Upload Document')).toBeInTheDocument());
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -262,8 +262,8 @@ describe('ClientContracts (characterization)', () => {
       const user = userEvent.setup();
       renderWithIntl(<ClientContracts wsId={9} />);
 
-      await waitFor(() => expect(screen.getByText('View Details')).toBeInTheDocument());
-      await user.click(screen.getByText('View Details'));
+      await waitFor(() => expect(screen.getByText('Preview')).toBeInTheDocument());
+      await user.click(screen.getByText('Preview'));
 
       await waitFor(() => expect(screen.getByText('Required Documents')).toBeInTheDocument());
       expect(screen.queryByText('Upload Document')).not.toBeInTheDocument();

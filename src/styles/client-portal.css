@@ -442,3 +442,6 @@ html[dir="rtl"] .cx-root .quote {border-radius:10px 0 0 10px}
 .cx-root .thumb .rm{background:none;border:0;padding:0}
 .cx-root .btn:focus-visible,.cx-root .chip2:focus-visible,.cx-root .lnk:focus-visible,.cx-root .segm button:focus-visible{outline:2px solid var(--ink-2);outline-offset:2px}
 .cx-root .sw2{padding:0;cursor:pointer}
+
+/* contract step line runs the other way in RTL */
+html[dir="rtl"] .cx-root .step+.step::before{right:auto;left:50%}

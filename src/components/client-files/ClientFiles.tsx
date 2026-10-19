@@ -1,18 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import UploadFileModal from './UploadFileModal';
 import { resolveFileUrl } from '@/lib/utils';
+import { formatFileSize, formatShortDate } from '@/lib/client-format';
 import { useWorkspaceFiles, fileKeys } from '@/hooks/queries/useFiles';
 import { canDo } from '@/lib/client-auth';
+import { Btn, Icon, StatusDot, type DotTone } from '@/components/client-portal/ui';
 import type { FileEntry, PaymentProofFile, DocumentDefinition } from '@/types';
+
+const TONE: Record<string, DotTone> = { approved: 'ok', verified: 'ok', pending: 'wait', rejected: 'crimson' };
+
+/** "PDF", "ZIP"… for the little file badge. */
+function extOf(name: string | undefined): string {
+  const m = /\.([A-Za-z0-9]{1,4})$/.exec(name ?? '');
+  return (m ? m[1] : 'FILE').toUpperCase();
+}
 
 export default function ClientFiles({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
+  const tp = useTranslations('client_portal');
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [showUpload, setShowUpload] = useState(false);
 
@@ -27,86 +38,118 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
   const error = filesQuery.isError && filesQuery.data === undefined ? t('file_load_failed') : '';
 
   if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (error) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{error}</p>;
+
+  const statusLabel = (s: string) =>
+    s === 'approved' || s === 'verified' ? t('file_approved_status') : s === 'rejected' ? t('file_rejected_status') : t('file_pending_review');
+  const sharedBy = (type: string) => (/User$/.test(type) ? tp('f_by_team') : tp('f_by_you'));
+
+  const head = (
+    <thead>
+      <tr><th>{tp('f_name')}</th><th>{tp('f_by')}</th><th>{tp('f_date')}</th><th>{tp('f_size')}</th><th></th></tr>
+    </thead>
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap">
-        {definitions.map((d) => (
-          <span key={d.id} className="px-2 py-0.5 bg-blue-900/30 text-blue-400 rounded-full text-xs">
-            {d.name} {d.is_required ? '*' : ''}
-          </span>
-        ))}
-      </div>
+    <div className="ledger">
+      {definitions.length > 0 && (
+        <div className="perm" style={{ marginBottom: 14 }}>
+          {definitions.map((d) => (
+            <span key={d.id}>{d.name} {d.is_required ? '*' : ''}</span>
+          ))}
+        </div>
+      )}
 
       {/* subuser-review-plan.md م٦ — uploading a file maps to
           can_upload_files, per the plan's action table. */}
       {canDo('can_upload_files') && (
-        <button onClick={() => setShowUpload(true)} className="text-sm text-[var(--color-gold-text)] hover:underline font-medium">
-          {t('file_upload_button')}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <Btn variant="primary" onClick={() => setShowUpload(true)}>
+            <Icon name="up" />
+            {tp('f_upload')}
+          </Btn>
+        </div>
       )}
 
-      {files.length === 0 && paymentFiles.length === 0 ? <EmptyState message={t('file_no_files')} /> : null}
-      <div className="space-y-2">
-        {files.map((f) => (
-          <div key={f.id} className="border border-[var(--color-card-border)] rounded-lg p-3 text-sm flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{f.name}</p>
-                {f.tag && (
-                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[length:var(--fs-1)] font-bold">{f.tag}</span>
-                )}
-              </div>
-              <p className="text-xs text-[var(--color-text-disabled)]">
-                {f.document_definition?.name ? `${f.document_definition.name} • ` : ''}
-                {f.size ? `${(f.size / 1024).toFixed(0)} KB` : ''}
-              </p>
-              {f.rejection_reason && <p className="text-xs text-red-500 mt-1">{t('file_rejection_reason', { reason: f.rejection_reason })}</p>}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                f.status === 'approved' ? 'bg-green-900/30 text-green-400' :
-                f.status === 'rejected' ? 'bg-red-900/30 text-red-400' :
-                'bg-yellow-900/30 text-yellow-400'
-              }`}>
-                {f.status === 'approved' ? t('file_approved_status') : f.status === 'rejected' ? t('file_rejected_status') : t('file_pending_review')}
-              </span>
-              {f.file_url && (
-                <a href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{t('file_view')}</a>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      {files.length === 0 && paymentFiles.length === 0 ? (
+        <p className="locked" style={{ padding: '48px 0', justifyContent: 'center', width: '100%' }}>{t('file_no_files')}</p>
+      ) : null}
+
+      {files.length > 0 && (
+        <div className="tblbox">
+          <table className="tbl2">
+            {head}
+            <tbody>
+              {files.map((f) => (
+                <tr key={f.id}>
+                  <td>
+                    <div className="who2">
+                      <div className="fileic">{extOf(f.name)}</div>
+                      <div>
+                        <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{f.name}</div>
+                        <div className="e">
+                          {f.tag && <span style={{ color: 'var(--crimson-ink)', marginInlineEnd: 8 }}>{f.tag}</span>}
+                          {f.document_definition?.name ? `${f.document_definition.name} · ` : ''}
+                          <StatusDot tone={TONE[f.status] ?? 'faint'}>{statusLabel(f.status)}</StatusDot>
+                        </div>
+                        {f.rejection_reason && <div className="e" style={{ color: 'var(--crimson-ink)' }}>{t('file_rejection_reason', { reason: f.rejection_reason })}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td>{sharedBy(f.uploaded_by_type)}</td>
+                  <td className="num-ltr">{formatShortDate(f.created_at, locale)}</td>
+                  <td className="num-ltr">{formatFileSize(f.size)}</td>
+                  <td>
+                    {f.file_url && (
+                      <a className="lnk" href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer">
+                        <Icon name="down" />
+                        {t('file_view')}
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {paymentFiles.length > 0 && (
         <>
-          <h4 className="text-sm font-bold text-[var(--color-gold-text)] mt-4">{t('file_payment_proofs')}</h4>
-          <div className="space-y-2">
-            {paymentFiles.map((pf) => (
-              <div key={pf.id} className="border border-[var(--color-card-border)] rounded-lg p-3 text-sm flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{pf.name}</p>
-                    <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[length:var(--fs-1)] font-bold">{t('file_payment_proof_badge')}</span>
-                  </div>
-                  <p className="text-xs text-[var(--color-text-disabled)]">{pf.amount} {pf.currency}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    pf.status === 'approved' || pf.status === 'verified' ? 'bg-green-900/30 text-green-400' :
-                    pf.status === 'rejected' ? 'bg-red-900/30 text-red-400' :
-                    'bg-yellow-900/30 text-yellow-400'
-                  }`}>
-                    {pf.status === 'approved' || pf.status === 'verified' ? t('file_approved_status') : pf.status === 'rejected' ? t('file_rejected_status') : t('file_pending_review')}
-                  </span>
-                  {pf.file_url && (
-                    <a href={resolveFileUrl(pf.file_url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{t('file_view')}</a>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="section-h">{t('file_payment_proofs')}</div>
+          <div className="tblbox">
+            <table className="tbl2">
+              {head}
+              <tbody>
+                {paymentFiles.map((pf) => (
+                  <tr key={pf.id}>
+                    <td>
+                      <div className="who2">
+                        <div className="fileic">{extOf(pf.name)}</div>
+                        <div>
+                          <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{pf.name}</div>
+                          <div className="e">
+                            <span style={{ marginInlineEnd: 8 }}>{t('file_payment_proof_badge')}</span>
+                            <StatusDot tone={TONE[pf.status] ?? 'faint'}>{statusLabel(pf.status)}</StatusDot>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{tp('f_by_you')}</td>
+                    <td className="num-ltr">{formatShortDate(pf.created_at, locale)}</td>
+                    <td className="num-ltr">{`${pf.amount} ${pf.currency ?? ''}`.trim()}</td>
+                    <td>
+                      {pf.file_url && (
+                        <a className="lnk" href={resolveFileUrl(pf.file_url)} target="_blank" rel="noopener noreferrer">
+                          <Icon name="down" />
+                          {t('file_view')}
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}

@@ -4,9 +4,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { Check, CheckCheck, Reply } from 'lucide-react';
+import { formatTime, formatShortDate } from '@/lib/client-format';
+import { Btn, Icon } from '@/components/client-portal/ui';
 import { useTranslations, useLocale } from 'next-intl';
 import { useWorkspaceChat, useSendChatMessage, useRespondChatAction } from '@/hooks/queries/useChat';
 import { canDo } from '@/lib/client-auth';
@@ -15,6 +15,7 @@ import type { ChatMessage, User } from '@/types';
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const tp = useTranslations('client_portal');
   const locale = useLocale();
   const chatQuery = useWorkspaceChat(wsId);
   const sendMutation = useSendChatMessage(wsId);
@@ -88,127 +89,136 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
   };
 
   if (chatQuery.isLoading) return <TableSkeleton />;
-  if (chatQuery.isError) return <p className="text-sm text-red-500 text-center py-8">{t('chat_load_error')}</p>;
+  if (chatQuery.isError) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{t('chat_load_error')}</p>;
 
   if (!wsActive) {
-    return (
-      <div className="text-center py-10">
-        <span className="text-4xl block mb-3">🔒</span>
-        <p className="text-[var(--color-text-secondary)] text-sm">{t('chat_unavailable_short')}</p>
-      </div>
-    );
+    return <p className="locked" style={{ padding: '48px 0', justifyContent: 'center', width: '100%' }}><Icon name="lock" />{t('chat_unavailable_short')}</p>;
   }
 
+  const canChat = canDo('can_chat');
+  const canRespond = canDo('can_respond_approvals');
+  const dayKey = (iso?: string) => (iso ? new Date(iso).toDateString() : '');
+
   return (
-    <div className="space-y-4">
-      <div ref={chatRef} className="h-72 overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]">
-        {messages.length === 0 ? <EmptyState message={t('chat_no_messages')} /> : null}
+    <div className="chat">
+      <div ref={chatRef} className="stream">
+        {messages.length === 0 ? <p className="locked" style={{ padding: '36px 0', justifyContent: 'center', width: '100%' }}>{t('chat_no_messages')}</p> : null}
         {messages.map((m, idx) => {
           const sentByClient = m.sender_type === 'App\\Models\\Client';
           const isSubUser = m.sender_type === 'App\\Models\\SubUser';
-          const isClientTeam = sentByClient || isSubUser;
+          const mine = sentByClient || isSubUser;
           const isPending = m.requires_action && !m.action_taken;
           const isResponded = m.action_taken;
           const approval = m.approval;
           const sender = m.sender;
-          const senderAvatarUrl = sender?.avatar_url;
           const senderName = sender?.name;
           const prev = idx > 0 ? messages[idx - 1] : null;
-          const isConsecutive = prev && prev.sender_type === m.sender_type && prev.sender_id === m.sender_id;
+          const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at);
+          const day = newDay && m.created_at ? <div key={`d${m.id}`} className="day">{formatShortDate(m.created_at, locale)}</div> : null;
+          const who = sentByClient
+            ? (senderName || t('sender_you'))
+            : isSubUser
+              ? (senderName || t('sender_team_member'))
+              : (senderName || '');
+          const role = mine ? null : ((m.sender as User | undefined)?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager'));
+          const time = formatTime(m.created_at, locale);
+          const avatar = (
+            <div className="av">
+              {sender?.avatar_url ? (
+                <img src={resolveFileUrl(sender.avatar_url)} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <span>{senderName?.[0]?.toUpperCase() || '?'}</span>
+              )}
+            </div>
+          );
+
           if (m.type === 'meeting' && m.metadata) {
             return (
-              <div key={m.id} className="flex justify-start">
-                <div className="max-w-xs">
-                  <MeetingChip metadata={m.metadata} />
+              <div key={m.id}>
+                {day}
+                <div className="msg">
+                  {avatar}
+                  <div>
+                    <div className="who"><b>{who}</b>{role && <span className="tagr">{role}</span>}<span>{time}</span></div>
+                    <div className="card"><MeetingChip metadata={m.metadata} /></div>
+                  </div>
                 </div>
               </div>
             );
           }
+
+          const fileBlock = m.type === 'file' && m.file_url ? (
+            /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
+              <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 10, marginBottom: 6 }} />
+            ) : (
+              <a className="lnk" href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" style={{ marginBottom: 6 }}>
+                <Icon name="clip" />
+                {t('view_attachment')}
+              </a>
+            )
+          ) : null;
+
+          const replyBlock = m.reply_to ? (
+            <div className="sub" style={{ borderInlineStart: '2px solid var(--line-2)', paddingInlineStart: 8, marginBottom: 6, opacity: 0.8 }}>
+              <div style={{ fontWeight: 500 }}>{m.reply_to.sender?.name || 'Unknown'}</div>
+              <div style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.reply_to.message || '...'}</div>
+            </div>
+          ) : null;
+
+          const resultLabel = isResponded ? actionResultLabel[m.action_result || ''] : null;
+
           return (
-            <div key={m.id} className={`flex gap-2 ${isClientTeam ? 'justify-end' : 'justify-start'}`}
-              onContextMenu={(e) => handleContextMenu(e, m)}>
-              {!isClientTeam && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-primary)] overflow-hidden bg-[var(--color-input-fill)] flex items-center justify-center text-xs text-[var(--color-gold-text)] font-bold mt-1">
-                  {senderAvatarUrl ? (
-                    <img src={resolveFileUrl(senderAvatarUrl)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{senderName?.[0]?.toUpperCase() || '?'}</span>
-                  )}
-                </div>
-              )}
-              {isClientTeam && !isConsecutive && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full border border-[var(--color-gold)] overflow-hidden bg-[var(--color-primary)] flex items-center justify-center text-xs text-white font-bold mt-1">
-                  {senderAvatarUrl ? (
-                    <img src={resolveFileUrl(senderAvatarUrl)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{senderName?.[0]?.toUpperCase() || '?'}</span>
-                  )}
-                </div>
-              )}
-              <div className="max-w-xs">
-                <div className={`px-3 py-2 text-sm ${isClientTeam ? 'bg-[var(--color-primary)] text-white rounded-br-lg rounded-tl-lg rounded-tr-lg' : 'bg-[var(--color-card)] text-[var(--color-foreground)] rounded-bl-lg rounded-tl-lg rounded-tr-lg'}`}>
-                  <p className={`text-xs mb-0.5 ${isClientTeam ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>
-                    {sentByClient ? (senderName || t('sender_you')) : isSubUser ? (m.sender?.name || t('sender_team_member')) : (((m.sender as User | undefined)?.role === 'super_admin' ? t('sender_supervisor') : t('sender_account_manager')) + ': ' + (m.sender?.name || ''))}
-                  </p>
-                  {m.reply_to && (
-                    <div className="mb-1.5 pl-2 border-l-2 border-[var(--color-primary)] opacity-70">
-                      <p className="text-[length:var(--fs-1)] font-medium">{m.reply_to.sender?.name || 'Unknown'}</p>
-                      <p className="text-[length:var(--fs-1)] truncate max-w-[180px]">{m.reply_to.message || '...'}</p>
-                    </div>
-                  )}
-                  {m.type === 'file' && m.file_url && (
-                    <div className="mb-1">
-                      {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
-                        <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
-                      ) : (
-                        <a href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" className="text-[var(--color-gold-text)] underline text-xs">{t('view_attachment')}</a>
+            <div key={m.id}>
+              {day}
+              <div className={`msg ${mine ? 'mine' : ''}`.trim()} onContextMenu={(e) => handleContextMenu(e, m)}>
+                {avatar}
+                <div>
+                  <div className="who"><b>{who}</b>{role && <span className="tagr">{role}</span>}<span>{time}</span></div>
+                  {isPending || approval ? (
+                    <div className={`card ${isPending ? 'apcard' : ''}`.trim()}>
+                      {isPending && <div className="k"><span>{t('chat_requires_your_approval')}</span></div>}
+                      {replyBlock}
+                      {fileBlock}
+                      {m.message && <div className="v" style={{ color: 'var(--ink)', marginTop: 8 }}>{m.message}</div>}
+                      {resultLabel && <div className="v" style={{ marginTop: 8 }}>{resultLabel}</div>}
+                      {approval?.certificate?.pdf_url && (
+                        <a className="lnk" style={{ marginTop: 12 }} href={resolveFileUrl(approval.certificate.pdf_url)} target="_blank" rel="noopener noreferrer">
+                          <Icon name="doc" />
+                          {t('download_certificate')}
+                        </a>
+                      )}
+                      {/* subuser-review-plan.md م٦ — responding to an approval
+                          request maps to can_respond_approvals (same key as
+                          ClientApprovals.tsx). */}
+                      {isPending && canRespond && (
+                        <div className="row">
+                          <Btn variant="primary" onClick={() => respond(m.id, 'approved')} disabled={responding[m.id]}>{t('chat_approve_button')}</Btn>
+                          <Btn onClick={() => respond(m.id, 'edit_requested')} disabled={responding[m.id]}>{t('chat_edit_button')}</Btn>
+                        </div>
+                      )}
+                      {isPending && !canRespond && (
+                        <div className="row"><span className="locked"><Icon name="lock" />{t('subuser_action_needs_owner')}</span></div>
                       )}
                     </div>
+                  ) : (
+                    <div className="bubble">
+                      {replyBlock}
+                      {fileBlock}
+                      {m.message}
+                      {resultLabel && <div className="sub" style={{ marginTop: 6 }}>{resultLabel}</div>}
+                    </div>
                   )}
-                  {m.message}
-                  {isPending && <p className="text-xs text-red-500 mt-1 font-medium">{t('chat_requires_your_approval')}</p>}
-                  {isResponded && <p className={`text-xs mt-1 font-medium ${m.action_result === 'approved' ? 'text-emerald-600' : m.action_result === 'rejected' ? 'text-red-600' : 'text-amber-600'}`}>{actionResultLabel[m.action_result || '']}</p>}
-                  {approval?.certificate?.pdf_url && (
-                    <a href={resolveFileUrl(approval.certificate.pdf_url)} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-[var(--color-primary)] text-white text-xs font-medium rounded-lg hover:bg-[var(--color-primary-dark)] transition-colors">
-                      {t('download_certificate')}
-                    </a>
-                  )}
-                  <div className="flex items-center justify-between gap-3 mt-1.5 pt-0.5 border-t border-white/10">
-                    <span className="text-[9px] opacity-70">
-                      {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <button type="button" onClick={() => setReplyTo(m)} aria-label={t('chat_context_reply')} title={t('chat_context_reply')}
-                        className="opacity-60 hover:opacity-100 focus-visible:opacity-100">
-                        <Reply size={12} strokeWidth={2} />
-                      </button>
-                      {isClientTeam && (
-                        <span className="inline-flex items-center" title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
-                          {m.read_at ? (
-                            <CheckCheck size={13} className="text-sky-300" strokeWidth={2.2} />
-                          ) : (
-                            <Check size={13} className="text-white/60" strokeWidth={2} />
-                          )}
-                        </span>
-                      )}
-                    </span>
+                  <div style={{ marginTop: 4, display: 'flex', gap: 10, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                    <button type="button" className="lnk" style={{ border: 0, fontSize: 11, opacity: 0.6 }} onClick={() => setReplyTo(m)} aria-label={t('chat_context_reply')} title={t('chat_context_reply')}>
+                      {t('chat_context_reply')}
+                    </button>
+                    {mine && (
+                      <span className="sub" style={{ fontSize: 11 }} title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
+                        {m.read_at ? '✓✓' : '✓'}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {/* subuser-review-plan.md م٦ — responding to an approval
-                    request maps to can_respond_approvals, per the plan's
-                    action table (same key as ClientApprovals.tsx). */}
-                {isPending && canDo('can_respond_approvals') && (
-                  <div className="flex gap-1 mt-1">
-                    <button onClick={() => respond(m.id, 'approved')} disabled={responding[m.id]}
-                      className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 disabled:opacity-50">{t('chat_approve_button')}</button>
-                    <button onClick={() => respond(m.id, 'edit_requested')} disabled={responding[m.id]}
-                      className="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 disabled:opacity-50">{t('chat_edit_button')}</button>
-                  </div>
-                )}
-                {isPending && !canDo('can_respond_approvals') && (
-                  <p className="text-[10px] text-[var(--color-text-disabled)] mt-1">{t('subuser_action_needs_owner')}</p>
-                )}
               </div>
             </div>
           );
@@ -216,33 +226,41 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
         <div ref={bottomRef} />
       </div>
 
-      {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-input-fill)] border border-[var(--color-primary)] border-r-4 rounded-lg text-sm relative">
-          <div className="flex-1 min-w-0">
-            <p className="text-[length:var(--fs-1)] font-medium text-[var(--color-foreground)]">{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</p>
-            <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
+      {replyTo && canChat && (
+        <div className="sub" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderInlineStart: '2px solid var(--crimson-ink)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 500, color: 'var(--ink)' }}>{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</div>
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.message || '...'}</div>
           </div>
-          <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
+          <button type="button" onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="lnk" style={{ border: 0 }}>✕</button>
         </div>
       )}
 
-      {sendError && <p className="text-xs text-red-500">{sendError}</p>}
-      <div className="flex gap-2 items-center">
-        <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1 flex-shrink-0" title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>📎</button>
-        {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24 flex-shrink-0">{uploadFile.name}</span>}
-        <input value={text} onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
-          className="flex-1 border border-[var(--color-input-border)] rounded-full px-4 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" placeholder={t('chat_input_placeholder')} />
-        <button onClick={send} className="bg-[var(--color-primary)] text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-primary-dark)] flex-shrink-0" title={t('chat_send_title')} aria-label={t('chat_send_title')}>↑</button>
-      </div>
+      {sendError && <p className="sub" style={{ color: 'var(--crimson-ink)' }}>{sendError}</p>}
 
-      {contextMenu && (
-        <div className="fixed z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          <button onClick={() => { setReplyTo(contextMenu.message); setContextMenu(null); }}
-            className="bg-[var(--color-card)] border border-[var(--color-card-border)] shadow-lg rounded-lg px-4 py-2 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] whitespace-nowrap">
-            {t('chat_context_reply')}
+      {canChat ? (
+        <div className="composer">
+          <div className="field">
+            <input type="file" ref={fileRef} style={{ display: 'none' }} onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+            <button type="button" className="ib" style={{ width: 28, height: 28 }} onClick={() => fileRef.current?.click()} title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>
+              <Icon name="clip" />
+            </button>
+            {uploadFile && <span className="sub" style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uploadFile.name}</span>}
+            <input value={text} onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
+              placeholder={t('chat_input_placeholder')} />
+          </div>
+          <button type="button" className="send" onClick={send} title={t('chat_send_title')} aria-label={t('chat_send_title')}>
+            <Icon name="send" />
           </button>
+        </div>
+      ) : (
+        <div className="viewonly"><Icon name="lock" />{tp('viewonly')}</div>
+      )}
+
+      {contextMenu && canChat && (
+        <div style={{ position: 'fixed', zIndex: 50, left: contextMenu.x, top: contextMenu.y }}>
+          <Btn onClick={() => { setReplyTo(contextMenu.message); setContextMenu(null); }}>{t('chat_context_reply')}</Btn>
         </div>
       )}
     </div>

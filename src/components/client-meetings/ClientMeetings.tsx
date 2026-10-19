@@ -1,25 +1,45 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
 import { useWorkspaceMeetings } from '@/hooks/queries/useMeetings';
+import { canDo } from '@/lib/client-auth';
+import { Icon, StatusDot, type DotTone } from '@/components/client-portal/ui';
+import type { Meeting } from '@/types';
+
+const TONE: Record<string, DotTone> = { scheduled: 'wait', completed: 'ok', cancelled: 'faint' };
+
+function CalendarBadge({ iso, locale }: { iso: string; locale: string }) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const month = d.toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short' });
+  const day = d.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric' });
+  return (
+    <div className="cal">
+      <div className="m">{month}</div>
+      <div className="dd">{day}</div>
+    </div>
+  );
+}
 
 export default function ClientMeetings({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
+  const tp = useTranslations('client_portal');
   const locale = useLocale();
 
   const meetingsQuery = useWorkspaceMeetings(wsId);
   const meetings = meetingsQuery.data ?? [];
   const loading = meetingsQuery.isLoading;
   const error = meetingsQuery.isError && meetingsQuery.data === undefined ? t('meeting_load_failed') : '';
+  // Joining a call maps to can_join_meetings; viewing the list does not.
+  const canJoin = canDo('can_join_meetings');
 
   const formatDate = (d: string) => formatMeetingDate(d, locale);
+  const statusLabel = (s: Meeting['status']) => ({ scheduled: tp('m_scheduled'), completed: tp('m_done'), cancelled: tp('m_cancelled') } as Record<string, string>)[s] ?? s;
 
   if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (error) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{error}</p>;
 
   const now = new Date();
   const upcoming = meetings.filter((m) => {
@@ -32,67 +52,55 @@ export default function ClientMeetings({ wsId }: { wsId: number }) {
   });
 
   return (
-    <div className="space-y-4">
-      {meetings.length === 0 ? <EmptyState message={t('meeting_no_meetings')} /> : null}
+    <div className="ledger">
+      {meetings.length === 0 ? (
+        <p className="locked" style={{ padding: '48px 0', justifyContent: 'center', width: '100%' }}>{t('meeting_no_meetings')}</p>
+      ) : null}
 
       {upcoming.length > 0 && (
         <>
-          <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('meeting_upcoming_heading')}</h4>
-          {upcoming.map((m) => (
-            <div key={m.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
-              <div className="flex justify-between items-start">
+          <div className="section-h" style={{ marginTop: 0 }}>{t('meeting_upcoming_heading')}</div>
+          {upcoming.map((m) => {
+            const join = m.link ? getMeetingJoinStatus(m.scheduled_at, locale) : null;
+            return (
+              <div key={m.id} className="meetbig" style={{ marginBottom: 12 }}>
+                <CalendarBadge iso={m.scheduled_at} locale={locale} />
                 <div>
-                  <h4 className="font-medium">{m.title}</h4>
-                  <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                    {formatDate(m.scheduled_at)} • {t('meeting_minutes', { minutes: m.duration_minutes })}
-                  </p>
-                  {m.notes && <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{m.notes}</p>}
+                  <div className="t">{m.title}</div>
+                  <div className="m2">{formatDate(m.scheduled_at)} · {t('meeting_minutes', { minutes: m.duration_minutes })}</div>
+                  {m.notes && <div className="m2">{m.notes}</div>}
+                  {m.passcode && <div className="m2">{t('meeting_passcode', { code: m.passcode })}</div>}
                 </div>
-                <StatusBadge status={m.status} />
-              </div>
-              {m.status === 'scheduled' && m.link && (() => {
-                const joinStatus = getMeetingJoinStatus(m.scheduled_at, locale);
-                return joinStatus.canJoin ? (
-                  <div className="mt-3">
-                    <a href={m.link} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-                      🎥 {joinStatus.label}
+                <div className="acts">
+                  {join && canJoin && (join.canJoin ? (
+                    <a className="btn primary" href={m.link} target="_blank" rel="noopener noreferrer">
+                      <Icon name="video" />
+                      {join.label}
                     </a>
-                  </div>
-                ) : (
-                  <div className="mt-3">
-                    <span className="inline-flex items-center gap-1.5 text-xs bg-gray-600/40 text-gray-400 px-4 py-2 rounded-lg">
-                      ⏳ {joinStatus.label}
-                    </span>
-                  </div>
-                );
-              })()}
-              {m.passcode && (
-                <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('meeting_passcode', { code: m.passcode })}</p>
-              )}
-            </div>
-          ))}
+                  ) : (
+                    <span className="locked">{join.label}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </>
       )}
 
       {past.length > 0 && (
         <>
-          <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('meeting_past_heading')}</h4>
+          <div className="section-h">{t('meeting_past_heading')}</div>
           {past.map((m) => (
-            <div key={m.id} className="border border-[var(--color-card-border)] rounded-lg p-4 opacity-70">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium">{m.title}</h4>
-                  <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                    {formatDate(m.scheduled_at)} • {t('meeting_minutes', { minutes: m.duration_minutes })}
-                  </p>
-                  {m.notes && <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{m.notes}</p>}
-                </div>
-                <StatusBadge status={m.status} />
+            <div key={m.id} className="rowx" style={{ marginBottom: 12 }}>
+              <div>
+                <div className="title">{m.title}</div>
+                <div className="sub">{formatDate(m.scheduled_at)} · {t('meeting_minutes', { minutes: m.duration_minutes })}</div>
+                {m.notes && <div className="sub">{m.notes}</div>}
+                {m.passcode && <div className="sub">{t('meeting_passcode', { code: m.passcode })}</div>}
               </div>
-              {m.passcode && (
-                <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('meeting_passcode', { code: m.passcode })}</p>
-              )}
+              <span />
+              <span className="st2"><StatusDot tone={TONE[m.status] ?? 'faint'} />{statusLabel(m.status)}</span>
+              <div className="acts" />
             </div>
           ))}
         </>

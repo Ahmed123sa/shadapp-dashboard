@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, within, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import MockAdapter from 'axios-mock-adapter';
+import api from '@/lib/api';
 import { renderWithIntl } from '@/test/render';
 import UploadProofModal from '../UploadProofModal';
 
@@ -39,5 +42,28 @@ describe('UploadProofModal', () => {
     renderModal(['USD', 'EUR']);
     const currencySelect = screen.getAllByRole('combobox')[0] as HTMLSelectElement;
     expect(currencySelect.value).toBe('USD');
+  });
+
+  it('sends every chosen receipt as proof_files[] (the field the backend reads)', async () => {
+    const mock = new MockAdapter(api);
+    mock.onPost('/workspaces/1/payments').reply(200, { payment: { id: 1 } });
+    const onCreated = vi.fn();
+    const user = userEvent.setup();
+    const { container } = renderWithIntl(
+      <UploadProofModal wsId={1} availableMethods={['instapay']} allowedCurrencies={['EGP']} onClose={vi.fn()} onCreated={onCreated} />
+    );
+
+    await user.type(screen.getByLabelText('Amount'), '100');
+    await user.selectOptions(screen.getAllByRole('combobox')[1], 'instapay');
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.multiple).toBe(true);
+    fireEvent.change(input, { target: { files: [new File(['1'], 'a.jpg', { type: 'image/jpeg' }), new File(['2'], 'b.jpg', { type: 'image/jpeg' })] } });
+    await user.click(screen.getByRole('button', { name: 'Submit Payment Proof' }));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    const form = mock.history.post[0].data as FormData;
+    expect(form.getAll('proof_files[]')).toHaveLength(2);
+    expect(form.get('proof_file')).toBeNull();
+    mock.restore();
   });
 });

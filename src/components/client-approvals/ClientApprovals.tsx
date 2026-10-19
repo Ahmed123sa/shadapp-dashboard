@@ -2,12 +2,19 @@
 
 import { useState } from 'react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceApprovals, useRespondApproval } from '@/hooks/queries/useApprovals';
 import { canDo } from '@/lib/client-auth';
+import { Btn, Icon, StatusDot, type DotTone } from '@/components/client-portal/ui';
+
+const TONE: Record<string, DotTone> = {
+  approved: 'ok',
+  pending: 'wait',
+  rejected: 'crimson',
+  edit_requested: 'crimson',
+};
 
 export default function ClientApprovals({ wsId }: { wsId: number; clientId: number }) {
   const t = useTranslations('dashboard');
@@ -20,6 +27,7 @@ export default function ClientApprovals({ wsId }: { wsId: number; clientId: numb
   const approvals = approvalsQuery.data ?? [];
   const loading = approvalsQuery.isLoading;
   const error = approvalsQuery.isError && approvalsQuery.data === undefined ? t('approval_load_failed') : '';
+  const canRespond = canDo('can_respond_approvals');
 
   const respond = () => {
     if (!respondTarget) return;
@@ -30,14 +38,8 @@ export default function ClientApprovals({ wsId }: { wsId: number; clientId: numb
   };
 
   if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (error) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{error}</p>;
 
-  const statusColors: Record<string, string> = {
-    approved: 'bg-emerald-900/30 text-emerald-400',
-    pending: 'bg-yellow-900/30 text-yellow-400',
-    rejected: 'bg-red-900/30 text-red-400',
-    edit_requested: 'bg-amber-900/30 text-amber-400',
-  };
   const statusLabels: Record<string, string> = {
     approved: t('approval_approved_status'),
     pending: t('approval_pending_status'),
@@ -46,53 +48,49 @@ export default function ClientApprovals({ wsId }: { wsId: number; clientId: numb
   };
 
   return (
-    <div className="space-y-3">
-      {approvals.length === 0 ? <EmptyState message={t('approval_no_approvals')} /> : null}
-      {approvals.map((a) => (
-        <div key={a.id} className="border border-[var(--color-card-border)] rounded-lg p-4">
-          <div className="flex justify-between items-start">
+    <div className="ledger">
+      {approvals.length === 0 ? (
+        <p className="locked" style={{ padding: '48px 0', justifyContent: 'center', width: '100%' }}>{t('approval_no_approvals')}</p>
+      ) : null}
+      <div className="rows">
+        {approvals.map((a) => (
+          <div key={a.id} className={`rowx ${a.status === 'pending' ? 'apcard' : ''}`.trim()}>
             <div>
-              <h4 className="font-medium">{a.title}</h4>
-              {a.description && <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{a.description}</p>}
-              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">{t('approval_ref_prefix')}{a.reference_no}</p>
+              <div className="title">{a.title}</div>
+              {a.description && <div className="sub">{a.description}</div>}
+              <div className="sub">{t('approval_ref_prefix')}{a.reference_no}</div>
             </div>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[a.status] || ''}`}>
-              {statusLabels[a.status] || a.status}
-            </span>
-          </div>
-
-          {a.files && a.files.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {a.files.map((f) => (
-                <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-[var(--color-gold-text)] underline bg-blue-900/30 px-2 py-0.5 rounded">
-                  📎 {f.name || t('approval_file_label')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+              {(a.files ?? []).map((f) => (
+                <a key={f.id} className="lnk" href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer">
+                  <Icon name="clip" />
+                  {f.name || t('approval_file_label')}
                 </a>
               ))}
+              {a.certificate?.pdf_url && (
+                <a className="lnk" href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer">
+                  <Icon name="doc" />
+                  {t('approval_certificate')}
+                </a>
+              )}
             </div>
-          )}
-
-          {a.certificate?.pdf_url && (
-              <div className="mt-1 text-xs text-[var(--color-gold-text)]">
-                📄 <a href={resolveFileUrl(a.certificate.pdf_url)} target="_blank" rel="noopener noreferrer" className="hover:underline">{t('approval_certificate')}</a>
+            <span className="st2"><StatusDot tone={TONE[a.status] ?? 'faint'} />{statusLabels[a.status] || a.status}</span>
+            <div className="acts">
+              {/* subuser-review-plan.md م٦ — responding to an approval request
+                  maps to can_respond_approvals, per the plan's action table. */}
+              {a.status === 'pending' && canRespond && (
+                <>
+                  <Btn onClick={() => setRespondTarget({ id: a.id, action: 'edit_requested' })}>{t('approval_respond_edit_request')}</Btn>
+                  <Btn variant="primary" onClick={() => setRespondTarget({ id: a.id, action: 'approved' })}>{t('approval_respond_approve')}</Btn>
+                </>
+              )}
+              {a.status === 'pending' && !canRespond && (
+                <span className="locked"><Icon name="lock" />{t('subuser_action_needs_owner')}</span>
+              )}
             </div>
-          )}
-
-          {/* subuser-review-plan.md م٦ — responding to an approval request
-              maps to can_respond_approvals, per the plan's action table. */}
-          {a.status === 'pending' && canDo('can_respond_approvals') && (
-            <div className="mt-3 flex gap-2">
-              <button onClick={() => setRespondTarget({ id: a.id, action: 'approved' })}
-                className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">{t('approval_respond_approve')}</button>
-              <button onClick={() => setRespondTarget({ id: a.id, action: 'edit_requested' })}
-                className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700">{t('approval_respond_edit_request')}</button>
-            </div>
-          )}
-          {a.status === 'pending' && !canDo('can_respond_approvals') && (
-            <p className="mt-3 text-xs text-[var(--color-text-disabled)]">{t('subuser_action_needs_owner')}</p>
-          )}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
 
       <ConfirmDialog
         open={!!respondTarget}

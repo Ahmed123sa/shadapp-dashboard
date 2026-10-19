@@ -4,6 +4,12 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
 import ClientMeetings from '../ClientMeetings';
 import api from '@/lib/api';
+import { canDo } from '@/lib/client-auth';
+
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  canDo: vi.fn(),
+}));
 
 // Characterization suite written BEFORE migrating ClientMeetings off manual
 // useEffect+setState onto TanStack Query (DASHBOARD_ASSESSMENT.md Round 3,
@@ -40,6 +46,7 @@ function mockLoad(overrides?: { meetings?: unknown[] }) {
 
 beforeEach(() => {
   mock = new MockAdapter(api);
+  vi.mocked(canDo).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -72,5 +79,15 @@ describe('ClientMeetings (characterization)', () => {
 
     await waitFor(() => expect(screen.getByText('Bring the deck')).toBeInTheDocument());
     expect(screen.getByText('Passcode: 1234', { exact: false })).toBeInTheDocument();
+  });
+
+  it('hides the join link and label without can_join_meetings', async () => {
+    vi.mocked(canDo).mockReturnValue(false);
+    mockLoad({ meetings: [{ ...upcomingMeeting, link: 'https://meet.example.com/x' }] });
+    renderWithIntl(<ClientMeetings wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('Kickoff Call')).toBeInTheDocument());
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(canDo).toHaveBeenCalledWith('can_join_meetings');
   });
 });

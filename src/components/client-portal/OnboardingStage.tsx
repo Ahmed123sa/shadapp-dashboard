@@ -7,7 +7,8 @@ import { StatusDot } from './ui';
 import SignStage from './stages/SignStage';
 import WaitingStage from './stages/WaitingStage';
 import ReviewStage from './stages/ReviewStage';
-import PaymentStage, { METHOD_KEYS } from './stages/PaymentStage';
+import PaymentStage from './stages/PaymentStage';
+import { METHOD_KEYS } from './PaymentSheet';
 
 interface Props {
   stage: Stage;

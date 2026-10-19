@@ -21,7 +21,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
   const [methodType, setMethodType] = useState('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const methodLabels: Record<string, string> = {
@@ -51,7 +51,9 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
     form.append('amount', amount);
     form.append('currency', currency);
     form.append('method_type', methodType);
-    if (proofFile) form.append('proof_file', proofFile);
+    // The backend reads `proof_files[]` (any number of receipts); the old
+    // singular `proof_file` was silently ignored.
+    proofFiles.forEach((f) => form.append('proof_files[]', f));
     const { data } = await api.post(`/workspaces/${wsId}/payments`, form).catch((err) => { notifyWriteError(tc, 'UploadProofModal.submit', err); return { data: null }; });
     if (data) onCreated(data.payment);
     setSaving(false);
@@ -84,8 +86,8 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
         </select>
 
         <label className="flex items-center gap-2 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)]">
-          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
-          <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFile ? proofFile.name : t('pay_choose_proof')}</span>
+          <input type="file" multiple accept="image/*,.pdf" className="hidden" onChange={(e) => setProofFiles(Array.from(e.target.files ?? []))} />
+          <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFiles.length > 0 ? proofFiles.map((f) => f.name).join(', ') : t('pay_choose_proof')}</span>
         </label>
 
         <button onClick={submit} disabled={saving || !amount || !methodType}

@@ -1,335 +1,156 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { useTranslations } from 'next-intl';
-import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
+import { resolveFileUrl } from '@/lib/utils';
+import { formatNumber, formatShortDate } from '@/lib/client-format';
 import type { Payment, Contract } from '@/types';
-import { useSubmitClientPayment, useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
+import { useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
 import { canDo } from '@/lib/client-auth';
+import { Btn, Icon, StatusDot, type DotTone } from '@/components/client-portal/ui';
+import PaymentSheet, { methodLabelOf } from '@/components/client-portal/PaymentSheet';
+
+const STATUS_TONE: Record<string, DotTone> = {
+  approved: 'ok',
+  pending: 'wait',
+  scheduled: 'wait',
+  overdue: 'crimson',
+  rejected: 'crimson',
+};
 
 export default function ClientPayments({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
-  const tc = useTranslations('common');
-  const [payableContract, setPayableContract] = useState<Contract | null>(null);
-  const [payableContracts, setPayableContracts] = useState<Contract[]>([]);
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('SAR');
-  const [methodType, setMethodType] = useState('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const tp = useTranslations('client_portal');
+  const locale = useLocale();
+  const [editing, setEditing] = useState<Payment | null>(null);
+  const [showNew, setShowNew] = useState(false);
 
   const paymentsQuery = useWorkspacePayments(wsId);
   const contractsQuery = useWorkspaceContracts(wsId);
-  const submitMutation = useSubmitClientPayment(wsId);
 
   const payments = paymentsQuery.data?.payments ?? [];
   const methods = paymentsQuery.data?.methods ?? [];
   const taxSummary = paymentsQuery.data?.taxSummary ?? null;
+  const contracts: Contract[] = contractsQuery.data ?? [];
   const loading = paymentsQuery.isLoading || contractsQuery.isLoading;
   const error = (paymentsQuery.isError || contractsQuery.isError) ? t('load_error') : '';
-
-  // Derives/initializes form defaults (payable contract, starting currency,
-  // a pre-filled amount) from whatever the payments+contracts queries most
-  // recently resolved to. This mirrors the original effect's behavior
-  // exactly, including re-running on every 30s poll (not just the first
-  // load) — e.g. the amount field keeps resetting to the contract value
-  // for as long as no payment has been submitted yet.
-  useEffect(() => {
-    if (!paymentsQuery.data || !contractsQuery.data) return;
-    const contracts = contractsQuery.data;
-    const payableList = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
-    if (payableList.length > 0) {
-      setPayableContract(payableList[0]);
-      setPayableContracts(payableList);
-      const initialCur = payableList[0].currency || 'SAR';
-      setCurrency(initialCur);
-      if (!paymentsQuery.data.payments.length) {
-        setAmount(String(taxSummary?.grand_total ?? payableList[0].value));
-      }
-    } else if (contracts.length > 0 && contracts[0].currency) {
-      setCurrency(contracts[0].currency);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentsQuery.data, contractsQuery.data]);
-
-  const methodLabels: Record<string, string> = {
-    bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
-    instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
-  };
-
-  const availableCurrencies = Array.from(new Set(
-    (payableContracts.length > 0 ? payableContracts : (payableContract ? [payableContract] : []))
-      .map((c) => c.currency || 'SAR')
-  ));
-  const effectiveCurrencies = availableCurrencies.length > 0 ? availableCurrencies : ['SAR'];
-
-  const startEdit = (p: Payment) => {
-    setEditingPayment(p);
-    setAmount(String(p.amount));
-    setCurrency(p.currency || payableContract?.currency || 'SAR');
-    setMethodType(p.method_type);
-    setProofFile(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingPayment(null);
-    setAmount('');
-    setCurrency(payableContract?.currency || 'SAR');
-    setMethodType('');
-    setProofFile(null);
-  };
-
-  const submit = async () => {
-    if (!amount || !methodType) return;
-    setSaving(true);
-    const form = new FormData();
-    form.append('amount', amount);
-    form.append('currency', currency);
-    form.append('method_type', methodType);
-    if (proofFile) form.append('proof_file', proofFile);
-    if (editingPayment) {
-      form.append('_method', 'PUT');
-    }
-    const url = editingPayment
-      ? `/workspaces/${wsId}/payments/${editingPayment.id}`
-      : `/workspaces/${wsId}/payments`;
-    await submitMutation.mutateAsync({ url, form, editingPaymentId: editingPayment?.id ?? null })
-      .then(() => cancelEdit())
-      .catch((err) => notifyWriteError(tc, 'ClientPayments.submit', err));
-    setSaving(false);
-  };
+  // subuser-review-plan.md م٦ — uploading/re-uploading a payment proof maps
+  // to can_upload_payment_proof, per the plan's action table.
+  const canUpload = canDo('can_upload_payment_proof');
 
   if (loading) return <TableSkeleton />;
-  if (error) return <p className="text-sm text-red-500 text-center py-8">{error}</p>;
+  if (error) return <p className="locked" style={{ padding: '40px 0', justifyContent: 'center', width: '100%' }}>{error}</p>;
 
-  const pendingPayment = payments.find((p) => p.status === 'pending');
-  const showPaymentForm = Boolean(editingPayment || pendingPayment || payableContract);
+  const payable = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
+  const contractCurrency = payable[0]?.currency || contracts[0]?.currency || 'SAR';
+  const currencies = Array.from(new Set(payable.map((c) => c.currency || 'SAR')));
+  const effectiveCurrencies = currencies.length > 0 ? currencies : ['SAR'];
 
-  const approvedPayments = payments.filter(p => p.status === 'approved');
-  const totalPaid = approvedPayments.reduce((s, p) => s + Number(p.amount), 0);
-  const grandTotal = taxSummary?.grand_total != null ? Number(taxSummary.grand_total) : (payableContracts.length > 0 ? payableContracts.reduce((s, c) => s + Number(c.value), 0) : payments.reduce((s, p) => s + Number(p.amount), 0));
-  const contractCurrency = payableContract?.currency || 'SAR';
+  const totalPaid = payments.filter((p) => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0);
+  const grandTotal = taxSummary?.grand_total != null
+    ? Number(taxSummary.grand_total)
+    : payable.length > 0 ? payable.reduce((s, c) => s + Number(c.value), 0) : payments.reduce((s, p) => s + Number(p.amount), 0);
   const remaining = grandTotal - totalPaid;
-  const isFullyPaid = totalPaid >= grandTotal && grandTotal > 0;
-  const progress = grandTotal > 0 ? Math.min(totalPaid / grandTotal, 1) : 0;
 
-  const installmentName = (i: number) => t('pay_installment_num', { num: i + 1 });
+  const money = (n: number, cur = contractCurrency) => <span className="num-ltr">{formatNumber(n, locale)}<small>{cur}</small></span>;
+  const methodLabel = (m: string) => methodLabelOf(tp, m);
+  const statusLabel = (s: string) => ({
+    approved: t('pay_status_approved'),
+    pending: t('pay_status_pending'),
+    rejected: t('pay_status_rejected'),
+    scheduled: tp('p_scheduled'),
+    overdue: tp('p_overdue'),
+  } as Record<string, string>)[s] ?? s;
+
+  const canStartNew = canUpload && payable.length > 0 && !editing && !showNew;
+  const sheetOpen = canUpload && (editing !== null || showNew);
 
   return (
-    <div className="space-y-3">
-      {/* إجمالي المدفوع */}
-      <div className="bg-[var(--bg-dark)] border border-[var(--color-card-border)] rounded-xl p-4">
-        {isFullyPaid ? (
-          <>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[var(--color-success-text)] text-lg">✅</span>
-              <p className="text-sm font-bold text-[var(--color-success-text)]">{t('pay_fully_paid')}</p>
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-gold-text)] font-display">
-              {totalPaid.toFixed(2)} {contractCurrency}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-xs text-[var(--color-gold-text)] font-medium">{t('pay_total_paid')}</p>
-            <p className="text-2xl font-bold text-[var(--color-gold-text)] mt-1 font-display">
-              {totalPaid.toFixed(2)} {contractCurrency}
-            </p>
-            <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-              {t('pay_of_prefix', { total: grandTotal.toFixed(2), currency: contractCurrency, remaining: remaining.toFixed(2) })}
-            </p>
-            {taxSummary && taxSummary.tax_percentage > 0 && (
-              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                {t('pay_value_detail', { value: Number(taxSummary.contracts_total).toFixed(2), taxPercent: taxSummary.tax_percentage, taxAmount: Number(taxSummary.tax_amount).toFixed(2), currency: contractCurrency })}
-              </p>
-            )}
-          </>
-        )}
-        <div className="mt-3">
-          <div className="w-full h-1.5 bg-[var(--color-card-border)] rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${isFullyPaid ? 'bg-[var(--color-success)]' : 'bg-[var(--color-gold)]'}`} style={{ width: `${progress * 100}%` }} />
-          </div>
-        </div>
+    <div className="ledger">
+      <div className="sum">
+        <div><div className="lbl">{tp('p_total_contracts')}</div><div className="num">{money(grandTotal)}</div></div>
+        <div><div className="lbl">{tp('paid')}</div><div className="num hl">{money(totalPaid)}</div></div>
+        <div><div className="lbl">{tp('remaining')}</div><div className="num">{money(remaining)}</div></div>
       </div>
 
-      {/* طرق الدفع المتاحة */}
-      {methods.length > 0 && (
-        <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4">
-          <p className="text-sm font-medium mb-2">{t('pay_method_ph')}:</p>
-          <div className="flex flex-wrap gap-2">
-            {methods.map((m) => (
-              <span key={m} className="px-3 py-1 bg-[var(--color-primary)]/20 text-[var(--color-foreground)] rounded-full text-xs font-medium">
-                {methodLabels[m] || m}
-              </span>
-            ))}
-          </div>
+      {!canUpload && (payable.length > 0 || payments.some((p) => p.status !== 'approved')) && (
+        <span className="locked" style={{ margin: '4px 0 14px' }}><Icon name="lock" />{t('subuser_action_needs_owner')}</span>
+      )}
+
+      {canStartNew && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+          <Btn variant="primary" onClick={() => setShowNew(true)}>
+            <Icon name="up" />
+            {tp('p_new')}
+          </Btn>
         </div>
       )}
 
-      {/* تنبيه بوجود عقد معتمد يتطلب الدفع */}
-      {!pendingPayment && payableContract && (
-        <div className="bg-[var(--color-card)] border border-[var(--color-gold)]/30 rounded-xl p-4">
-          <p className="text-sm text-[var(--color-gold-text)] font-medium">
-            💳 {t('pay_approved_contract_notice', { title: payableContract.title, value: payableContract.value ?? '', taxSuffix: taxSummary && taxSummary.tax_percentage > 0 ? ` + ${taxSummary.tax_percentage}% ${t('plus_tax')}` : '' })}
-          </p>
-        </div>
+      {sheetOpen && (
+        <PaymentSheet
+          wsId={wsId}
+          methods={methods}
+          currencies={effectiveCurrencies}
+          defaultAmount={payments.length === 0 ? String(taxSummary?.grand_total ?? payable[0]?.value ?? '') : ''}
+          defaultCurrency={contractCurrency}
+          editing={editing}
+          onDone={() => { setEditing(null); setShowNew(false); }}
+          onCancelEdit={() => { setEditing(null); setShowNew(false); }}
+        />
       )}
 
-      {/* نموذج إرسال الدفع */}
-      {/* subuser-review-plan.md م٦ — uploading/re-uploading a payment proof
-          maps to can_upload_payment_proof, per the plan's action table. */}
-      {showPaymentForm && !canDo('can_upload_payment_proof') && (
-        <div className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-4 text-center text-sm text-[var(--color-text-disabled)]">
-          {t('subuser_action_needs_owner')}
-        </div>
-      )}
-      {showPaymentForm && canDo('can_upload_payment_proof') && (
-        <div className="bg-blue-900/30 border border-blue-200 rounded-xl p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">💳</span>
-            <div>
-              {editingPayment ? (
-                <p className="font-medium text-blue-800">
-                  {editingPayment.status === 'rejected' ? t('pay_reupload_for_rejected') : t('pay_edit')}
-                </p>
-              ) : pendingPayment ? (
-                <p className="font-medium text-blue-800">{t('pay_required_notice', { amount: pendingPayment.amount })}</p>
-              ) : (
-                <p className="font-medium text-blue-800">
-                  {t('pay_complete_notice', { title: payableContract?.title || '' })}
-                </p>
-              )}
-              <p className="text-xs text-[var(--color-gold-text)] mt-0.5">{t('pay_upload_proof_hint')}</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('pay_amount_ph')}
-              className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] placeholder-[var(--color-text-disabled)]" />
-            
-            {effectiveCurrencies.length === 1 ? (
-              <div className="border border-[var(--color-input-border)] rounded-lg px-4 py-2.5 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)] flex items-center justify-between">
-                <span className="text-xs text-[var(--color-text-secondary)]">{t('currency') || 'العملة'}</span>
-                <span className="font-semibold text-[var(--color-gold-text)]">{effectiveCurrencies[0]}</span>
-              </div>
-            ) : (
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-                {effectiveCurrencies.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            )}
-
-            <select value={methodType} onChange={(e) => setMethodType(e.target.value)}
-              className="border border-[var(--color-input-border)] rounded-lg px-4 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
-              <option value="">{t('pay_method_ph')}</option>
-              {methods.map((m) => <option key={m} value={m}>{methodLabels[m] || m}</option>)}
-            </select>
-            <label className="flex items-center gap-2 text-sm text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)]">
-              <input type="file" accept="image/*,.pdf" className="hidden"
-                onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
-              <span className="border border-blue-200 rounded-lg px-4 py-2 bg-[var(--color-card)]">
-                {proofFile ? proofFile.name : t('pay_choose_proof')}
-              </span>
-            </label>
-            <div className="flex gap-2">
-              <button onClick={submit} disabled={saving || !amount || !methodType}
-                className="flex-1 bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
-                {saving ? t('pay_saving') : editingPayment ? (editingPayment.status === 'rejected' ? t('pay_reupload_proof') : t('pay_update')) : t('pay_submit_proof')}
-              </button>
-              {editingPayment && (
-                <button onClick={cancelEdit} type="button"
-                  className="bg-[var(--color-input-fill)] px-4 py-2.5 rounded-lg text-sm hover:bg-[var(--color-card-border)]">
-                  {t('pay_cancel')}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* قائمة المدفوعات السابقة أو رسالة عدم وجود مدفوعات */}
-      {payments.length === 0 && !pendingPayment && !payableContract
-        ? <EmptyState message={t('pay_no_payments')} />
-        : payments.map((p, idx) => {
-          const linkedContract = p.contract;
-          const isPending = p.status === 'pending';
-          const isApproved = p.status === 'approved';
-          const isRejected = p.status === 'rejected';
-          const statusColor = isApproved ? 'text-green-400' : isPending ? 'text-[var(--color-gold-text)]' : isRejected ? 'text-red-400' : 'text-[var(--color-text-disabled)]';
-          const statusDot = isApproved ? 'bg-green-400' : isPending ? 'bg-[var(--color-gold)]' : isRejected ? 'bg-red-400' : 'bg-gray-500';
-          const statusText = isApproved ? t('pay_status_approved') : isPending ? t('pay_status_pending') : isRejected ? t('pay_status_rejected') : p.status;
-
+      <div className="rows" style={{ marginTop: sheetOpen ? 18 : 0 }}>
+        {payments.length === 0 && (
+          <p className="locked" style={{ padding: '36px 0', justifyContent: 'center', width: '100%' }}>{t('pay_no_payments')}</p>
+        )}
+        {payments.map((p, idx) => {
+          const isScheduled = p.status === 'scheduled' || p.status === 'overdue';
+          const editable = ['pending', 'rejected', 'scheduled', 'overdue'].includes(p.status);
           const proofUrl = p.proof_file_url ? resolveFileUrl(p.proof_file_url) || null : null;
-
+          const dateText = p.due_date
+            ? tp('p_due', { date: formatShortDate(p.due_date, locale) })
+            : formatShortDate(p.created_at, locale);
+          const kindParts = [
+            p.method_type && p.method_type !== 'scheduled' ? methodLabel(p.method_type) : null,
+            p.contract?.title ?? null,
+          ].filter(Boolean).join(' · ');
           return (
-          <div key={p.id} className={`border rounded-xl overflow-hidden ${isPending ? 'border-[var(--color-gold)]' : isRejected ? 'border-red-500/40' : 'border-[var(--color-card-border)]'}`}>
-            {/* ── القسم العلوي ── */}
-            <div className="px-5 pt-5 pb-4">
-              <p className="text-xs text-[var(--color-gold-text)] font-medium">{installmentName(idx)}</p>
-              <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1 font-display">{p.amount} <span className="text-sm font-normal text-[var(--color-text-disabled)]">{p.currency || 'SAR'}</span></p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
-                <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
+            <div key={p.id} className={`rowx ${isScheduled || p.status === 'rejected' ? 'apcard' : ''}`.trim()}>
+              <div>
+                {kindParts && <div className="kind">{kindParts}</div>}
+                <div className="title">{p.installment_label || t('pay_installment_num', { num: idx + 1 })}</div>
+                {dateText && <div className="sub">{dateText}</div>}
+                {/* payments-fixes-2-plan.md ت٢ — rejection_reason and notes are
+                    different things: notes is the manager's note when
+                    requesting the payment, rejection_reason is why it was
+                    later rejected. Each is shown under its own label,
+                    independently. */}
+                {p.status === 'rejected' && p.rejection_reason && (
+                  <div className="sub" style={{ color: 'var(--crimson-ink)' }}><b>{t('pay_rejection_reason')}:</b> <span>{p.rejection_reason}</span></div>
+                )}
+                {p.notes && <div className="sub"><b>{t('notes')}:</b> <span>{p.notes}</span></div>}
               </div>
-              {/* payments-fixes-2-plan.md ت٢ — rejection_reason and notes are
-                  different things: notes is the manager's note when
-                  requesting the payment, rejection_reason is why it was
-                  later rejected. Falling back to notes whenever
-                  rejection_reason is empty mislabeled the manager's own note
-                  as "rejection reason" for any payment rejected without one.
-                  Each is now shown under its own label, independently. */}
-              {isRejected && p.rejection_reason && (
-                <div className="mt-2.5 p-2.5 bg-red-900/20 border border-red-500/30 rounded-lg text-xs text-red-300">
-                  <p className="font-medium text-red-400 mb-0.5">{t('pay_rejection_reason')}:</p>
-                  <p>{p.rejection_reason}</p>
-                </div>
-              )}
-              {p.notes && (
-                <div className="mt-2.5 p-2.5 bg-white/[0.03] border border-[var(--color-card-border)] rounded-lg text-xs text-[var(--color-text-secondary)]">
-                  <p className="font-medium text-[var(--color-text-primary)] mb-0.5">{t('notes')}:</p>
-                  <p>{p.notes}</p>
-                </div>
-              )}
+              <div className="amt">{money(Number(p.amount), p.currency || contractCurrency)}</div>
+              <span className="st2"><StatusDot tone={STATUS_TONE[p.status] ?? 'faint'} />{statusLabel(p.status)}</span>
+              <div className="acts">
+                {proofUrl && (
+                  <a className="lnk" href={proofUrl} target="_blank" rel="noopener noreferrer">{t('pay_view_proof')}</a>
+                )}
+                {editable && canUpload && (
+                  <Btn
+                    variant={p.status === 'pending' ? 'default' : 'primary'}
+                    onClick={() => { setShowNew(false); setEditing(p); }}
+                  >
+                    <Icon name="up" />
+                    {p.status === 'rejected' ? t('pay_reupload_proof') : p.status === 'pending' ? t('pay_edit') : tp('p_upload')}
+                  </Btn>
+                )}
+              </div>
             </div>
-
-            {/* ── الفاصل ── */}
-            <div className="h-px bg-[var(--color-card-border)]"></div>
-
-            {/* ── القسم السفلي ── */}
-            <div className="px-5 py-4 space-y-2">
-              {p.method_type && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">💳</span>
-                  <span className="text-xs text-[var(--color-text-secondary)]">{methodLabels[p.method_type] || p.method_type}</span>
-                </div>
-              )}
-              {linkedContract && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">📄</span>
-                  <span className="text-xs text-[var(--color-text-secondary)]">{linkedContract.title}</span>
-                </div>
-              )}
-              {proofUrl && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">📎</span>
-                  <a href={proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('pay_view_proof')}</a>
-                </div>
-              )}
-              {(isPending || isRejected) && canDo('can_upload_payment_proof') && (
-                <div className="pt-2">
-                  <button onClick={() => startEdit(p)} className={`w-full text-sm font-medium py-1.5 px-3 rounded-lg border transition-colors ${isRejected ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-[var(--color-gold)]/40 text-[var(--color-gold-text)] hover:bg-[var(--color-gold)]/10'}`}>
-                    {isRejected ? t('pay_reupload_proof') : t('pay_edit')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
           );
         })}
+      </div>
     </div>
   );
 }

@@ -105,8 +105,8 @@ describe('ClientFiles (characterization)', () => {
     const user = userEvent.setup();
     renderWithIntl(<ClientFiles wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('+ Upload Document')).toBeInTheDocument());
-    await user.click(screen.getByText('+ Upload Document'));
+    await waitFor(() => expect(screen.getByText('Upload file')).toBeInTheDocument());
+    await user.click(screen.getByText('Upload file'));
 
     await waitFor(() => expect(screen.getByText('Upload Document')).toBeInTheDocument());
 
@@ -136,7 +136,7 @@ describe('ClientFiles (characterization)', () => {
       renderWithIntl(<ClientFiles wsId={9} />);
 
       await waitFor(() => expect(screen.getByText('ID Card.pdf')).toBeInTheDocument());
-      expect(screen.queryByText('+ Upload Document')).not.toBeInTheDocument();
+      expect(screen.queryByText('Upload file')).not.toBeInTheDocument();
     });
 
     it('shows the upload trigger button when can_upload_files is true', async () => {
@@ -144,7 +144,7 @@ describe('ClientFiles (characterization)', () => {
       mockLoad();
       renderWithIntl(<ClientFiles wsId={9} />);
 
-      await waitFor(() => expect(screen.getByText('+ Upload Document')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Upload file')).toBeInTheDocument());
     });
   });
 });

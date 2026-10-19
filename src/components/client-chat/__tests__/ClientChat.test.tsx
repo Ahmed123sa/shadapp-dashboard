@@ -217,4 +217,14 @@ describe('ClientChat (characterization)', () => {
       expect(screen.getByText('Edit')).toBeInTheDocument();
     });
   });
+
+  it('replaces the composer with a view-only note without can_chat', async () => {
+    vi.mocked(canDo).mockImplementation((k: string) => k !== 'can_chat');
+    mockLoad();
+    renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+    await waitFor(() => expect(screen.getByText('Hello from the client')).toBeInTheDocument());
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+    expect(screen.getByText('View only')).toBeInTheDocument();
+  });
 });

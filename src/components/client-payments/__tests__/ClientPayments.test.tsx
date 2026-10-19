@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
@@ -59,25 +59,36 @@ afterEach(() => {
 });
 
 describe('ClientPayments (characterization)', () => {
-  it('pre-fills the amount from the payable contract value when there are no payments yet', async () => {
-    mockLoad();
+  it('summarises contracts value, paid and remaining from the approved payments', async () => {
+    const approved = { id: 1, workspace_id: 9, client_id: 1, amount: '2000', currency: 'SAR', method_type: 'instapay', status: 'approved', created_at: '2026-08-01T00:00:00Z' };
+    mockLoad({ payments: [approved] });
     renderWithIntl(<ClientPayments wsId={9} />);
 
-    const amountInput = await screen.findByPlaceholderText('Amount') as HTMLInputElement;
-    await waitFor(() => expect(amountInput.value).toBe('5000'));
+    await waitFor(() => expect(screen.getByText('Contracts value').parentElement).toHaveTextContent('5,000'));
+    expect(screen.getByText('Paid so far').parentElement).toHaveTextContent('2,000');
+    expect(screen.getByText('Remaining').parentElement).toHaveTextContent('3,000');
   });
 
-  it('lists available payment methods returned by the API', async () => {
+  it('opens the payment sheet pre-filled with the contract value when there are no payments yet', async () => {
     mockLoad();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithIntl(<ClientPayments wsId={9} />);
 
-    await screen.findByPlaceholderText('Amount');
-    expect(screen.getByText('Payment Method:')).toBeInTheDocument();
-    expect(screen.getAllByText('Bank Transfer').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Instapay').length).toBeGreaterThan(0);
+    await user.click(await screen.findByRole('button', { name: /Send a payment/ }));
+    await waitFor(() => expect(screen.getByLabelText('Amount')).toHaveValue(5000));
   });
 
-  it('submits a new payment proof as multipart form data and adds it to the list', async () => {
+  it('lists the payment methods returned by the API as chips', async () => {
+    mockLoad();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    await user.click(await screen.findByRole('button', { name: /Send a payment/ }));
+    expect(screen.getByRole('radio', { name: 'Bank transfer' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'InstaPay' })).toBeInTheDocument();
+  });
+
+  it('submits a new payment as multipart form data with proof_files[] and adds it to the list', async () => {
     mockLoad();
     mock.onPost('/workspaces/9/payments').reply(200, {
       payment: { id: 900, workspace_id: 9, client_id: 1, amount: '5000', currency: 'SAR', method_type: 'bank_transfer', status: 'pending', created_at: '2026-08-01T00:00:00Z' },
@@ -86,12 +97,11 @@ describe('ClientPayments (characterization)', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithIntl(<ClientPayments wsId={9} />);
 
-    await screen.findByPlaceholderText('Amount');
-    const methodSelects = screen.getAllByRole('combobox');
-    // Single currency (SAR only) collapses to a display box, not a <select>,
-    // so the only combobox on screen is the payment-method dropdown.
-    await user.selectOptions(methodSelects[0], 'bank_transfer');
-    await user.click(screen.getByText('Submit Payment Proof'));
+    await user.click(await screen.findByRole('button', { name: /Send a payment/ }));
+    await user.click(screen.getByRole('radio', { name: 'Bank transfer' }));
+    const input = screen.getByTestId('proof-input');
+    fireEvent.change(input, { target: { files: [new File(['a'], 'a.jpg', { type: 'image/jpeg' }), new File(['b'], 'b.pdf', { type: 'application/pdf' })] } });
+    await user.click(screen.getByRole('button', { name: 'Send payment' }));
 
     await waitFor(() => {
       const call = mock.history.post.find((r) => r.url === '/workspaces/9/payments');
@@ -100,10 +110,14 @@ describe('ClientPayments (characterization)', () => {
       expect(form.get('amount')).toBe('5000');
       expect(form.get('currency')).toBe('SAR');
       expect(form.get('method_type')).toBe('bank_transfer');
+      expect(form.getAll('proof_files[]')).toHaveLength(2);
+      expect(form.get('proof_file')).toBeNull();
     });
+    // The new payment shows up in the list.
+    await waitFor(() => expect(screen.getByText('Pending')).toBeInTheDocument());
   });
 
-  it('lets a client edit a pending payment, pre-filling the form, and PUTs the update', async () => {
+  it('lets a client edit a pending payment, pre-filling the sheet, and PUTs the update', async () => {
     const pending = { id: 901, workspace_id: 9, client_id: 1, amount: '3000', currency: 'SAR', method_type: 'instapay', status: 'pending', created_at: '2026-08-01T00:00:00Z' };
     mockLoad({ payments: [pending] });
     mock.onPost('/workspaces/9/payments/901').reply(200, {
@@ -113,13 +127,12 @@ describe('ClientPayments (characterization)', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithIntl(<ClientPayments wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('Edit')).toBeInTheDocument());
-    await user.click(screen.getByText('Edit'));
+    await user.click(await screen.findByRole('button', { name: 'Edit' }));
 
     const amountInput = await screen.findByDisplayValue('3000');
     await user.clear(amountInput);
     await user.type(amountInput, '3500');
-    await user.click(screen.getByText('Update'));
+    await user.click(screen.getByRole('button', { name: 'Send payment' }));
 
     await waitFor(() => {
       const call = mock.history.post.find((r) => r.url === '/workspaces/9/payments/901');
@@ -127,15 +140,32 @@ describe('ClientPayments (characterization)', () => {
       const form = call!.data as FormData;
       expect(form.get('amount')).toBe('3500');
       expect(form.get('_method')).toBe('PUT');
+      expect(form.get('method_type')).toBe('instapay');
     });
   });
 
-  it('shows the pending-payment notice with the required amount instead of the contract notice', async () => {
-    const pending = { id: 902, workspace_id: 9, client_id: 1, amount: '1200', currency: 'SAR', method_type: '', status: 'pending', created_at: '2026-08-01T00:00:00Z' };
-    mockLoad({ payments: [pending] });
+  it('a scheduled installment gets an Upload receipt action that PUTs the existing payment', async () => {
+    const scheduled = { id: 905, workspace_id: 9, client_id: 1, amount: '2500', currency: 'SAR', method_type: 'scheduled', status: 'scheduled', due_date: '2026-11-01', installment_label: 'Second payment', created_at: '2026-08-01T00:00:00Z' };
+    mockLoad({ payments: [scheduled] });
+    mock.onPost('/workspaces/9/payments/905').reply(200, { payment: { ...scheduled, status: 'pending' } });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithIntl(<ClientPayments wsId={9} />);
 
-    await waitFor(() => expect(screen.getByText('Payment of 1200 SAR is required')).toBeInTheDocument());
+    expect(await screen.findByText('Second payment')).toBeInTheDocument();
+    expect(screen.getByText('Scheduled')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Upload receipt' }));
+    await user.click(screen.getByRole('radio', { name: 'InstaPay' }));
+    fireEvent.change(screen.getByTestId('proof-input'), { target: { files: [new File(['r'], 'r.jpg', { type: 'image/jpeg' })] } });
+    await user.click(screen.getByRole('button', { name: 'Send payment' }));
+
+    await waitFor(() => {
+      const call = mock.history.post.find((r) => r.url === '/workspaces/9/payments/905');
+      expect(call).toBeTruthy();
+      const form = call!.data as FormData;
+      expect(form.get('_method')).toBe('PUT');
+      expect(form.getAll('proof_files[]')).toHaveLength(1);
+    });
   });
 
   // payments-fixes-2-plan.md ت٢ — rejection_reason used to fall back to
@@ -166,35 +196,34 @@ describe('ClientPayments (characterization)', () => {
 
   // subuser-review-plan.md م٦ — uploading/re-uploading a payment proof maps
   // to can_upload_payment_proof; a sub-user without it must not see the
-  // submission form or the per-payment edit/reupload trigger.
+  // submission sheet or the per-payment upload/edit actions.
   describe('sub-user action gating (م٦)', () => {
-    it('replaces the payment form with the owner-only message when can_upload_payment_proof is false', async () => {
+    it('shows the owner-only message and no send button when can_upload_payment_proof is false', async () => {
       vi.mocked(canDo).mockReturnValue(false);
       mockLoad();
       renderWithIntl(<ClientPayments wsId={9} />);
 
       await waitFor(() => expect(screen.getByText('This action needs approval from the account owner or a user with permission')).toBeInTheDocument());
-      expect(screen.queryByPlaceholderText('Amount')).not.toBeInTheDocument();
-      expect(screen.queryByText('Submit Payment Proof')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Send a payment/ })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
     });
 
-    it('hides the per-payment edit/reupload button when can_upload_payment_proof is false', async () => {
+    it('hides the per-payment edit/upload action when can_upload_payment_proof is false', async () => {
       vi.mocked(canDo).mockReturnValue(false);
       const pending = { id: 901, workspace_id: 9, client_id: 1, amount: '3000', currency: 'SAR', method_type: 'instapay', status: 'pending', created_at: '2026-08-01T00:00:00Z' };
       mockLoad({ payments: [pending] });
       renderWithIntl(<ClientPayments wsId={9} />);
 
       await waitFor(() => expect(screen.getByText('Pending')).toBeInTheDocument());
-      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     });
 
-    it('shows the payment form normally when can_upload_payment_proof is true', async () => {
+    it('offers to send a payment when can_upload_payment_proof is true', async () => {
       vi.mocked(canDo).mockReturnValue(true);
       mockLoad();
       renderWithIntl(<ClientPayments wsId={9} />);
 
-      await screen.findByPlaceholderText('Amount');
-      expect(screen.getByText('Submit Payment Proof')).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /Send a payment/ })).toBeInTheDocument();
       expect(screen.queryByText('This action needs approval from the account owner or a user with permission')).not.toBeInTheDocument();
     });
   });

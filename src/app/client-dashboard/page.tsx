@@ -142,7 +142,7 @@ export default function ClientDashboardPage() {
         <WorkspaceTabs tabs={tabs} active={current?.key ?? activeTab} counts={badgeCounts} onSelect={selectTab} />
         <div className="panel">
           {/* Tab bodies still carry their previous markup; they are restyled one by one (ع٤). */}
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '22px 0 40px' }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             {current && (
               <TabContent tab={current.key} wsId={wsId} clientId={session.id} clientData={client} wsActive={wsActive} onGoToPayments={() => selectTab('payments')} />
             )}
