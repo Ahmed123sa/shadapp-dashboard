@@ -26,7 +26,6 @@ export default function ClientTeamPage() {
             <p>{t('team_desc', { company: client.company_name })}</p>
           </div>
         </div>
-        {/* The list/form keep their previous markup until ع٥ restyles them. */}
         <ClientSubUsers clientId={client.id} />
       </div>
     </ClientShell>

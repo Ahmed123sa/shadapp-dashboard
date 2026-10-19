@@ -1399,6 +1399,26 @@
     "m_scheduled": "Scheduled",
     "m_done": "Completed",
     "m_cancelled": "Cancelled",
-    "m_join": "Join"
+    "m_join": "Join",
+    "tm_add": "Add member",
+    "tm_add_title": "Add a team member",
+    "tm_edit_title": "Edit team member",
+    "tm_name": "Full name",
+    "tm_email": "Email",
+    "tm_phone": "Phone",
+    "tm_dob": "Date of birth",
+    "tm_password": "Password",
+    "tm_send_login": "Email the login details to this person",
+    "tm_col_name": "Member",
+    "tm_col_access": "Access",
+    "tm_no_access": "No access yet",
+    "tm_del_title": "Delete team member",
+    "tm_del_msg": "Delete {name}? They will be signed out and lose access immediately. This cannot be undone.",
+    "g_chat": "Chat",
+    "g_contracts": "Contracts",
+    "g_payments": "Payments",
+    "g_approvals": "Approvals",
+    "g_files": "Files",
+    "g_meetings": "Meetings"
   }
 }
