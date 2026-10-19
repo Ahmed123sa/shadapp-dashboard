@@ -7,7 +7,7 @@ import { useSubmitClientPayment } from '@/hooks/queries/usePayments';
 import type { Payment } from '@/types';
 import { Btn, Icon } from './ui';
 
-export const METHOD_KEYS = ['bank_transfer', 'swift', 'corporate_account', 'instapay', 'vodafone_cash', 'mobile_wallet'] as const;
+export const METHOD_KEYS = ['bank_transfer', 'swift', 'corporate_account', 'instapay', 'vodafone_cash', 'mobile_wallet', 'cheque'] as const;
 
 export function methodLabelOf(t: (key: string) => string, m: string): string {
   return (METHOD_KEYS as readonly string[]).includes(m) ? t(`method_${m}`) : m;

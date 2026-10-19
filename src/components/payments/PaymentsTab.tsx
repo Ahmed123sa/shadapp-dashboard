@@ -91,7 +91,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('method_bank_transfer'), swift: t('method_swift'), corporate_account: t('method_corporate_account'),
-    instapay: t('method_instapay'), vodafone_cash: t('method_vodafone_cash'), mobile_wallet: t('method_mobile_wallet'),
+    instapay: t('method_instapay'), vodafone_cash: t('method_vodafone_cash'), mobile_wallet: t('method_mobile_wallet'), cheque: t('method_cheque'),
   };
 
   const reviewPayment = (pid: number, action: string) => {

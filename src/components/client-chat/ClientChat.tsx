@@ -4,13 +4,23 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
-import MeetingChip from '@/components/ui/MeetingChip';
+import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
+import { StatusDot, type DotTone } from '@/components/client-portal/ui';
 import { formatTime, formatShortDate } from '@/lib/client-format';
 import { Btn, Icon } from '@/components/client-portal/ui';
 import { useTranslations, useLocale } from 'next-intl';
 import { useWorkspaceChat, useSendChatMessage, useRespondChatAction } from '@/hooks/queries/useChat';
 import { canDo } from '@/lib/client-auth';
 import type { ChatMessage, User } from '@/types';
+
+const M_TONE: Record<string, DotTone> = { scheduled: 'wait', completed: 'ok', cancelled: 'faint' };
+
+function fileExt(url: string) {
+  return (url.split('?')[0].split('.').pop() || 'file').slice(0, 4);
+}
+function fileName(url: string) {
+  try { return decodeURIComponent(url.split('?')[0].split('/').pop() || ''); } catch { return url.split('?')[0].split('/').pop() || ''; }
+}
 
 export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
@@ -97,6 +107,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
 
   const canChat = canDo('can_chat');
   const canRespond = canDo('can_respond_approvals');
+  const canJoinMeeting = canDo('can_join_meetings');
   const dayKey = (iso?: string) => (iso ? new Date(iso).toDateString() : '');
 
   return (
@@ -133,6 +144,13 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
           );
 
           if (m.type === 'meeting' && m.metadata) {
+            const md = m.metadata;
+            const status = md.status || 'scheduled';
+            const joinSt = md.scheduled_at ? getMeetingJoinStatus(md.scheduled_at, locale) : null;
+            const sd = md.scheduled_at ? new Date(md.scheduled_at) : null;
+            const validDate = sd && !Number.isNaN(sd.getTime());
+            const loc = locale === 'ar' ? 'ar-EG' : 'en-US';
+            const statusLabel = ({ scheduled: tp('m_scheduled'), completed: tp('m_done'), cancelled: tp('m_cancelled') } as Record<string, string>)[status] ?? status;
             return (
               <div key={m.id}>
                 {day}
@@ -140,7 +158,30 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                   {avatar}
                   <div>
                     <div className="who"><b>{who}</b>{role && <span className="tagr">{role}</span>}<span>{time}</span></div>
-                    <div className="card"><MeetingChip metadata={m.metadata} /></div>
+                    <div className="card mcard">
+                      {validDate && (
+                        <div className="cal">
+                          <div className="m">{sd!.toLocaleDateString(loc, { month: 'short' })}</div>
+                          <div className="dd">{sd!.toLocaleString(loc, { day: 'numeric' })}</div>
+                        </div>
+                      )}
+                      <div className="mbody">
+                        <div className="k"><span>{t('meeting_chip_title')}</span></div>
+                        <div className="t">{md.title || t('meeting_chip_title')}</div>
+                        {md.scheduled_at && <div className="v">{formatMeetingDate(md.scheduled_at, locale)}{md.duration_minutes ? ` · ${md.duration_minutes}m` : ''}</div>}
+                        {md.rescheduled && status === 'scheduled' && <span className="tagr" style={{ marginTop: 6, display: 'inline-block' }}>{t('meeting_chip_rescheduled')}</span>}
+                        {md.passcode && <div className="v">{t('meeting_chip_passcode', { code: md.passcode })}</div>}
+                      </div>
+                      <div className="macts">
+                        {status !== 'scheduled' ? (
+                          <span className="st2"><StatusDot tone={M_TONE[status] ?? 'faint'} />{statusLabel}</span>
+                        ) : joinSt && md.link && canJoinMeeting && joinSt.canJoin ? (
+                          <a className="btn primary" href={md.link} target="_blank" rel="noopener noreferrer"><Icon name="video" />{t('meeting_chip_join_now')}</a>
+                        ) : joinSt ? (
+                          <span className="locked">{joinSt.label}</span>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -151,17 +192,18 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
               <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 10, marginBottom: 6 }} />
             ) : (
-              <a className="lnk" href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer" style={{ marginBottom: 6 }}>
-                <Icon name="clip" />
-                {t('view_attachment')}
+              <a className="fcard" href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer">
+                <span className="fic">{fileExt(m.file_url)}</span>
+                <span className="fn">{fileName(m.file_url)}</span>
+                <span className="fopen"><Icon name="clip" />{t('view_attachment')}</span>
               </a>
             )
           ) : null;
 
           const replyBlock = m.reply_to ? (
-            <div className="sub" style={{ borderInlineStart: '2px solid var(--line-2)', paddingInlineStart: 8, marginBottom: 6, opacity: 0.8 }}>
-              <div style={{ fontWeight: 500 }}>{m.reply_to.sender?.name || 'Unknown'}</div>
-              <div style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.reply_to.message || '...'}</div>
+            <div className="rquote">
+              <div className="rn">{m.reply_to.sender?.name || 'Unknown'}</div>
+              <div className="rt">{m.reply_to.message || '...'}</div>
             </div>
           ) : null;
 

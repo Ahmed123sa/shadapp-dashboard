@@ -26,7 +26,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
 
   const methodLabels: Record<string, string> = {
     bank_transfer: t('pay_method_bank_transfer'), swift: t('pay_method_swift'), corporate_account: t('pay_method_corporate_account'),
-    instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'),
+    instapay: t('pay_method_instapay'), vodafone_cash: t('pay_method_vodafone_cash'), mobile_wallet: t('pay_method_mobile_wallet'), cheque: t('pay_method_cheque'),
   };
 
   const currencyLabels: Record<string, string> = {

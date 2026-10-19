@@ -195,6 +195,7 @@ export interface ChatMessage {
     link?: string;
     passcode?: string;
     status?: string;
+    rescheduled?: boolean;
   };
   created_at: string;
 }

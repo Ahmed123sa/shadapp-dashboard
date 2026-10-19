@@ -112,6 +112,7 @@ export default function FinancePage() {
     instapay: 'InstaPay',
     vodafone_cash: 'Vodafone Cash',
     mobile_wallet: locale === 'ar' ? 'محفظة إلكترونية' : 'Mobile Wallet',
+    cheque: locale === 'ar' ? 'شيك' : 'Cheque',
   };
 
   return (
