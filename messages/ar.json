@@ -1426,6 +1426,8 @@
     "set_lang_h": "اللغة",
     "set_lang_p": "تُعاد تحميل الصفحة باللغة التي تختارها.",
     "f_amount": "المبلغ",
-    "m_ended": "انتهى"
+    "m_ended": "انتهى",
+    "login_mode_client": "عميل",
+    "login_mode_staff": "المدير والفريق"
   }
 }

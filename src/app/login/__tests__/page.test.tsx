@@ -6,6 +6,12 @@ import LoginPage from '../page';
 import { login } from '@/lib/auth';
 
 vi.mock('@/lib/auth', () => ({ login: vi.fn() }));
+vi.mock('@/lib/client-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/client-auth')>()),
+  clientLogin: vi.fn(),
+  getClient: vi.fn(() => null),
+}));
+import { clientLogin } from '@/lib/client-auth';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -63,9 +69,26 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument();
   });
 
-  it('links to forgot-password and to the client login (ف-٨)', () => {
+  it('links to forgot-password (staff) and opens on the team side of the switch', () => {
     renderWithIntl(<LoginPage />);
     expect(screen.getByText('Forgot your password?').closest('a')).toHaveAttribute('href', '/forgot-password');
-    expect(screen.getByText('Client Login').closest('a')).toHaveAttribute('href', '/client-login');
+    expect(screen.getByRole('tab', { name: 'Managers & team' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('switches to the client side: client forgot link, client login call, /client-dashboard', async () => {
+    const spy = vi.mocked(clientLogin).mockResolvedValue({} as never);
+    const user = userEvent.setup();
+    renderWithIntl(<LoginPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'Client' }));
+    expect(screen.getByText('Forgot your password?').closest('a')).toHaveAttribute('href', '/forgot-password?type=client');
+
+    await user.type(emailInput(), 'jane@acme.com');
+    await user.type(passwordInput(), 'secret123');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/client-dashboard'));
+    expect(spy).toHaveBeenCalledWith('jane@acme.com', 'secret123');
+    expect(login).not.toHaveBeenCalled();
   });
 });

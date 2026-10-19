@@ -1426,6 +1426,8 @@
     "set_lang_h": "Language",
     "set_lang_p": "The page reloads in the language you pick.",
     "f_amount": "Amount",
-    "m_ended": "Ended"
+    "m_ended": "Ended",
+    "login_mode_client": "Client",
+    "login_mode_staff": "Managers & team"
   }
 }

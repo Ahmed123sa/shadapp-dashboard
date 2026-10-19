@@ -15,6 +15,7 @@ vi.mock('@/lib/client-auth', async (importOriginal) => ({
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/lib/auth', () => ({ login: vi.fn() }));
 
 beforeEach(() => {
   push.mockClear();
@@ -60,10 +61,17 @@ describe('ClientLoginPage', () => {
     expect(input.type).toBe('text');
   });
 
-  it('links to forgot-password (client) and to the admin login', () => {
+  it('links to forgot-password (client) and opens on the client side of the switch', () => {
     renderWithIntl(<ClientLoginPage />);
     expect(screen.getByText('Forgot your password?').closest('a')).toHaveAttribute('href', '/forgot-password?type=client');
-    expect(screen.getByText('Admin Login').closest('a')).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('tab', { name: 'Client' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('switching to managers & team swaps the forgot link and uses the staff login', async () => {
+    const user = userEvent.setup();
+    renderWithIntl(<ClientLoginPage />);
+    await user.click(screen.getByRole('tab', { name: 'Managers & team' }));
+    expect(screen.getByText('Forgot your password?').closest('a')).toHaveAttribute('href', '/forgot-password');
   });
 
   it('offers to continue when a client session already exists', () => {

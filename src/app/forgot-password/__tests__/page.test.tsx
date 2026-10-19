@@ -83,4 +83,19 @@ describe('ForgotPasswordPage', () => {
 
     expect(await screen.findByText(/something went wrong/i)).toBeInTheDocument();
   });
+
+  it('has the client / team switch, and flipping it changes where the request goes', async () => {
+    (global.fetch as any).mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    const user = userEvent.setup();
+    renderWithIntl(<ForgotPasswordPage />);
+
+    expect(screen.getByRole('tab', { name: 'Managers & team' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: 'Client' }));
+    await user.type(screen.getByLabelText('Email'), 'jane@acme.com');
+    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+    await screen.findByText(/sent/i);
+
+    const [url] = (global.fetch as any).mock.calls[0];
+    expect(String(url)).toContain('auth/client/forgot-password');
+  });
 });
