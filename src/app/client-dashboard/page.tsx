@@ -13,6 +13,10 @@ import ClientMeetings from '@/components/client-meetings/ClientMeetings';
 import ClientSignature from '@/components/client-signature/ClientSignature';
 import ClientSubUsers from '@/components/client-subusers/ClientSubUsers';
 import StagesStepper from '@/components/client-dashboard/StagesStepper';
+import OnboardingShell from '@/components/client-portal/OnboardingShell';
+import OnboardingStage from '@/components/client-portal/OnboardingStage';
+import WaitingStage from '@/components/client-portal/stages/WaitingStage';
+import { resolveOnboardingStage, stageToStep } from '@/lib/client-onboarding';
 import NotificationBell from '@/components/NotificationBell';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -37,6 +41,7 @@ type Tab = (typeof ALL_TABS)[number]['key'];
 
 export default function ClientDashboardPage() {
   const t = useTranslations('dashboard');
+  const tp = useTranslations('client_portal');
   const TAB_LABELS: Record<string, string> = {
     'العقود': t('tab_contracts'),
     'المدفوعات': t('tab_payments'),
@@ -80,7 +85,7 @@ export default function ClientDashboardPage() {
   const { data: client, isLoading: clientQueryLoading, refetch: refetchClient } = useClient(session?.id ?? '', { enabled: !!session?.id });
   const clientLoading = !session?.id || clientQueryLoading;
   const clientWorkspaceId = client?.workspace?.id;
-  const { data: workspace } = useWorkspace(clientWorkspaceId);
+  const { data: workspace, isLoading: workspaceLoading, refetch: refetchWorkspace } = useWorkspace(clientWorkspaceId);
   useWorkspaceRealtime(clientWorkspaceId);
 
   // SUBUSER_PLAN.md §5.3 — refetches this sub-user's permissions from the
@@ -106,88 +111,35 @@ export default function ClientDashboardPage() {
   if (clientLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
   if (!session || !client) return null;
 
-  const hasSigned = !!client.signed_at;
   const wsId = workspace?.id;
   const wsActive = workspace?.status === 'active';
-  const workspaceExists = !!wsId;
 
-  if (!hasSigned) {
+  // The workspace opens only once it is active; until then the client walks
+  // through onboarding (same stage rule as the mobile app) and an assistant
+  // just waits. Hold the loading state while the workspace is still being
+  // fetched so an active client never flashes the onboarding screens.
+  if (!wsActive) {
+    if (clientWorkspaceId && workspaceLoading) {
+      return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
+    }
+    const manager = workspace?.manager ?? client.workspace?.manager ?? null;
+    if (isSubUser()) {
+      return (
+        <OnboardingShell company={session.company_name} userName={getSubUser()?.name ?? ''} step={0} assistant>
+          <WaitingStage title={tp('asst_title')} description={tp('asst_desc')} />
+        </OnboardingShell>
+      );
+    }
+    const stage = resolveOnboardingStage(client, workspace);
+    const onChanged = () => { refetchClient(); refetchWorkspace?.(); };
     return (
-      <div className="min-h-screen bg-[var(--color-background)]">
-        <header className="bg-[var(--color-card)] border-b border-[var(--color-card-border)] px-6 py-4 flex items-center justify-between">
-          <h1 className="text-lg font-bold">ShadApp</h1>
-          <div className="flex items-center gap-3">
-            <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg">{t('client_logout')}</button>
-          </div>
-        </header>
-        <main className="max-w-2xl mx-auto p-6 space-y-6">
-          <div className="bg-[var(--color-card)] rounded-2xl border border-[var(--color-card-border)] p-8 text-center">
-            <div className="text-5xl mb-4">👋</div>
-            <h2 className="text-2xl font-bold mb-2">{t('client_welcome_title')}</h2>
-            <p className="text-[var(--color-text-secondary)] mb-6">{t('client_welcome_desc')}</p>
-
-            <div className="space-y-3 text-right max-w-md mx-auto">
-              <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                <span className="text-emerald-400 text-lg">✅</span>
-                <span className="text-sm text-emerald-300 font-medium">{t('client_account_created')}</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <span className="text-amber-400 text-lg">📝</span>
-                <span className="text-sm text-amber-300 font-medium">{t('client_sign_required')}</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-[var(--color-card-border)] rounded-lg text-[var(--color-text-disabled)]">
-                <span className="text-lg">⏳</span>
-                <span className="text-sm">{t('client_waiting_workspace')}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* subuser-review-plan.md م٥ — signing is the primary client's own
-              act; a sub-user who somehow lands here (before the client has
-              signed) can't do anything on this screen, so show a waiting
-              message instead of the signature form. */}
-          {isSubUser() ? (
-            <div className="bg-[var(--color-card)] rounded-2xl border border-[var(--color-card-border)] p-6 text-center text-sm text-[var(--color-text-secondary)]">
-              {t('client_signature_waiting_for_owner')}
-            </div>
-          ) : (
-            <ClientSignature clientId={session.id} clientData={client} onSigned={() => refetchClient()} />
-          )}
-        </main>
-      </div>
+      <OnboardingShell company={session.company_name} userName={client.contact_person ?? session.company_name} step={stageToStep(stage)} manager={manager}>
+        <OnboardingStage stage={stage} client={client} workspace={workspace} onChanged={onChanged} />
+      </OnboardingShell>
     );
   }
 
-  if (!workspaceExists) {
-    return (
-      <div className="min-h-screen bg-[var(--color-background)]">
-        <header className="bg-[var(--color-card)] border-b border-[var(--color-card-border)] px-6 py-4 flex items-center justify-between">
-          <h1 className="text-lg font-bold">ShadApp</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-[var(--color-text-secondary)]">{session.company_name}</span>
-            <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg">{t('client_logout')}</button>
-          </div>
-        </header>
-        <main className="max-w-2xl mx-auto p-6 space-y-6">
-          <div className="bg-[var(--color-card)] rounded-2xl border border-[var(--color-card-border)] p-8 text-center">
-            <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-xl font-bold mb-2">{t('client_signature_saved')}</h2>
-            <div className="space-y-3 text-right max-w-md mx-auto mt-6">
-              <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                <span className="text-emerald-400 text-lg">✅</span>
-                <span className="text-sm text-emerald-300 font-medium">{t('client_e_signature')}</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <span className="text-blue-400 text-lg">⏳</span>
-                <span className="text-sm text-blue-300 font-medium">{t('client_waiting_workspace_creation')}</span>
-              </div>
-            </div>
-            <p className="text-sm text-[var(--color-text-disabled)] mt-6">{t('client_notifications_incoming')}</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  if (!wsId) return null;
 
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
@@ -214,12 +166,6 @@ export default function ClientDashboardPage() {
 
       <main className="max-w-5xl mx-auto p-6 space-y-6">
         <StagesStepper client={client} workspace={workspace} onStageClick={(tab) => setActiveTab(tab as Tab)} />
-
-        {workspace?.payments?.some((p) => p.status === 'approved') && !wsActive && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
-            <p className="text-emerald-300 font-medium">✅ {t('client_payment_accepted')}</p>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4 text-center">
@@ -281,7 +227,7 @@ function TabContent({ tab, wsId, clientId, clientData, wsActive, onGoToPayments 
     case 'الشات': return <ClientChat wsId={wsId} wsActive={wsActive} />;
     case 'الملفات': return <ClientFiles wsId={wsId} />;
     case 'الاجتماعات': return <ClientMeetings wsId={wsId} />;
-    case 'التوقيع': return <ClientSignature clientId={clientId} clientData={clientData} onSigned={() => {}} />;
+    case 'التوقيع': return <div className="cx-root" style={{ minHeight: 0, background: 'transparent' }}><ClientSignature clientId={clientId} clientData={clientData} onSigned={() => {}} /></div>;
     case 'المستخدمين': return <ClientSubUsers clientId={clientId} />;
   }
 }

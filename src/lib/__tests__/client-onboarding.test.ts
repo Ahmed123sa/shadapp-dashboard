@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   computeOnboardingStage,
   isWorkspaceActive,
+  resolveOnboardingStage,
   stageToStep,
 } from '../client-onboarding';
 
@@ -81,5 +82,16 @@ describe('isWorkspaceActive', () => {
     expect(isWorkspaceActive({ status: 'inactive' })).toBe(false);
     expect(isWorkspaceActive(null)).toBe(false);
     expect(isWorkspaceActive(undefined)).toBe(false);
+  });
+});
+
+describe('resolveOnboardingStage (web)', () => {
+  it('a signed client without a workspace row waits instead of re-signing', () => {
+    expect(resolveOnboardingStage(signed, null)).toBe(1);
+    expect(resolveOnboardingStage(unsigned, null)).toBe(0);
+  });
+  it('otherwise matches the mobile rule', () => {
+    expect(resolveOnboardingStage(signed, ws(['sent']))).toBe(2);
+    expect(resolveOnboardingStage(null, null)).toBe(0);
   });
 });

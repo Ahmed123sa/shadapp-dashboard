@@ -429,3 +429,16 @@ html[dir="rtl"] .cx-root .quote {border-radius:10px 0 0 10px}
 .cx-root.cx-ws{height:100vh;overflow:hidden}
 .cx-root.cx-ws .app{height:100vh}
 @media (max-width:640px){.cx-root.cx-ws{height:auto;overflow:visible}}
+
+/* ---- real form controls dressed as the mockup's underline fields ---- */
+.cx-root input.in,.cx-root select.in{display:block;width:100%;background:none;border:0;border-radius:0;color:var(--ink);font-family:inherit;outline:0}
+.cx-root select.in option{background:#1B1A19;color:var(--ink)}
+.cx-root .f2 .in:focus-visible,.cx-root .f3 .in:focus-visible{border-bottom-color:var(--ink-2)}
+.cx-root textarea.ta{display:block;width:100%;font-family:inherit;color:var(--ink);resize:vertical;outline:0}
+.cx-root textarea.ta:focus-visible{border-color:rgba(240,240,240,.28)}
+.cx-root button.chip2{cursor:pointer;background:none}
+.cx-root a.lnk,.cx-root button.lnk{cursor:pointer;background:none;border-top:0;border-inline:0}
+.cx-root button.drop{display:block;width:100%;background:none;cursor:pointer}
+.cx-root .thumb .rm{background:none;border:0;padding:0}
+.cx-root .btn:focus-visible,.cx-root .chip2:focus-visible,.cx-root .lnk:focus-visible,.cx-root .segm button:focus-visible{outline:2px solid var(--ink-2);outline-offset:2px}
+.cx-root .sw2{padding:0;cursor:pointer}

@@ -50,3 +50,16 @@ export function isWorkspaceActive(workspace: StageWorkspace | null | undefined):
 export function stageToStep(stage: number): number {
   return STAGE_TO_STEP[stage] ?? 0;
 }
+
+/**
+ * Stage for the web portal. Same as the mobile rule, except a client who has
+ * already signed but whose workspace row isn't there yet is shown "waiting"
+ * (1) instead of being asked to sign again.
+ */
+export function resolveOnboardingStage(
+  client: StageClient | null | undefined,
+  workspace: StageWorkspace | null | undefined,
+): OnboardingStage {
+  if (client && !workspace && client.signed_at) return 1;
+  return computeOnboardingStage(client, workspace);
+}

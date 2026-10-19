@@ -1,6 +1,13 @@
 'use client';
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { iconMarkup, type IconName } from './icons';
+
+/** Mockup line icon (24px grid). Size/stroke come from the surrounding CSS. */
+export function Icon({ name }: { name: IconName }) {
+  // The markup is a fixed constant from icons.ts, never user input.
+  return <svg viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: iconMarkup(name) }} />;
+}
 
 /**
  * Small building blocks for the client portal (Luxe design). All visual

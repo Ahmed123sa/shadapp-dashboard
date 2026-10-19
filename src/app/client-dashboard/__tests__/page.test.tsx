@@ -67,7 +67,7 @@ function mockWorkspace(wsOverrides?: Record<string, unknown>) {
   mock.onGet('/workspaces/22').reply(200, {
     workspace: {
       id: 22,
-      status: 'inactive',
+      status: 'active',
       contracts: [],
       payments: [],
       approvals: [],
@@ -95,6 +95,8 @@ beforeEach(() => {
   vi.mocked(clientAuth.hasSubUserPermission).mockReturnValue(true);
   vi.mocked(clientAuth.getSubUser).mockReturnValue(null);
   vi.mocked(subscribeToWorkspace).mockReturnValue(vi.fn());
+  // jsdom has no canvas; the signature pad just skips painting when null.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
 });
 
 afterEach(() => {
@@ -119,27 +121,89 @@ describe('ClientDashboardPage (characterization)', () => {
     await waitFor(() => expect(mock.history.get.some((r) => r.url === '/clients/7')).toBe(true));
   });
 
-  it('shows the welcome/sign-required screen when the client has not signed yet', async () => {
+  // Until the workspace is active the client is in onboarding (mobile rule:
+  // see lib/client-onboarding.ts); the workspace tabs only open afterwards.
+  it('stage 0: an unsigned client is asked to add a signature', async () => {
     mockClient({ signed_at: null });
     mockFallback();
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByText('Welcome to ShadApp')).toBeInTheDocument());
-    expect(screen.getByText('Register your electronic signature — Required first')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Add your signature')).toBeInTheDocument());
+    expect(screen.getByText('Welcome, Acme Corp')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Contracts' })).not.toBeInTheDocument();
   });
 
-  it('shows the waiting-for-workspace screen once signed but before a workspace exists', async () => {
+  it('stage 1: signed but no workspace yet shows the waiting-for-contract card', async () => {
     mockClient({ signed_at: '2026-01-01T00:00:00Z', workspace: null });
     mockFallback();
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByText('Your signature has been saved successfully')).toBeInTheDocument());
-    expect(screen.getByText('Waiting for workspace creation — your admin will create the contract soon')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Your contract is being prepared')).toBeInTheDocument());
   });
 
-  it('loads the workspace and renders stats + tabs once a workspace exists', async () => {
+  it('stage 1: an inactive workspace with nothing sent also waits for the contract', async () => {
     mockClient({ workspace: { id: 22 } });
-    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'sent' }], payments: [] });
+    mockWorkspace({ status: 'inactive' });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Your contract is being prepared')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Contracts' })).not.toBeInTheDocument();
+  });
+
+  it('stage 2: a sent contract opens the review screen', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'sent' }] });
+    mock.onGet('/workspaces/22/contracts').reply(200, {
+      contracts: [{ id: 1, title: 'Menu & identity', status: 'sent', value: '14500', currency: 'EGP', clauses: [], required_documents: [] }],
+    });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Review your contract')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Menu & identity')).toBeInTheDocument());
+  });
+
+  it('stage 3: a client-approved contract waits for the company', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'client_approved' }] });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Waiting for company approval')).toBeInTheDocument());
+  });
+
+  it('stage 4: a company-approved contract opens the payment screen', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'company_approved' }] });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Complete your first payment')).toBeInTheDocument());
+  });
+
+  it('stage 5: a submitted payment shows the payment-review card', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'company_approved' }], payments: [{ id: 5, status: 'pending', amount: '16530', currency: 'EGP', method_type: 'instapay' }] });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('We’re reviewing your payment')).toBeInTheDocument());
+  });
+
+  it('stage 6: an edit request shows the quote of what was asked', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'inactive', contracts: [{ id: 1, status: 'edit_requested', edit_reason: 'Two instalments please' }] });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Edit requested')).toBeInTheDocument());
+    expect(screen.getByText('Two instalments please')).toBeInTheDocument();
+  });
+
+  it('loads the workspace and renders stats + tabs once the workspace is active', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace({ status: 'active', contracts: [{ id: 1, status: 'sent' }], payments: [] });
     mockFallback();
     renderWithIntl(<ClientDashboardPage />);
 
@@ -147,25 +211,7 @@ describe('ClientDashboardPage (characterization)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
     // Contracts stat card reflects the loaded workspace.contracts length.
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
-  });
-
-  it('shows the payment-accepted banner when a payment is approved but the workspace is not yet active', async () => {
-    mockClient({ workspace: { id: 22 } });
-    mockWorkspace({ status: 'inactive', payments: [{ id: 5, status: 'approved' }] });
-    mockFallback();
-    renderWithIntl(<ClientDashboardPage />);
-
-    await waitFor(() => expect(screen.getByText(/Payment approved — workspace will be activated/)).toBeInTheDocument());
-  });
-
-  it('does not show the payment-accepted banner once the workspace is active', async () => {
-    mockClient({ workspace: { id: 22 } });
-    mockWorkspace({ status: 'active', payments: [{ id: 5, status: 'approved' }] });
-    mockFallback();
-    renderWithIntl(<ClientDashboardPage />);
-
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
-    expect(screen.queryByText(/Payment approved — workspace will be activated/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Add your signature')).not.toBeInTheDocument();
   });
 
   it('syncs the active tab from the ?tab= query param on mount', async () => {
@@ -297,7 +343,7 @@ describe('ClientDashboardPage (characterization)', () => {
     expect(screen.queryByRole('button', { name: 'Signature' })).not.toBeInTheDocument();
   });
 
-  it('shows a waiting-for-owner message instead of the signature form for a sub-user before the client has signed', async () => {
+  it('shows a simple waiting card (no signature form, no stages) for a sub-user before the workspace is active', async () => {
     vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
     vi.mocked(clientAuth.getSubUser).mockReturnValue({
       id: 5, name: 'Employee', email: 'employee@acme.com', permissions: {},
@@ -307,6 +353,8 @@ describe('ClientDashboardPage (characterization)', () => {
 
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByText('Waiting for the account owner to register their electronic signature.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Your workspace is being prepared')).toBeInTheDocument());
+    expect(screen.queryByText('Add your signature')).not.toBeInTheDocument();
+    expect(screen.queryByText('Step 1 of 6')).not.toBeInTheDocument();
   });
 });
