@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { isClientAuthenticated, getClient, clientLogout, isSubUser, hasSubUserPermission, getSubUser, syncSubUserPermissions } from '@/lib/client-auth';
+import { isClientAuthenticated, getClient, isSubUser, hasSubUserPermission, getSubUser, syncSubUserPermissions } from '@/lib/client-auth';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import ClientContracts from '@/components/client-contracts/ClientContracts';
 import ClientPayments from '@/components/client-payments/ClientPayments';
@@ -10,15 +10,15 @@ import ClientApprovals from '@/components/client-approvals/ClientApprovals';
 import ClientChat from '@/components/client-chat/ClientChat';
 import ClientFiles from '@/components/client-files/ClientFiles';
 import ClientMeetings from '@/components/client-meetings/ClientMeetings';
-import ClientSignature from '@/components/client-signature/ClientSignature';
-import ClientSubUsers from '@/components/client-subusers/ClientSubUsers';
-import StagesStepper from '@/components/client-dashboard/StagesStepper';
 import OnboardingShell from '@/components/client-portal/OnboardingShell';
 import OnboardingStage from '@/components/client-portal/OnboardingStage';
 import WaitingStage from '@/components/client-portal/stages/WaitingStage';
 import { resolveOnboardingStage, stageToStep } from '@/lib/client-onboarding';
-import NotificationBell from '@/components/NotificationBell';
-import Link from 'next/link';
+import ClientShell from '@/components/client-portal/ClientShell';
+import WorkspaceHeader from '@/components/client-portal/WorkspaceHeader';
+import WorkspaceTabs from '@/components/client-portal/WorkspaceTabs';
+import { visibleClientTabs, resolveTabParam, type ClientTabKey } from '@/lib/client-tabs';
+import { useBadgeCounts } from '@/hooks/queries/useBadgeCounts';
 import { useTranslations } from 'next-intl';
 import { useClient } from '@/hooks/queries/useClients';
 import { useWorkspace } from '@/hooks/queries/useWorkspace';
@@ -26,46 +26,30 @@ import { useWorkspaceRealtime } from '@/hooks/queries/useWorkspaceRealtime';
 import { useSubUserPermissions } from '@/hooks/queries/useSubUsers';
 import type { Client } from '@/types';
 
-const ALL_TABS = [
-  { key: 'العقود', perm: 'can_view_contracts' },
-  { key: 'المدفوعات', perm: 'can_view_payments' },
-  { key: 'الموافقات', perm: 'can_view_approvals' },
-  { key: 'الشات', perm: 'can_chat' },
-  { key: 'الملفات', perm: 'can_view_files' },
-  { key: 'الاجتماعات', perm: 'can_view_meetings' },
-  { key: 'التوقيع', perm: null },
-  { key: 'المستخدمين', perm: null },
-] as const;
-
-type Tab = (typeof ALL_TABS)[number]['key'];
-
 export default function ClientDashboardPage() {
   const t = useTranslations('dashboard');
   const tp = useTranslations('client_portal');
-  const TAB_LABELS: Record<string, string> = {
-    'العقود': t('tab_contracts'),
-    'المدفوعات': t('tab_payments'),
-    'الموافقات': t('tab_approvals'),
-    'الشات': t('tab_chat'),
-    'الملفات': t('tab_files'),
-    'الاجتماعات': t('tab_meetings'),
-    'التوقيع': t('tab_signature'),
-    'المستخدمين': t('tab_users'),
-  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('العقود');
+  const [activeTab, setActiveTab] = useState<ClientTabKey>('contracts');
 
+  // `?tab=` accepts the slug, the old Arabic key, or a localized label
+  // (NotificationBell links carry the label).
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam) {
-      const match = ALL_TABS.find((item) => item.key === tabParam || TAB_LABELS[item.key] === tabParam || TAB_LABELS[item.key]?.toLowerCase() === tabParam.toLowerCase());
-      if (match) {
-        setActiveTab(match.key as Tab);
-      }
-    }
-  }, [searchParams, TAB_LABELS]);
+    const labels = Object.fromEntries(
+      (['contracts', 'payments', 'chat', 'approvals', 'files', 'meetings'] as const).map((k) => [k, [t(`tab_${k}`), tp(`tab_${k}`)]]),
+    );
+    const match = resolveTabParam(tabParam, labels);
+    if (match) setActiveTab(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const selectTab = (key: ClientTabKey) => {
+    setActiveTab(key);
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', `/client-dashboard?tab=${key}`);
+  };
   const session = getClient();
 
   useEffect(() => {
@@ -87,6 +71,7 @@ export default function ClientDashboardPage() {
   const clientWorkspaceId = client?.workspace?.id;
   const { data: workspace, isLoading: workspaceLoading, refetch: refetchWorkspace } = useWorkspace(clientWorkspaceId);
   useWorkspaceRealtime(clientWorkspaceId);
+  const { data: badgeCounts } = useBadgeCounts(true);
 
   // SUBUSER_PLAN.md §5.3 — refetches this sub-user's permissions from the
   // server on every load instead of trusting whatever was cached in
@@ -111,7 +96,6 @@ export default function ClientDashboardPage() {
   if (clientLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSkeleton message={t('client_loading_data')} /></div>;
   if (!session || !client) return null;
 
-  const wsId = workspace?.id;
   const wsActive = workspace?.status === 'active';
 
   // The workspace opens only once it is active; until then the client walks
@@ -139,95 +123,43 @@ export default function ClientDashboardPage() {
     );
   }
 
-  if (!wsId) return null;
+  if (!workspace) return null;
+  const wsId = workspace.id;
+
+  const tabs = visibleClientTabs(hasFreshSubUserPermission);
+  const current = tabs.find((x) => x.key === activeTab) ?? tabs[0];
+  const wsCount = tabs.reduce((sum, x) => sum + (x.badge ? badgeCounts?.[x.badge] ?? 0 : 0), 0);
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)]">
-      <header className="bg-[var(--color-card)] border-b border-[var(--color-card-border)] px-6 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold">ShadApp</h1>
-          <div className="flex items-center gap-3">
-            {isSubUser() ? (
-              <span className="text-sm text-[var(--color-gold-text)]">👤 {getSubUser()?.name}</span>
-            ) : (
-              <span className="text-sm text-[var(--color-text-secondary)]">{session.company_name}</span>
+    <ClientShell
+      company={session.company_name}
+      userName={isSubUser() ? (getSubUser()?.name ?? '') : (client.contact_person ?? session.company_name)}
+      active="ws"
+      wsCount={wsCount}
+    >
+      <div className="scroll">
+        <WorkspaceHeader client={client} workspace={workspace} />
+        <WorkspaceTabs tabs={tabs} active={current?.key ?? activeTab} counts={badgeCounts} onSelect={selectTab} />
+        <div className="panel">
+          {/* Tab bodies still carry their previous markup; they are restyled one by one (ع٤). */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '22px 0 40px' }}>
+            {current && (
+              <TabContent tab={current.key} wsId={wsId} clientId={session.id} clientData={client} wsActive={wsActive} onGoToPayments={() => selectTab('payments')} />
             )}
-            {/* plans/notifications-badges-toasts-plan.md ن9 — the client
-                portal had no bell at all; NotificationBell already branches
-                on isClientPortal (window.location.pathname) for its own href
-                and empty-tab routing, so mounting it here needs no changes
-                to the component itself. */}
-            <NotificationBell />
-            <Link href="/client-dashboard/settings" className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg transition-colors" aria-label={t('settings_title')}>⚙️</Link>
-            <button onClick={clientLogout} className="text-xs bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-3 py-1.5 rounded-lg">
-              {t('client_logout')}
-            </button>
-          </div>
-        </header>
-
-      <main className="max-w-5xl mx-auto p-6 space-y-6">
-        <StagesStepper client={client} workspace={workspace} onStageClick={(tab) => setActiveTab(tab as Tab)} />
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4 text-center">
-            <p className="text-2xl font-bold text-blue-600">{workspace?.contracts?.length || 0}</p>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('client_contracts_count')}</p>
-          </div>
-          <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-600">{workspace?.payments?.length || 0}</p>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('client_payments_count')}</p>
-          </div>
-          <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4 text-center">
-            <p className="text-2xl font-bold text-purple-600">{workspace?.approvals?.length || 0}</p>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('client_approvals_count')}</p>
-          </div>
-          <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-4 text-center">
-            <p className={`text-2xl font-bold ${wsActive ? 'text-emerald-600' : 'text-[var(--color-text-disabled)]'}`}>
-              {wsActive ? '🟢' : '⏳'}
-            </p>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('client_workspace_status')}</p>
           </div>
         </div>
-
-        <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
-          <div className="flex border-b border-[var(--color-card-border)] overflow-x-auto">
-            {ALL_TABS.filter((t) => {
-              // SUBUSER_PLAN.md §5.2 — the colleague list (name, email,
-              // every permission) is for the primary client only, never a
-              // sub-user, regardless of that sub-user's own permissions
-              // (the tab had `perm: null` — "always visible" — which never
-              // accounted for this). The backend now rejects a SubUser here
-              // too; this just keeps the tab from appearing at all.
-              // subuser-review-plan.md م٥ — same reasoning as 'المستخدمين'
-              // above: the e-signature is the primary client's own act
-              // (backend م٣), so a sub-user has no business on this tab
-              // either, regardless of its `perm: null`.
-              if (t.key === 'المستخدمين' || t.key === 'التوقيع') return !isSubUser();
-              return t.perm === null || hasFreshSubUserPermission(t.perm);
-            }).map((t) => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
-                className={`px-5 py-3 text-sm whitespace-nowrap border-b-2 transition ${activeTab === t.key ? 'border-[var(--color-primary)] text-[var(--color-foreground)] font-medium' : 'border-transparent text-[var(--color-text-disabled)] hover:text-[var(--color-foreground)]'}`}>
-                {TAB_LABELS[t.key] || t.key}
-              </button>
-            ))}
-          </div>
-          <div className="p-5">
-                <TabContent tab={activeTab} wsId={wsId} clientId={session.id} clientData={client} wsActive={wsActive} onGoToPayments={() => setActiveTab('المدفوعات')} />
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </ClientShell>
   );
 }
 
-function TabContent({ tab, wsId, clientId, clientData, wsActive, onGoToPayments }: { tab: Tab; wsId: number; clientId: number; clientData: Client; wsActive?: boolean; onGoToPayments?: () => void }) {
+function TabContent({ tab, wsId, clientId, clientData, wsActive, onGoToPayments }: { tab: ClientTabKey; wsId: number; clientId: number; clientData: Client; wsActive?: boolean; onGoToPayments?: () => void }) {
   switch (tab) {
-    case 'العقود': return <ClientContracts wsId={wsId} clientType={clientData?.client_type} onGoToPayments={onGoToPayments} />;
-    case 'المدفوعات': return <ClientPayments wsId={wsId} />;
-    case 'الموافقات': return <ClientApprovals wsId={wsId} clientId={clientId} />;
-    case 'الشات': return <ClientChat wsId={wsId} wsActive={wsActive} />;
-    case 'الملفات': return <ClientFiles wsId={wsId} />;
-    case 'الاجتماعات': return <ClientMeetings wsId={wsId} />;
-    case 'التوقيع': return <div className="cx-root" style={{ minHeight: 0, background: 'transparent' }}><ClientSignature clientId={clientId} clientData={clientData} onSigned={() => {}} /></div>;
-    case 'المستخدمين': return <ClientSubUsers clientId={clientId} />;
+    case 'contracts': return <ClientContracts wsId={wsId} clientType={clientData?.client_type} onGoToPayments={onGoToPayments} />;
+    case 'payments': return <ClientPayments wsId={wsId} />;
+    case 'approvals': return <ClientApprovals wsId={wsId} clientId={clientId} />;
+    case 'chat': return <ClientChat wsId={wsId} wsActive={wsActive} />;
+    case 'files': return <ClientFiles wsId={wsId} />;
+    case 'meetings': return <ClientMeetings wsId={wsId} />;
   }
 }

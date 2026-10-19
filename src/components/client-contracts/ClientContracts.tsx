@@ -51,7 +51,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
             id: 'ClientContracts.signatureRequired',
             title: t('contract_signature_required_title'),
             message: getErrorMessage(err) || t('contract_signature_required_message'),
-            href: '/client-dashboard?tab=التوقيع',
+            href: '/client-dashboard/signature',
           });
           return;
         }

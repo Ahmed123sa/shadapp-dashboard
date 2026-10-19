@@ -160,7 +160,7 @@ describe('ClientContracts (characterization)', () => {
     expect(screen.getByText('You need to save your signature before approving this contract.')).toBeInTheDocument();
 
     await user.click(screen.getByText('Signature Required'));
-    expect(routerPush).toHaveBeenCalledWith('/client-dashboard?tab=التوقيع');
+    expect(routerPush).toHaveBeenCalledWith('/client-dashboard/signature');
   });
 
   it('shows missing documents toast when backend rejects approval with required_documents_missing', async () => {

@@ -130,7 +130,7 @@ describe('ClientDashboardPage (characterization)', () => {
 
     await waitFor(() => expect(screen.getByText('Add your signature')).toBeInTheDocument());
     expect(screen.getByText('Welcome, Acme Corp')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Contracts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Contracts/ })).not.toBeInTheDocument();
   });
 
   it('stage 1: signed but no workspace yet shows the waiting-for-contract card', async () => {
@@ -148,7 +148,7 @@ describe('ClientDashboardPage (characterization)', () => {
     renderWithIntl(<ClientDashboardPage />);
 
     await waitFor(() => expect(screen.getByText('Your contract is being prepared')).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Contracts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Contracts/ })).not.toBeInTheDocument();
   });
 
   it('stage 2: a sent contract opens the review screen', async () => {
@@ -201,16 +201,14 @@ describe('ClientDashboardPage (characterization)', () => {
     expect(screen.getByText('Two instalments please')).toBeInTheDocument();
   });
 
-  it('loads the workspace and renders stats + tabs once the workspace is active', async () => {
+  it('loads the workspace and renders the shell + tabs once the workspace is active', async () => {
     mockClient({ workspace: { id: 22 } });
     mockWorkspace({ status: 'active', contracts: [{ id: 1, status: 'sent' }], payments: [] });
     mockFallback();
     renderWithIntl(<ClientDashboardPage />);
 
     await waitFor(() => expect(mock.history.get.some((r) => r.url === '/workspaces/22')).toBe(true));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
-    // Contracts stat card reflects the loaded workspace.contracts length.
-    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Contracts/ })).toBeInTheDocument());
     expect(screen.queryByText('Add your signature')).not.toBeInTheDocument();
   });
 
@@ -221,9 +219,9 @@ describe('ClientDashboardPage (characterization)', () => {
     mockFallback();
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Payments' })).toBeInTheDocument());
-    const paymentsBtn = screen.getByRole('button', { name: 'Payments' });
-    expect(paymentsBtn.className).toContain('border-[var(--color-primary)]');
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Payments/ })).toBeInTheDocument());
+    const paymentsBtn = screen.getByRole('tab', { name: /^Payments/ });
+    expect(paymentsBtn).toHaveAttribute('aria-selected', 'true');
   });
 
   it('switches tabs when a tab button is clicked', async () => {
@@ -233,13 +231,63 @@ describe('ClientDashboardPage (characterization)', () => {
     const user = userEvent.setup();
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
-    const filesBtn = screen.getByRole('button', { name: 'Files' });
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Contracts/ })).toBeInTheDocument());
+    const filesBtn = screen.getByRole('tab', { name: /^Files/ });
     await user.click(filesBtn);
 
-    expect(filesBtn.className).toContain('border-[var(--color-primary)]');
-    const contractsBtn = screen.getByRole('button', { name: 'Contracts' });
-    expect(contractsBtn.className).not.toContain('border-[var(--color-primary)]');
+    expect(filesBtn).toHaveAttribute('aria-selected', 'true');
+    const contractsBtn = screen.getByRole('tab', { name: /^Contracts/ });
+    expect(contractsBtn).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('accepts the old Arabic tab key and a localized label in ?tab=', async () => {
+    searchParams = new URLSearchParams('tab=المدفوعات');
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Payments/ })).toHaveAttribute('aria-selected', 'true'));
+  });
+
+  it('shows the workspace shell: company, sidebar pages for the owner and the status line', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Acme Corp/ })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /My team/ })).toHaveAttribute('href', '/client-dashboard/team');
+    expect(screen.getByRole('link', { name: /Signature/ })).toHaveAttribute('href', '/client-dashboard/signature');
+    expect(screen.getByRole('link', { name: /Settings/ })).toHaveAttribute('href', '/client-dashboard/settings');
+    expect(screen.getByText('Workspace active')).toBeInTheDocument();
+  });
+
+  it('shows per-tab counts from /badge-counts', async () => {
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mock.onGet('/badge-counts').reply(200, { chat: 2, contracts: 1, approvals: 0, payments: 0, files: 0, notifications: 0 });
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Chat\s*2$/ })).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: /^Contracts\s*1$/ })).toBeInTheDocument();
+  });
+
+  it('hides tabs the assistant has no view permission for', async () => {
+    vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
+    vi.mocked(clientAuth.getSubUser).mockReturnValue({ id: 5, name: 'Employee', email: 'e@acme.com', permissions: {} } as any);
+    mock.onGet('/sub-users/5').reply(200, { sub_user: { id: 5, name: 'Employee', permissions: { can_view_files: true, can_chat: true } } });
+    mockClient({ workspace: { id: 22 } });
+    mockWorkspace();
+    mockFallback();
+    renderWithIntl(<ClientDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Files/ })).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: /^Chat/ })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Contracts/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Payments/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Meetings/ })).not.toBeInTheDocument();
   });
 
   it('subscribes to the workspace realtime channel instead of polling', async () => {
@@ -298,14 +346,14 @@ describe('ClientDashboardPage (characterization)', () => {
 
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Contracts' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Contracts/ })).toBeInTheDocument());
     // Server just granted can_view_payments — the tab must show up without
     // requiring a fresh login.
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Payments' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Payments/ })).toBeInTheDocument());
     expect(mock.history.get.some((r) => r.url === '/sub-users/5')).toBe(true);
   });
 
-  it('hides the Users (colleagues) tab for a sub-user even though it has no permission gate', async () => {
+  it('hides the My team page link for a sub-user', async () => {
     vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
     vi.mocked(clientAuth.getSubUser).mockReturnValue({
       id: 5,
@@ -320,14 +368,15 @@ describe('ClientDashboardPage (characterization)', () => {
 
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByText(/Employee/)).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Users' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/Employee/).length).toBeGreaterThan(0));
+    // Team is a page of its own now and never appears for an assistant.
+    expect(screen.queryByRole('link', { name: /My team/ })).not.toBeInTheDocument();
   });
 
   // subuser-review-plan.md م٥ — the client's e-signature is theirs alone
   // (م٣ on the backend); a sub-user must not see the Signature tab, or the
   // primary-client-only pre-signature form, at all.
-  it('hides the Signature tab for a sub-user even though it has no permission gate', async () => {
+  it('hides the Signature page link for a sub-user', async () => {
     vi.mocked(clientAuth.isSubUser).mockReturnValue(true);
     vi.mocked(clientAuth.getSubUser).mockReturnValue({
       id: 5, name: 'Employee', email: 'employee@acme.com', permissions: {},
@@ -339,8 +388,8 @@ describe('ClientDashboardPage (characterization)', () => {
 
     renderWithIntl(<ClientDashboardPage />);
 
-    await waitFor(() => expect(screen.getByText(/Employee/)).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Signature' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/Employee/).length).toBeGreaterThan(0));
+    expect(screen.queryByRole('link', { name: /Signature/ })).not.toBeInTheDocument();
   });
 
   it('shows a simple waiting card (no signature form, no stages) for a sub-user before the workspace is active', async () => {
