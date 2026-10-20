@@ -14,7 +14,7 @@ import {
   Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
-import { canDo, canUseAssistantsTeam, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
+import { canDo, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
 import { applyUiStyle, getStoredUiStyle, storeUiStyle, useUiStyle, type UiStyle } from '@/lib/ui-style';
 
 interface NavItem {
@@ -95,11 +95,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ],
     },
   ];
-  // An account manager also gets "My Team" (their assistants) — only while the
-  // assistants feature is switched on (team_assistants_enabled).
-  if (canUseAssistantsTeam(user)) {
-    amNavGroups[0].items.push({ href: '/dashboard/team', label: t('team_nav'), icon: UsersRound });
-  }
+  // An account manager also gets "Team" — their company-staff team. The old
+  // assistants panel lives on the same page and only shows while that feature
+  // is switched on (team_assistants_enabled).
+  amNavGroups[0].items.push({ href: '/dashboard/team', label: t('team_nav'), icon: UsersRound });
 
   // An assistant has no payments, audit log, system settings or team: those
   // are simply not in their sidebar. Settings is only their own profile.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MockAdapter from 'axios-mock-adapter';
 import { renderWithIntl } from '@/test/render';
@@ -14,12 +14,33 @@ vi.mock('@/lib/auth', () => ({
 
 let mock: MockAdapter;
 
-const perms = (over: Record<string, boolean> = {}) => ({
-  can_view_clients: true, can_edit_clients: false, can_chat: false, can_manage_contracts: false,
-  can_manage_meetings: false, can_view_files: false, can_review_files: false, can_manage_approvals: false, ...over,
-});
+const ALL = {
+  can_view_chat: true, can_send_chat: true,
+  can_view_approvals: true, can_request_approvals: true,
+  can_view_meetings: true, can_join_meetings: true,
+};
 
-const sami = { id: 7, name: 'Sami Helper', email: 'sami@example.com', phone: null, is_active: true, deactivated_by_parent: false, permissions: perms({ can_chat: true }) };
+const nour = {
+  id: 7, name: 'Nour Hassan', email: 'nour@example.com',
+  other_teams: [{ manager_id: 9, name: 'Mariam Fathy' }],
+  assignments: [
+    { workspace_id: 11, client_id: 1, name: 'Nile Bakery', permissions: { ...ALL, can_send_chat: false, can_view_approvals: false, can_request_approvals: false } },
+    { workspace_id: 12, client_id: 2, name: 'Relax', permissions: { ...ALL } },
+  ],
+};
+const salma = { id: 8, name: 'Salma Adel', email: 'salma@example.com', other_teams: [], assignments: [] };
+const youssef = { id: 20, name: 'Youssef Ali', email: 'youssef@example.com', other_teams: [{ manager_id: 9, name: 'Mariam Fathy' }] };
+const hana = { id: 21, name: 'Hana Mostafa', email: 'hana@example.com', other_teams: [] };
+
+const clientsReply = {
+  clients: { data: [
+    { id: 1, company_name: 'Nile Bakery', workspace: { id: 11 } },
+    { id: 2, company_name: 'Relax', workspace: { id: 12 } },
+    { id: 3, company_name: 'Sun Co', workspace: { id: 13 } },
+  ] },
+};
+
+const loadTeam = (team = [nour, salma], others = [youssef, hana]) => mock.onGet('/my-team').reply(200, { team, others });
 
 beforeEach(() => {
   mock = new MockAdapter(api);
@@ -29,23 +50,217 @@ beforeEach(() => {
 afterEach(() => {
   mock.restore();
   vi.clearAllMocks();
+  delete document.documentElement.dataset.ui;
 });
 
-describe('TeamPage', () => {
-  it('lists the manager\'s assistants with their granted permissions', async () => {
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    renderWithIntl(<TeamPage />);
-
-    expect(await screen.findByText('Sami Helper')).toBeInTheDocument();
-    expect(screen.getByText('sami@example.com')).toBeInTheDocument();
+// The page is built for both looks of the dashboard (PLAN_2 ف٣): every
+// behaviour below must hold in the classic and in the Luxe markup.
+describe.each(['classic', 'luxe'] as const)('Team page (%s look)', (look) => {
+  beforeEach(() => {
+    if (look === 'luxe') document.documentElement.dataset.ui = 'luxe';
   });
 
-  it('shows the empty state when there are no assistants', async () => {
-    mock.onGet('/team').reply(200, { assistants: [] });
+  it('lists the team with each member\'s clients and permission chips', async () => {
+    loadTeam();
     renderWithIntl(<TeamPage />);
-    expect(await screen.findByText('You have no assistants yet.')).toBeInTheDocument();
+
+    const card = await screen.findByRole('article', { name: 'Nour Hassan' });
+    expect(within(card).getByText('Nile Bakery')).toBeInTheDocument();
+    expect(within(card).getByText('Relax')).toBeInTheDocument();
+    expect(within(card).getByText(/Also in: Mariam Fathy/)).toBeInTheDocument();
+    // Nile Bakery: chat view only, approvals off. Relax: everything on.
+    expect(within(card).getByText('Chat · view')).toBeInTheDocument();
+    expect(within(card).getAllByText('Chat · view + send')).toHaveLength(1);
+    expect(card.querySelectorAll('[data-off="true"]')).toHaveLength(1);
+
+    const empty = screen.getByRole('article', { name: 'Salma Adel' });
+    expect(within(empty).getByText('Not linked to any of your clients yet.')).toBeInTheDocument();
   });
 
+  it('shows the empty state when nobody is in the team', async () => {
+    loadTeam([], [youssef]);
+    renderWithIntl(<TeamPage />);
+    expect(await screen.findByText('Nobody in your team yet. Add people from company staff.')).toBeInTheDocument();
+  });
+
+  it('keeps company staff hidden until asked, and the same button hides it again', async () => {
+    loadTeam();
+    renderWithIntl(<TeamPage />);
+    await screen.findByRole('article', { name: 'Nour Hassan' });
+    expect(screen.queryByText('Youssef Ali')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add from company staff' }));
+    expect(screen.getByText('Youssef Ali')).toBeInTheDocument();
+    expect(screen.getByText('Also in: Mariam Fathy')).toBeInTheDocument();
+    expect(screen.getByText('In no team')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hide company staff' }));
+    expect(screen.queryByText('Youssef Ali')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add from company staff' })).toBeInTheDocument();
+  });
+
+  it('filters the company staff list by name or email', async () => {
+    loadTeam();
+    renderWithIntl(<TeamPage />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add from company staff' }));
+
+    await userEvent.type(screen.getByLabelText('Search by name or email…'), 'hana@');
+    expect(screen.getByText('Hana Mostafa')).toBeInTheDocument();
+    expect(screen.queryByText('Youssef Ali')).not.toBeInTheDocument();
+  });
+
+  it('adds several picked staff members to the team in one go', async () => {
+    loadTeam();
+    mock.onPost(/\/my-team\/\d+/).reply(200, { changed: true });
+    renderWithIntl(<TeamPage />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add from company staff' }));
+
+    const add = screen.getByRole('button', { name: 'Add 0 to my team' });
+    expect(add).toBeDisabled();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Youssef Ali' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Hana Mostafa' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add 2 to my team' }));
+
+    await waitFor(() => expect(mock.history.post.map((r) => r.url).sort()).toEqual(['/my-team/20', '/my-team/21']));
+    // The list closes once they are added.
+    await waitFor(() => expect(screen.queryByRole('checkbox', { name: 'Hana Mostafa' })).not.toBeInTheDocument());
+  });
+
+  it('asks before removing, naming the clients, and removes only on confirm', async () => {
+    loadTeam();
+    mock.onGet('/my-team/7/removal-impact').reply(200, { count: 2, clients: ['Nile Bakery', 'Relax'] });
+    mock.onDelete('/my-team/7').reply(200, { removed: true, unassigned_count: 2 });
+    renderWithIntl(<TeamPage />);
+
+    const card = await screen.findByRole('article', { name: 'Nour Hassan' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Remove from team' }));
+
+    expect(await screen.findByText('Remove Nour Hassan from your team?')).toBeInTheDocument();
+    expect(screen.getByText(/unlinked from 2 of your clients: Nile Bakery، Relax/)).toBeInTheDocument();
+    expect(mock.history.delete.length).toBe(0);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await waitFor(() => expect(mock.history.delete.map((r) => r.url)).toEqual(['/my-team/7']));
+  });
+
+  it('leaves the member alone when the removal is cancelled', async () => {
+    loadTeam();
+    mock.onGet('/my-team/8/removal-impact').reply(200, { count: 0, clients: [] });
+    renderWithIntl(<TeamPage />);
+
+    const card = await screen.findByRole('article', { name: 'Salma Adel' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Remove from team' }));
+    expect(await screen.findByText(/aren’t linked to any of your clients/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByText('Remove Salma Adel from your team?')).not.toBeInTheDocument();
+    expect(mock.history.delete.length).toBe(0);
+  });
+
+  it('unlinks one client without touching the rest', async () => {
+    loadTeam();
+    mock.onDelete('/workspaces/11/staff/7').reply(200, { changed: true });
+    renderWithIntl(<TeamPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Unlink Nile Bakery' }));
+
+    await waitFor(() => expect(mock.history.delete.map((r) => r.url)).toEqual(['/workspaces/11/staff/7']));
+  });
+
+  it('links a member to a client with the default permissions (everything on)', async () => {
+    loadTeam();
+    mock.onGet('/clients').reply(200, clientsReply);
+    mock.onPut('/workspaces/13/staff/8').reply(200, { changed: true });
+    renderWithIntl(<TeamPage />);
+
+    const card = await screen.findByRole('article', { name: 'Salma Adel' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Link to a client' }));
+
+    const drawer = await screen.findByRole('dialog');
+    await within(drawer).findByRole('option', { name: 'Sun Co' });
+    for (const name of ['See the chat', 'Send messages', 'See approvals', 'Request approvals', 'See meetings', 'Join meetings']) {
+      expect(within(drawer).getByRole('switch', { name })).toBeChecked();
+    }
+    const save = within(drawer).getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+
+    await userEvent.selectOptions(within(drawer).getByLabelText('Client'), 'Sun Co');
+    await userEvent.click(save);
+
+    await waitFor(() => expect(mock.history.put.length).toBe(1));
+    expect(mock.history.put[0].url).toBe('/workspaces/13/staff/8');
+    expect(JSON.parse(mock.history.put[0].data).permissions).toEqual(expect.objectContaining({ can_view_chat: true, can_send_chat: true }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('does not offer clients the member is already linked to', async () => {
+    loadTeam();
+    mock.onGet('/clients').reply(200, clientsReply);
+    renderWithIntl(<TeamPage />);
+
+    const card = await screen.findByRole('article', { name: 'Nour Hassan' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Link to a client' }));
+
+    const drawer = await screen.findByRole('dialog');
+    await within(drawer).findByRole('option', { name: 'Sun Co' });
+    expect(within(drawer).queryByRole('option', { name: 'Relax' })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('option', { name: 'Nile Bakery' })).not.toBeInTheDocument();
+  });
+
+  it('turning "see" off turns the action under it off and locks it', async () => {
+    loadTeam();
+    mock.onGet('/clients').reply(200, clientsReply);
+    mock.onPut('/workspaces/13/staff/8').reply(200, {});
+    renderWithIntl(<TeamPage />);
+
+    const card = await screen.findByRole('article', { name: 'Salma Adel' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Link to a client' }));
+    const drawer = await screen.findByRole('dialog');
+    await within(drawer).findByRole('option', { name: 'Sun Co' });
+    await userEvent.selectOptions(within(drawer).getByLabelText('Client'), 'Sun Co');
+
+    await userEvent.click(within(drawer).getByRole('switch', { name: 'See the chat' }));
+    const send = within(drawer).getByRole('switch', { name: 'Send messages' });
+    expect(send).not.toBeChecked();
+    expect(send).toBeDisabled();
+
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(mock.history.put.length).toBe(1));
+    const sent = JSON.parse(mock.history.put[0].data).permissions;
+    expect(sent.can_view_chat).toBe(false);
+    expect(sent.can_send_chat).toBe(false);
+    expect(sent.can_view_approvals).toBe(true);
+  });
+
+  it('edits the permissions of an existing link with the client fixed', async () => {
+    loadTeam();
+    mock.onPut('/workspaces/11/staff/7').reply(200, {});
+    renderWithIntl(<TeamPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Nile Bakery' }));
+
+    const drawer = await screen.findByRole('dialog');
+    expect(within(drawer).queryByRole('combobox')).not.toBeInTheDocument();
+    expect(within(drawer).getByText('Nile Bakery')).toBeInTheDocument();
+    expect(within(drawer).getByRole('switch', { name: 'Send messages' })).not.toBeChecked();
+    expect(within(drawer).getByRole('switch', { name: 'See approvals' })).not.toBeChecked();
+    expect(within(drawer).getByRole('switch', { name: 'Request approvals' })).toBeDisabled();
+
+    await userEvent.click(within(drawer).getByRole('switch', { name: 'Send messages' }));
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(mock.history.put.length).toBe(1));
+    expect(JSON.parse(mock.history.put[0].data).permissions.can_send_chat).toBe(true);
+  });
+
+  it('shows an error when the team cannot be loaded', async () => {
+    mock.onGet('/my-team').reply(500);
+    renderWithIntl(<TeamPage />);
+    expect(await screen.findByText('Could not load your team.')).toBeInTheDocument();
+  });
+});
+
+describe('Team page access', () => {
   it('does not render or call the API for a non-manager', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' } as any);
     renderWithIntl(<TeamPage />);
@@ -53,128 +268,27 @@ describe('TeamPage', () => {
     expect(mock.history.get.length).toBe(0);
   });
 
-  it('keeps can_view_clients ticked and locked in the create form', async () => {
+  it('keeps the old assistants panel off while that feature is off', async () => {
+    loadTeam();
     mock.onGet('/team').reply(200, { assistants: [] });
     renderWithIntl(<TeamPage />);
-    await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
+    await screen.findByRole('article', { name: 'Nour Hassan' });
 
-    const boxes = screen.getAllByRole('checkbox');
-    // first box is "email the login details" (on by default), then the permissions
-    expect(boxes[0]).toBeChecked();
-    expect(boxes[1]).toBeChecked();
-    expect(boxes[1]).toBeDisabled();
-    expect(boxes.slice(2).every((b) => !(b as HTMLInputElement).checked)).toBe(true);
+    expect(screen.queryByText('Assistants')).not.toBeInTheDocument();
+    expect(mock.history.get.some((r) => r.url === '/team')).toBe(false);
   });
 
-  it('creates an assistant with the ticked permissions', async () => {
-    mock.onGet('/team').reply(200, { assistants: [] });
-    mock.onPost('/team').reply(201, { assistant: sami });
-    renderWithIntl(<TeamPage />);
-    await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
-
-    await userEvent.type(screen.getByLabelText('Name'), 'Sami Helper');
-    await userEvent.type(screen.getByLabelText('Email'), 'sami@example.com');
-    await userEvent.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'Str0ng!Pass#1');
-    await userEvent.click(screen.getAllByRole('checkbox')[3]); // can_chat (0 = send email, 1 = can_view_clients)
-    await userEvent.click(screen.getByRole('button', { name: 'Create assistant' }));
-
-    await waitFor(() => expect(mock.history.post.length).toBe(1));
-    const body = JSON.parse(mock.history.post[0].data);
-    expect(body.email).toBe('sami@example.com');
-    expect(body.permissions.can_chat).toBe(true);
-    expect(body.permissions.can_manage_contracts).toBe(false);
-    expect(body.send_email).toBe(true);
-  });
-
-  it('can switch the login-details email off', async () => {
-    mock.onGet('/team').reply(200, { assistants: [] });
-    mock.onPost('/team').reply(201, { assistant: sami });
-    renderWithIntl(<TeamPage />);
-    await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
-    await userEvent.type(screen.getByLabelText('Name'), 'Sami Helper');
-    await userEvent.type(screen.getByLabelText('Email'), 'sami@example.com');
-    await userEvent.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'Str0ng!Pass#1');
-    await userEvent.click(screen.getByLabelText('Email the login details to this person'));
-    await userEvent.click(screen.getByRole('button', { name: 'Create assistant' }));
-
-    await waitFor(() => expect(mock.history.post.length).toBe(1));
-    expect(JSON.parse(mock.history.post[0].data).send_email).toBe(false);
-  });
-
-  it('shows the backend validation message when creation fails', async () => {
-    mock.onGet('/team').reply(200, { assistants: [] });
-    mock.onPost('/team').reply(422, { errors: { email: ['The email has already been taken.'] } });
-    renderWithIntl(<TeamPage />);
-    await userEvent.click(await screen.findByRole('button', { name: /New assistant/ }));
-    await userEvent.type(screen.getByLabelText('Name'), 'X');
-    await userEvent.type(screen.getByLabelText('Email'), 'x@example.com');
-    await userEvent.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'Str0ng!Pass#1');
-    await userEvent.click(screen.getByRole('button', { name: 'Create assistant' }));
-
-    expect(await screen.findByText('The email has already been taken.')).toBeInTheDocument();
-  });
-
-  it('deactivates an assistant after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    mock.onPost('/team/7/deactivate').reply(200, { assistant: { ...sami, is_active: false } });
+  it('shows the assistants panel below the team once the feature is on', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', email: 'm@example.com', role: 'account_manager', team_assistants_enabled: true } as any);
+    loadTeam();
+    mock.onGet('/team').reply(200, { assistants: [{
+      id: 5, name: 'Sami Helper', email: 'sami@example.com', phone: null, is_active: true, deactivated_by_parent: false,
+      permissions: { can_view_clients: true, can_edit_clients: false, can_chat: true, can_manage_contracts: false, can_manage_meetings: false, can_view_files: false, can_review_files: false, can_manage_approvals: false },
+    }] });
     renderWithIntl(<TeamPage />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Deactivate' }));
-
-    await waitFor(() => expect(mock.history.post.some((r) => r.url === '/team/7/deactivate')).toBe(true));
-  });
-
-  it('removes an assistant only after two separate warnings', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    mock.onDelete('/team/7').reply(200, { message: 'ok' });
-    renderWithIntl(<TeamPage />);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-
-    await waitFor(() => expect(mock.history.delete.length).toBe(1));
-    expect(confirmSpy).toHaveBeenCalledTimes(2);
-    expect(String(confirmSpy.mock.calls[0][0])).toMatch(/WARNING/);
-    expect(String(confirmSpy.mock.calls[1][0])).toMatch(/LAST WARNING/);
-  });
-
-  it('does not remove when the second warning is declined', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(true).mockReturnValueOnce(false);
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    renderWithIntl(<TeamPage />);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-
-    expect(confirmSpy).toHaveBeenCalledTimes(2);
-    expect(mock.history.delete.length).toBe(0);
-  });
-
-  it('does not remove when the first warning is declined', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    renderWithIntl(<TeamPage />);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
-    expect(mock.history.delete.length).toBe(0);
-  });
-
-  it('explains an assistant that is off only because the manager is', async () => {
-    mock.onGet('/team').reply(200, { assistants: [{ ...sami, is_active: false, deactivated_by_parent: true }] });
-    renderWithIntl(<TeamPage />);
-    expect(await screen.findByText('Switched off with the manager')).toBeInTheDocument();
-  });
-
-  it('loads an assistant\'s activity', async () => {
-    mock.onGet('/team').reply(200, { assistants: [sami] });
-    mock.onGet('/team/7/activity').reply(200, { logs: { data: [{ id: 1, action: 'contract.sent', created_at: '2026-10-05T10:00:00Z', client: { company_name: 'Acme' } }] } });
-    renderWithIntl(<TeamPage />);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Activity' }));
-
-    expect(await screen.findByText('contract.sent')).toBeInTheDocument();
-    expect(screen.getByText(/Acme/)).toBeInTheDocument();
+    expect(await screen.findByText('Sami Helper')).toBeInTheDocument();
+    expect(screen.getByText('Assistants')).toBeInTheDocument();
+    expect(await screen.findByRole('article', { name: 'Nour Hassan' })).toBeInTheDocument();
   });
 });
