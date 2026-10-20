@@ -254,6 +254,20 @@ describe('ClientWorkspace — company staff and the Team tab', () => {
     expect(mock.history.get.some((r) => /\/contracts$/.test(r.url ?? ''))).toBe(false);
   });
 
+  it('hides the tabs a staff member may not view on this client', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 30, name: 'Nour', email: 'nour@example.com', role: 'staff_member' });
+    mockClient({ has_signed_contract: undefined });
+    mock.onGet('/workspaces/22').reply(200, { workspace: { id: 22, my_staff_permissions: {
+      can_view_chat: true, can_send_chat: false, can_view_approvals: false, can_request_approvals: false, can_view_meetings: true, can_join_meetings: false,
+    } } });
+    mockFallback();
+    renderWithIntl(<ClientWorkspace />);
+
+    expect(await screen.findByRole('button', { name: 'Chat' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Approvals' })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Meetings' })).toBeInTheDocument();
+  });
+
   it('shows the Team tab to an account manager and loads the staff list when opened', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager' });
     mockClient();

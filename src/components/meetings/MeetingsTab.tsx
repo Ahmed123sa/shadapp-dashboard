@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
 import { canDo, isStaffMember } from '@/lib/permissions';
+import { useStaffPermissions } from '@/hooks/queries/useStaffPermissions';
 import { getMeetingJoinStatus, notifyWriteError } from '@/lib/utils';
 import { enterMeeting } from '@/lib/zoom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -21,6 +22,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
   const tc = useTranslations('common');
 
   const meetingsQuery = useWorkspaceMeetings(wsId);
+  const canJoin = useStaffPermissions(wsId).can_join_meetings;
   // Contracts only feed the "new meeting" form's picker; company staff can
   // neither create meetings nor read contracts (backend 403s), so skip it.
   const contractsQuery = useWorkspaceContracts(wsId, !isStaffMember(getUser()));
@@ -132,6 +134,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
           <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('upcoming_meetings')}</h3>
           {upcoming.map((m) => (
             <MeetingCard
+              canJoin={canJoin}
               key={m.id}
               meeting={m}
               isSA={isSA}
@@ -150,6 +153,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
           <h3 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">{t('past_meetings')}</h3>
           {past.map((m) => (
             <MeetingCard
+              canJoin={canJoin}
               key={m.id}
               meeting={m}
               isSA={isSA}
@@ -168,6 +172,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
 
 function MeetingCard({
   meeting: m,
+  canJoin,
   isSA,
   currentUserId,
   isEntering,
@@ -176,6 +181,7 @@ function MeetingCard({
   onCancel,
 }: {
   meeting: Meeting;
+  canJoin: boolean;
   isSA: boolean;
   currentUserId?: number;
   isEntering?: boolean;
@@ -199,7 +205,7 @@ function MeetingCard({
         </div>
         <StatusBadge status={m.status} />
       </div>
-      {isScheduled && m.link && joinStatus && (
+      {isScheduled && canJoin && m.link && joinStatus && (
         <div className="mt-3">
           {joinStatus.canJoin ? (
             isZoom ? (
