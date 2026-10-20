@@ -19,6 +19,7 @@ import ApprovalsTab from '@/components/approvals/ApprovalsTab';
 import MeetingsTab from '@/components/meetings/MeetingsTab';
 import CalendarTab from '@/components/calendar/CalendarTab';
 import ClientStaffTab from '@/components/staff/ClientStaffTab';
+import { useStaffPermissions } from '@/hooks/queries/useStaffPermissions';
 import NoWorkspace from '@/components/workspace/NoWorkspace';
 import ClientProfileTab from '@/components/clients/ClientProfileTab';
 import { resolveFileUrl, clientHasSignedContract } from '@/lib/utils';
@@ -56,8 +57,14 @@ export default function ClientWorkspace() {
   // The "Team" tab (assign company staff to this client) is for the super
   // admin and the client's account manager — not assistants or staff.
   const canManageTeam = me?.role === 'super_admin' || me?.role === 'account_manager';
+  const clientQuery = useClient(id as string);
+  const client = clientQuery.data ?? null;
+  // Company staff only see the tabs they may view on THIS client.
+  const staffPerms = useStaffPermissions(client?.workspace?.id);
   const visibleTabs = TABS.filter((k) => {
-    if (isStaffMember(me)) return STAFF_TABS.includes(k);
+    if (isStaffMember(me)) {
+      return STAFF_TABS.includes(k) && (k === 'chat' ? staffPerms.can_view_chat : k === 'approvals' ? staffPerms.can_view_approvals : staffPerms.can_view_meetings);
+    }
     if (k === 'team') return canManageTeam;
     return !(isAssistant(me) && (k === 'payments' || (k === 'files' && !canDo(me, 'can_view_files'))));
   });
@@ -71,14 +78,18 @@ export default function ClientWorkspace() {
       }
     }
   }, [searchParams, t]);
+
+  // The tab on screen may have just been taken away from a staff member.
+  useEffect(() => {
+    if (visibleTabs.length && !visibleTabs.includes(activeTab)) setActiveTab(visibleTabs[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleTabs.join(',')]);
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({} as Record<Tab, HTMLButtonElement | null>);
 
   useEffect(() => {
     tabRefs.current[activeTab]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [activeTab]);
 
-  const clientQuery = useClient(id as string);
-  const client = clientQuery.data ?? null;
   const archiveMutation = useArchiveClient();
   const unarchiveMutation = useUnarchiveClient();
   const [archiveError, setArchiveError] = useState('');

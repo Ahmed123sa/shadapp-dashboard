@@ -420,6 +420,7 @@
     "attach_file": "Attach File",
     "chat_placeholder": "Type a message...",
     "chat_send_button": "Send",
+    "chat_read_only": "This client has chat view-only for you.",
     "reply": "Reply",
     "chat_cancel_reply": "Cancel reply",
     "team_member": "Team Member",

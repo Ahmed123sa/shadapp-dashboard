@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getUser } from '@/lib/auth';
 import { canDo, isStaffMember } from '@/lib/permissions';
+import { useStaffPermissions } from '@/hooks/queries/useStaffPermissions';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
@@ -13,7 +14,8 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
   const isSA = getUser()?.role === 'super_admin';
   // Company staff may send approval requests (to the client) even though they
   // hold no manager-side approval permissions.
-  const canWrite = !isSA && (canDo(getUser(), 'can_manage_approvals') || isStaffMember(getUser()));
+  const staffPerms = useStaffPermissions(wsId);
+  const canWrite = !isSA && (canDo(getUser(), 'can_manage_approvals') || (isStaffMember(getUser()) && staffPerms.can_request_approvals));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);

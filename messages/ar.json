@@ -420,6 +420,7 @@
     "attach_file": "إرفاق ملف",
     "chat_placeholder": "اكتب رسالة...",
     "chat_send_button": "إرسال",
+    "chat_read_only": "صلاحيتك على الشات مع العميل ده عرض فقط.",
     "reply": "↩ رد",
     "chat_cancel_reply": "إلغاء الرد",
     "team_member": "عضو فريق",

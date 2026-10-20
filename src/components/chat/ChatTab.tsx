@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getUser } from '@/lib/auth';
 import { canDo, isStaffMember } from '@/lib/permissions';
+import { useStaffPermissions } from '@/hooks/queries/useStaffPermissions';
 import { subscribeToWorkspace } from '@/lib/echo';
 import ChatContractCard from '@/components/chat/ChatContractCard';
 import ContractBuilder from '@/components/chat/ContractBuilder';
@@ -30,6 +31,8 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const locale = useLocale();
   const queryClient = useQueryClient();
   const chatQuery = useWorkspaceChat(wsId);
+  // Staff without "send" on this client can read the chat but not write.
+  const canSend = useStaffPermissions(wsId).can_send_chat;
   // Company staff may not read contracts (backend 403s) — skip the query.
   const contractsQuery = useWorkspaceContracts(wsId, !isStaffMember(getUser()));
   const meetingsQuery = useWorkspaceMeetings(wsId);
@@ -364,6 +367,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         </div>
       )}
 
+      {canSend ? (
       <div className="flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
         <button onClick={() => fileRef.current?.click()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}>📎</button>
@@ -372,6 +376,9 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
           className="flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
         <button onClick={send} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]">{t('chat_send_button')}</button>
       </div>
+      ) : (
+        <p className="text-xs text-[var(--color-text-secondary)] text-center py-2" data-testid="chat-read-only">{t('chat_read_only')}</p>
+      )}
       {sendError && <p className="text-xs text-red-500">{sendError}</p>}
 
       {contextMenu && (
