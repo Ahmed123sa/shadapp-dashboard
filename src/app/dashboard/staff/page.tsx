@@ -25,6 +25,7 @@ interface StaffMember {
   is_active: boolean;
   archived_at?: string | null;
   assigned_clients_count: number;
+  teams?: { manager_id: number; name: string }[];
 }
 
 interface AssignedClient {
@@ -259,6 +260,7 @@ export default function StaffPage() {
                     </div>
                     <p className="text-sm text-[var(--color-text-secondary)]" dir="ltr">{m.email}{m.phone ? ` • ${m.phone}` : ''}</p>
                     <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('staff_clients_count', { count: m.assigned_clients_count })}</p>
+                    {!!m.teams?.length && <p className="text-xs text-[var(--color-text-secondary)]" data-testid="staff-teams">{t('staff_in_teams', { names: m.teams.map((x) => x.name).join(', ') })}</p>}
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
