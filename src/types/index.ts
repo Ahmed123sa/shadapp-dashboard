@@ -202,6 +202,8 @@ export interface FileEntry {
   id: number;
   workspace_id: number;
   document_definition_id?: number;
+  contract_id?: number | null;
+  contract_required_document_id?: number | null;
   file_url: string;
   name: string;
   type: string;

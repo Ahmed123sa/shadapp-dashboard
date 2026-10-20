@@ -15,6 +15,13 @@ export function reportError(context: string, error: unknown, extra?: Record<stri
   const payload: Record<string, unknown> = { context, message };
   if (error instanceof Error && error.stack) payload.stack = error.stack;
   if (extra) payload.extra = extra;
+  // An axios failure's own message is just "Request failed with status code N";
+  // surface the status and the server's answer so the console shows why.
+  const res = (error as { response?: { status?: number; data?: unknown } } | null)?.response;
+  if (res) {
+    payload.status = res.status;
+    payload.response = res.data;
+  }
   console.error(`[reportError] ${context}:`, payload);
 
   Sentry.captureException(error, {

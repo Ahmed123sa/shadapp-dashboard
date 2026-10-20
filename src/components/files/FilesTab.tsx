@@ -19,6 +19,11 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   const { data: managersCanReview = false } = useManagersCanReviewFilesSetting();
   const isAsst = user?.role === 'manager_assistant';
   const canReview = isSA || ((isAM || (isAsst && canDo(user, 'can_review_files'))) && managersCanReview);
+  // A manager the super admin allowed to approve contracts may also review the
+  // documents attached to those contracts, whatever the global setting says
+  // (mirrors FileController::review on the backend).
+  const canReviewFile = (f: { contract_id?: number | null; contract_required_document_id?: number | null }) =>
+    canReview || (isAM && !!user?.can_approve_contracts && (f.contract_id != null || f.contract_required_document_id != null));
   const [showDefForm, setShowDefForm] = useState(false);
   const [defName, setDefName] = useState('');
   const [uploadDef, setUploadDef] = useState('');
@@ -113,7 +118,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
               {f.file_url && (
                 <a href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{t('view_file')}</a>
               )}
-              {canReview && f.status === 'pending' && (
+              {canReviewFile(f) && f.status === 'pending' && (
                 <>
                   <button onClick={() => reviewFile(f.id, 'approved')} className="text-xs text-green-600 hover:underline">{t('accept')}</button>
                   <button onClick={() => { const r = prompt(t('rejection_reason_prompt')); if (r) reviewFile(f.id, 'rejected', r); }} className="text-xs text-red-600 hover:underline">{t('reject')}</button>

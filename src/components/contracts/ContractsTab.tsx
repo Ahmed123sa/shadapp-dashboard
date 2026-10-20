@@ -5,7 +5,8 @@ import { useId, useState } from 'react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { canDo } from '@/lib/permissions';
-import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
+import { resolveFileUrl, notifyWriteError, getErrorCode, getErrorMessage } from '@/lib/utils';
+import { showToast } from '@/components/ToastNotification';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -34,6 +35,17 @@ function isImageSignature(val: string | null | undefined) {
 export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+
+  // A 422 "signature_required" means the company signature isn't saved yet —
+  // say so instead of the generic "something went wrong".
+  const companyApproveError = (context: string) => (err: unknown) => {
+    if (getErrorCode(err) === 'signature_required') {
+      reportError(context, err);
+      showToast({ id: context, title: tc('write_error_title'), message: getErrorMessage(err) || tc('write_error_message') });
+      return;
+    }
+    notifyWriteError(tc, context, err);
+  };
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFixed, setEditFixed] = useState<string[]>([]);
@@ -178,7 +190,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
     if (!approveSig) return;
     const payload = useSavedSig ? { use_saved_signature: true as const } : { signature: approveSig.signature };
     companyApproveMutation.mutate({ id: approveSig.id, payload }, {
-      onError: (err) => notifyWriteError(tc, 'ContractsTab.doCompanyApprove', err),
+      onError: companyApproveError('ContractsTab.doCompanyApprove'),
       onSettled: () => { setApproveSig(null); setSavedUserSig(null); },
     });
   };
@@ -359,7 +371,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
                     onClick={() => {
                       if (!confirm(t('am_company_approve_confirm'))) return;
                       companyApproveMutation.mutate({ id: c.id, payload: { use_saved_signature: true } }, {
-                        onError: (err) => notifyWriteError(tc, 'ContractsTab.amCompanyApprove', err),
+                        onError: companyApproveError('ContractsTab.amCompanyApprove'),
                       });
                     }}
                     className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700"
