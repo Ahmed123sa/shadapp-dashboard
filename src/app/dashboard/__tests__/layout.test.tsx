@@ -144,17 +144,13 @@ describe('DashboardLayout — manager assistant', () => {
     expect(screen.queryByText('Account Managers')).not.toBeInTheDocument();
   });
 
-  it('gives an account manager the My Team entry while the assistants feature is on', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager', team_assistants_enabled: true } as any);
-    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
-    await waitFor(() => expect(screen.getAllByText('My Team').length).toBeGreaterThan(0));
-  });
-
-  it('hides My Team from an account manager while the assistants feature is off', async () => {
-    vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager', team_assistants_enabled: false } as any);
-    renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
-    await waitFor(() => expect(screen.getAllByText('My Clients').length).toBeGreaterThan(0));
-    expect(screen.queryByText('My Team')).not.toBeInTheDocument();
+  it('gives an account manager the Team entry whether or not the assistants feature is on', async () => {
+    for (const enabled of [true, false]) {
+      vi.mocked(getUser).mockReturnValue({ id: 2, name: 'Mgr', role: 'account_manager', team_assistants_enabled: enabled } as any);
+      const { unmount } = renderWithIntl(<DashboardLayout><div>child</div></DashboardLayout>);
+      await waitFor(() => expect(screen.getAllByText('Team').length).toBeGreaterThan(0));
+      unmount();
+    }
   });
 });
 
