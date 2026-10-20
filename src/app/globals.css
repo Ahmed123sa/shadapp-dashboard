@@ -773,6 +773,14 @@ html[data-ui="luxe"] textarea:focus {
 }
 html[data-ui="luxe"] input::placeholder,
 html[data-ui="luxe"] textarea::placeholder { color: var(--color-text-disabled); }
+/* قوائم الـselect المنسدلة: الخلفية الشفافة كانت بتطلع بيضا */
+html[data-ui="luxe"] select { color-scheme: dark; }
+html[data-ui="luxe"] select option,
+html[data-ui="luxe"] select optgroup {
+  background-color: #1b1b1b;
+  color: var(--color-foreground);
+}
+html[data-ui="luxe"] select option:disabled { color: var(--color-text-disabled); }
 
 /* عناوين داخل التابات */
 html[data-ui="luxe"] .lx-panel h3 {
