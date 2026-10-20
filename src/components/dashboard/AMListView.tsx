@@ -68,11 +68,27 @@ export default function AMListView({ t, locale, view, clients, allPayments }: {
 
   const isPaginated = view === 'contracts' || view === 'meetings' || view === 'payments' || view === 'files';
 
-  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode } | null => {
+  const getDynamicConfig = (viewType: string, items: any[]): { title: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; headers: string[]; getLink: (item: any) => string; renderRow: (item: any, locale: string) => React.ReactNode; luxe?: { sub: string; headers: string[]; renderRow: (item: any, locale: string) => React.ReactNode } } | null => {
     if (viewType === 'contracts') return {
       title: t('contracts_nav'),
       icon: FileText,
       headers: [t('col_client'), t('col_title'), t('col_type'), t('col_value'), t('col_date'), t('col_status')],
+      luxe: {
+        sub: t('amlist_sub_contracts'),
+        headers: [t('col_contract'), t('col_client'), t('col_value'), t('manager_col_status'), t('col_date')],
+        renderRow: (c: Contract, loc: string) => (
+          <>
+            <td>
+              <div className="lx-kindtxt">{c.contract_type === 'main' || c.contract_type === null ? t('main_contract') : t('additional_contract')}</div>
+              <div className="lx-tname">{c.title}</div>
+            </td>
+            <td>{c.workspace?.client?.company_name || '—'}</td>
+            <td><span className="font-display" style={{ fontSize: 17 }}>{Number(c.value).toLocaleString()}</span> <span className="lx-dim">{c.currency}</span></td>
+            <td><StatusBadge status={c.status} /></td>
+            <td className="lx-dim">{c.created_at ? formatDate(c.created_at, loc) : '—'}</td>
+          </>
+        ),
+      },
       getLink: (c: Contract) => `/dashboard/clients/${c.workspace?.client?.id}?tab=العقود`,
       renderRow: (c: Contract, loc: string) => (
         <>
@@ -105,6 +121,23 @@ export default function AMListView({ t, locale, view, clients, allPayments }: {
     if (viewType === 'meetings') return {
       title: t('meetings_nav'), icon: Calendar,
       headers: [t('col_client'), t('col_title'), t('col_datetime'), t('col_duration'), t('col_status')],
+      luxe: {
+        sub: t('amlist_sub_meetings'),
+        headers: [t('col_meeting'), t('col_client'), t('col_when'), t('col_duration'), t('manager_col_status')],
+        renderRow: (m: Meeting, loc: string) => (
+          <>
+            <td><div className="lx-tname">{m.title}</div></td>
+            <td>{m.workspace?.client?.company_name || '—'}</td>
+            <td className="lx-dim">{formatDate(m.scheduled_at, loc)} · {formatTime(m.scheduled_at, loc)}</td>
+            <td className="lx-dim">{m.duration_minutes} {t('minutes_suffix')}</td>
+            <td>
+              <span className="lx-status" data-tone={m.status === 'completed' ? 'ok' : m.status === 'cancelled' ? 'bad' : 'wait'}>
+                {m.status === 'completed' ? t('done_status') : m.status === 'cancelled' ? t('cancelled_status') : t('upcoming_status')}
+              </span>
+            </td>
+          </>
+        ),
+      },
       getLink: (m: Meeting) => `/dashboard/clients/${m.workspace?.client?.id}?tab=الاجتماعات`,
       renderRow: (m: Meeting, loc: string) => (
         <>
@@ -139,6 +172,20 @@ export default function AMListView({ t, locale, view, clients, allPayments }: {
     if (viewType === 'payments') return {
       title: t('payments_nav'), icon: CreditCard,
       headers: [t('col_client'), t('col_contract'), t('col_amount'), t('col_method'), t('col_datetime'), t('col_status')],
+      luxe: {
+        sub: t('amlist_sub_payments'),
+        headers: [t('col_client'), t('col_contract'), t('col_amount'), t('col_method'), t('manager_col_status'), t('col_date')],
+        renderRow: (p: Payment, loc: string) => (
+          <>
+            <td><div className="lx-tname">{p.workspace?.client?.company_name || '—'}</div></td>
+            <td>{p.contract?.title || '—'}</td>
+            <td><span className="font-display" style={{ fontSize: 17 }}>{Number(p.amount).toLocaleString()}</span> <span className="lx-dim">{p.currency || 'SAR'}</span></td>
+            <td className="lx-dim">{p.method_type}</td>
+            <td><StatusBadge status={p.status} /></td>
+            <td className="lx-dim">{formatDate(p.created_at, loc)}</td>
+          </>
+        ),
+      },
       getLink: (p: Payment) => `/dashboard/clients/${p.workspace?.client?.id}?tab=المدفوعات`,
       renderRow: (p: Payment, loc: string) => (
         <>
@@ -166,6 +213,22 @@ export default function AMListView({ t, locale, view, clients, allPayments }: {
     if (viewType === 'files') return {
       title: t('files_nav'), icon: Folder,
       headers: [t('col_client'), t('col_file'), t('col_type'), t('col_size'), t('col_date')],
+      luxe: {
+        sub: t('amlist_sub_files'),
+        headers: [t('col_file'), t('col_client'), t('col_type'), t('col_size'), t('col_date')],
+        renderRow: (f: FileFile, loc: string) => (
+          <>
+            <td>
+              <div className="lx-tname">{f.name}</div>
+              {f.uploaded_by?.name && <div className="lx-dim">{f.uploaded_by.name}</div>}
+            </td>
+            <td>{f.workspace?.client?.company_name || '—'}</td>
+            <td className="lx-dim">{f.type || '—'}</td>
+            <td className="lx-dim">{formatFileSize(f.size, loc, t)}</td>
+            <td className="lx-dim">{formatDate(f.created_at, loc)}</td>
+          </>
+        ),
+      },
       getLink: (f: FileFile) => `/dashboard/clients/${f.workspace?.client?.id}?tab=الملفات`,
       renderRow: (f: FileFile, loc: string) => (
         <>

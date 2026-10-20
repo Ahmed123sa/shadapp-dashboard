@@ -82,3 +82,37 @@ describe('AMListView contracts pagination', () => {
     expect(screen.queryByText('Contract 1')).not.toBeInTheDocument();
   });
 });
+
+// Luxe look (dashboard-mockup.html `amList`): no card header or "Back to
+// Dashboard", a one-line description and a ledger table with a plain "Status"
+// column.
+describe('AMListView — Luxe look', () => {
+  beforeEach(() => { document.documentElement.dataset.ui = 'luxe'; });
+  afterEach(() => { delete document.documentElement.dataset.ui; });
+
+  it('renders contracts as a ledger with the kind label, the title and the client', async () => {
+    mock.onGet(/\/all-contracts/).reply(200, { contracts: { data: [contract(1)], last_page: 1, total: 1 } });
+    renderWithIntl(<Harness view="contracts" />);
+
+    expect(await screen.findByText('Contract 1')).toBeInTheDocument();
+    expect(screen.getByText('All contracts across your clients.')).toBeInTheDocument();
+    expect(screen.getByText('Main')).toBeInTheDocument();
+    expect(screen.getByText('Acme')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument();
+    expect(screen.queryByText('Contract Status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /back to dashboard/i })).not.toBeInTheDocument();
+  });
+
+  it('renders meetings with the status as a dot and a word', async () => {
+    mock.onGet(/\/all-meetings/).reply(200, { meetings: { data: [{
+      id: 3, title: 'Kickoff', status: 'scheduled', scheduled_at: '2030-01-01T10:00:00.000Z', duration_minutes: 30,
+      workspace: { id: 1, client: { id: 5, company_name: 'Acme' } },
+    }], last_page: 1, total: 1 } });
+    renderWithIntl(<Harness view="meetings" />);
+
+    expect(await screen.findByText('Kickoff')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming and past meetings with your clients.')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming')).toHaveAttribute('data-tone', 'wait');
+    expect(screen.getByRole('columnheader', { name: 'Meeting' })).toBeInTheDocument();
+  });
+});
