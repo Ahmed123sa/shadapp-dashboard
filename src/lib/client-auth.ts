@@ -89,6 +89,17 @@ export function isSubUser(): boolean {
   return !!getClient()?.is_sub_user;
 }
 
+// Whether the signed-in account uploaded [file]. The backend only lets the
+// uploader delete a file (FileController::destroy compares uploaded_by_type
+// and uploaded_by_id), so the delete button is shown for these only.
+export function isMyUpload(file: { uploaded_by_type?: string; uploaded_by_id?: number }): boolean {
+  const type = file.uploaded_by_type ?? '';
+  if (isSubUser()) {
+    return type.endsWith('SubUser') && file.uploaded_by_id === getSubUser()?.id;
+  }
+  return type.endsWith('Client') && file.uploaded_by_id === getClient()?.id;
+}
+
 // UI convenience only, same caveat as isAuthenticated() in lib/auth.ts —
 // the real gate is the httpOnly cookie checked server-side in src/proxy.ts.
 export function isClientAuthenticated(): boolean {

@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import api from '@/lib/api';
-import { canDo } from '@/lib/client-auth';
+import { canDo, isMyUpload } from '@/lib/client-auth';
 import { getErrorCode, getErrorMessage, notifyWriteError, resolveFileUrl } from '@/lib/utils';
 import { reportError } from '@/lib/error-reporting';
 import { showToast } from '@/components/ToastNotification';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ContractDetailModal from '@/components/client-contracts/ContractDetailModal';
 import { useClientContractAction, useWorkspaceContracts } from '@/hooks/queries/useContracts';
+import type { FileEntry } from '@/types';
 import { Btn, Icon, StatusDot } from '../ui';
 
 interface Props {
@@ -32,6 +33,9 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
   const [reason, setReason] = useState('');
   const [uploading, setUploading] = useState<Record<number, boolean>>({});
   const [uploadError, setUploadError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<FileEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const td = useTranslations('dashboard');
 
   const contract = (contractsQuery.data ?? []).find((c) => c.status === 'sent') ?? null;
 
@@ -74,6 +78,27 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
       setUploading((p) => ({ ...p, [docId]: false }));
     }
   };
+
+  // A not-yet-approved file the client uploaded can be removed (the backend
+  // allows the uploader to delete it until it is approved).
+  const deleteFile = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setUploadError('');
+    try {
+      await api.delete(`/workspaces/${wsId}/files/${pendingDelete.id}`);
+      await contractsQuery.refetch();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } }; message?: string };
+      setUploadError(err?.response?.data?.message || td('doc_delete_failed'));
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
+
+  const fileStatus = (f: FileEntry) =>
+    f.status === 'approved' ? td('file_approved_status') : f.status === 'rejected' ? td('file_rejected_status') : td('file_pending_review');
 
   const run = (action: 'approved' | 'edit_requested') => {
     actionMutation.mutate(
@@ -142,6 +167,9 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
           {docs.map((d) => {
             const file = liveFile(d);
             const rej = rejectedFile(d);
+            const files = d.files ?? [];
+            // More files can be added until one of them has been approved.
+            const approved = files.some((f) => f.status === 'approved');
             return (
               <div className="doc" key={d.id}>
                 <div>
@@ -149,18 +177,36 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
                   {!file && rej?.rejection_reason && (
                     <div className="sub" style={{ fontSize: 12, color: 'var(--faint)' }}>{t('reject_reason_label', { reason: rej.rejection_reason })}</div>
                   )}
+                  {files.length > 0 && (
+                    <div className="docfiles" style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                      {files.map((f) => (
+                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 }}>
+                          <a className="lnk" href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer">{f.name || t('doc_view')}</a>
+                          <StatusDot tone={f.status === 'approved' ? 'ok' : f.status === 'rejected' ? 'crimson' : 'wait'}>{fileStatus(f)}</StatusDot>
+                          {f.status !== 'approved' && isMyUpload(f) && (
+                            <button
+                              type="button"
+                              className="lnk"
+                              aria-label={`${td('doc_delete')} ${f.name || ''}`.trim()}
+                              onClick={() => setPendingDelete(f)}
+                            >
+                              {td('doc_delete')}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <span className="st">
                   <StatusDot tone={file ? 'ok' : 'crimson'} />
                   {file ? t('doc_uploaded') : t('doc_missing')}
                 </span>
                 <div className="end">
-                  {file ? (
-                    <a className="lnk" href={resolveFileUrl(file.file_url)} target="_blank" rel="noopener noreferrer">{t('doc_view')}</a>
-                  ) : canUpload ? (
+                  {!approved && canUpload ? (
                     <label className="btn" style={uploading[d.id] ? { opacity: 0.5 } : undefined}>
                       <Icon name="up" />
-                      {uploading[d.id] ? t('doc_uploading') : t('doc_upload')}
+                      {uploading[d.id] ? t('doc_uploading') : file ? td('doc_add_more') : t('doc_upload')}
                       <input
                         type="file"
                         aria-label={`${t('doc_upload')} ${d.name}`}
@@ -214,6 +260,17 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
           <span className="hint">{t('need_perm_approve')}</span>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={td('doc_delete_confirm_title')}
+        message={td('doc_delete_confirm_msg')}
+        confirmLabel={deleting ? '...' : td('doc_delete')}
+        cancelLabel={t('cancel')}
+        variant="danger"
+        onConfirm={deleteFile}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       <ConfirmDialog
         open={confirmApprove}

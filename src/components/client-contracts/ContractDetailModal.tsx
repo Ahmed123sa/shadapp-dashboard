@@ -6,9 +6,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import ContractStatusStepper from '@/components/ui/ContractStatusStepper';
 import { useTranslations } from 'next-intl';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import { canDo } from '@/lib/client-auth';
+import { canDo, isMyUpload } from '@/lib/client-auth';
 import { resolveFileUrl } from '@/lib/utils';
-import type { Contract } from '@/types';
+import type { Contract, FileEntry } from '@/types';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
   contract: Contract;
@@ -24,6 +25,24 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
   const canAct = contract.status === 'sent';
   const [uploading, setUploading] = useState<Record<number, boolean>>({});
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<FileEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // The uploader can remove a file until it is approved (FileController::destroy).
+  const deleteFile = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/workspaces/${wsId}/files/${pendingDelete.id}`);
+      onUpload();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || t('doc_delete_failed'));
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
 
   const uploadDoc = async (docId: number, file: File) => {
     setUploading((prev) => ({ ...prev, [docId]: true }));
@@ -93,36 +112,58 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
           <div className="mt-4 space-y-2">
             <h4 className="text-sm font-bold text-[var(--color-foreground)] mb-2">{t('documents_heading')}</h4>
             {docs.map((doc) => {
-              const file = doc.files?.[0];
+              const files = doc.files ?? [];
+              const approved = files.some((f) => f.status === 'approved');
+              const lastRejected = [...files].reverse().find((f) => f.status === 'rejected');
+              const hasLive = files.some((f) => f.status !== 'rejected');
               return (
-                <div key={doc.id} className="flex items-center justify-between text-sm border border-[var(--color-card-border)] rounded-lg p-3">
-                  <div>
+                <div key={doc.id} className="flex items-start justify-between gap-3 text-sm border border-[var(--color-card-border)] rounded-lg p-3">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{doc.name}</p>
-                    {file ? (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          file.status === 'approved' ? 'bg-green-900/30 text-green-400' :
-                          file.status === 'rejected' ? 'bg-red-900/30 text-red-400' :
-                          'bg-yellow-900/30 text-yellow-400'
-                        }`}>
-                          {file.status === 'approved' ? t('file_approved_status') : file.status === 'rejected' ? t('file_rejected_status') : t('file_pending_review')}
-                        </span>
-                        <span className="text-xs text-[var(--color-text-disabled)]">{file.name}</span>
+                    {files.length > 0 ? (
+                      <div className="mt-1 space-y-1">
+                        {/* Every file uploaded for this document, each with its
+                            own status; not-yet-approved ones the client uploaded
+                            can be deleted. */}
+                        {files.map((file) => (
+                          <div key={file.id} className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${
+                              file.status === 'approved' ? 'bg-green-900/30 text-green-400' :
+                              file.status === 'rejected' ? 'bg-red-900/30 text-red-400' :
+                              'bg-yellow-900/30 text-yellow-400'
+                            }`}>
+                              {file.status === 'approved' ? t('file_approved_status') : file.status === 'rejected' ? t('file_rejected_status') : t('file_pending_review')}
+                            </span>
+                            {file.file_url ? (
+                              <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--color-text-disabled)] hover:underline truncate max-w-[180px]">{file.name}</a>
+                            ) : (
+                              <span className="text-xs text-[var(--color-text-disabled)]">{file.name}</span>
+                            )}
+                            {file.status !== 'approved' && isMyUpload(file) && (
+                              <button type="button" onClick={() => setPendingDelete(file)}
+                                aria-label={`${t('doc_delete')} ${file.name || ''}`.trim()}
+                                className="text-xs text-red-400 hover:underline">
+                                {t('doc_delete')}
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="text-xs text-[var(--color-text-disabled)] mt-1">{t('doc_not_uploaded')}</p>
                     )}
-                    {file?.status === 'rejected' && file.rejection_reason && (
-                      <p className="text-xs text-red-500 mt-1">{t('doc_reason_prefix')}{file.rejection_reason}</p>
+                    {!hasLive && lastRejected?.rejection_reason && (
+                      <p className="text-xs text-red-500 mt-1">{t('doc_reason_prefix')}{lastRejected.rejection_reason}</p>
                     )}
                   </div>
-                  <div>
+                  <div className="shrink-0">
                     {/* subuser-review-plan.md م٦ — required-document uploads
-                        map to can_upload_files, per the plan's action table. */}
-                    {(!file || file.status === 'rejected') && canDo('can_upload_files') ? (
+                        map to can_upload_files, per the plan's action table.
+                        More files can be added until one is approved. */}
+                    {!approved && canDo('can_upload_files') ? (
                       <label className={`inline-flex items-center gap-1 text-xs text-[var(--color-gold-text)] cursor-pointer hover:text-[var(--color-gold-text)] ${uploading[doc.id] ? 'opacity-50' : ''}`}>
-                        <input type="file" className="hidden" disabled={uploading[doc.id]} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(doc.id, f); }} />
-                        {uploading[doc.id] ? t('doc_uploading') : file ? t('doc_upload_new') : t('doc_upload')}
+                        <input type="file" className="hidden" disabled={uploading[doc.id]} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(doc.id, f); e.target.value = ''; }} />
+                        {uploading[doc.id] ? t('doc_uploading') : hasLive ? t('doc_add_more') : files.length > 0 ? t('doc_upload_new') : t('doc_upload')}
                       </label>
                     ) : null}
                   </div>
@@ -175,6 +216,19 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
              contract.status === 'completed' ? t('contract_completed_msg') : ''}
           </p>
         )}
+      </div>
+      {/* Clicks inside the confirm must not reach the backdrop above (it closes this sheet). */}
+      <div onClick={(e) => e.stopPropagation()}>
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('doc_delete_confirm_title')}
+        message={t('doc_delete_confirm_msg')}
+        confirmLabel={deleting ? '...' : t('doc_delete')}
+        cancelLabel={t('cancel')}
+        variant="danger"
+        onConfirm={deleteFile}
+        onCancel={() => setPendingDelete(null)}
+      />
       </div>
     </div>
   );

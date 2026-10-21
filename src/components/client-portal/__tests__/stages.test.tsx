@@ -148,6 +148,49 @@ describe('ReviewStage', () => {
     expect(form.get('contract_id')).toBe('3');
     expect(form.get('contract_required_document_id')).toBe('2');
   });
+
+  it('lists every file of a document, lets the uploader delete a pending one and add another', async () => {
+    localStorage.setItem('client', JSON.stringify({ id: 5, company_name: 'Nile', contact_person: 'Mona', email: 'm@x.com', status: 'active', has_signed: true }));
+    mock.onGet('/workspaces/9/contracts').reply(200, {
+      contracts: [sentContract([{
+        id: 2,
+        name: 'Tax card',
+        files: [
+          { id: 11, status: 'pending', name: 'front.jpg', file_url: 'f.jpg', uploaded_by_type: 'App\\Models\\Client', uploaded_by_id: 5 },
+          { id: 12, status: 'rejected', name: 'old.jpg', file_url: 'o.jpg', uploaded_by_type: 'App\\Models\\Client', uploaded_by_id: 5 },
+          { id: 13, status: 'pending', name: 'by-team.jpg', file_url: 't.jpg', uploaded_by_type: 'App\\Models\\User', uploaded_by_id: 5 },
+        ],
+      }])],
+    });
+    mock.onDelete('/workspaces/9/files/11').reply(200, {});
+    renderWithIntl(<ReviewStage wsId={9} onChanged={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('front.jpg')).toBeInTheDocument());
+    expect(screen.getByText('old.jpg')).toBeInTheDocument();
+    expect(screen.getByText('by-team.jpg')).toBeInTheDocument();
+    // Only the client's own, not-approved files get a Delete.
+    expect(screen.getByRole('button', { name: 'Delete front.jpg' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete old.jpg' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete by-team.jpg' })).not.toBeInTheDocument();
+    // A live file is there, so the upload button now adds another one.
+    expect(screen.getByText('Add another file')).toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Delete front.jpg' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(mock.history.delete.length).toBe(1));
+    expect(mock.history.delete[0].url).toBe('/workspaces/9/files/11');
+    localStorage.removeItem('client');
+  });
+
+  it('hides the upload button once a file of the document is approved', async () => {
+    mock.onGet('/workspaces/9/contracts').reply(200, {
+      contracts: [sentContract([{ id: 2, name: 'Tax card', files: [{ id: 11, status: 'approved', name: 'ok.jpg', file_url: 'k.jpg', uploaded_by_type: 'App\\Models\\Client', uploaded_by_id: 5 }] }])],
+    });
+    renderWithIntl(<ReviewStage wsId={9} onChanged={vi.fn()} />);
+    await waitFor(() => expect(screen.getByText('ok.jpg')).toBeInTheDocument());
+    expect(screen.queryByLabelText('Upload Tax card')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Delete/ })).not.toBeInTheDocument();
+  });
 });
 
 describe('PaymentStage', () => {
