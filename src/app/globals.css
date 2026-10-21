@@ -1757,7 +1757,7 @@ html[data-ui="luxe"] .lx-drawer input[role="switch"]:focus-visible { outline: 2p
  * Inputs become underline fields, the client-type picker uses the crimson
  * chip, buttons are pills, Save is a crimson pill on the end side.
  * ==================================================================== */
-html[data-ui="luxe"] .lx-form { max-width: 760px; }
+html[data-ui="luxe"] .lx-form-page { max-width: 760px; }
 html[data-ui="luxe"] .lx-form-head { gap: 14px; flex-wrap: wrap; }
 html[data-ui="luxe"] .lx-form-head > button { font-size: 13px; color: var(--color-text-secondary); }
 html[data-ui="luxe"] .lx-form-head h1 {
@@ -1807,3 +1807,64 @@ html[data-ui="luxe"] .lx-form-save {
   padding: 0 24px; height: 42px; font-weight: 400;
 }
 
+/* .lx-form, generic parts: every form only needs the one class. */
+html[data-ui="luxe"] .lx-form select {
+  border: 0; border-bottom: 1px solid var(--lx-line-2); border-radius: 0;
+  background-color: transparent; padding: 8px 0 10px; font-size: 15px;
+}
+html[data-ui="luxe"] .lx-form select:focus { border-bottom-color: #D24A4A; box-shadow: none; }
+/* primary submit -> crimson pill */
+html[data-ui="luxe"] .lx-form button[type="submit"] {
+  border-radius: 999px; padding: 0 22px; height: 40px; font-weight: 400;
+}
+/* secondary / cancel buttons (input-fill or card-border background) -> outline pill */
+html[data-ui="luxe"] .lx-form button[class*="bg-[var(--color-input-fill)]"]:not(.lx-typeopt),
+html[data-ui="luxe"] .lx-form label[class*="bg-[var(--color-card-border)]"],
+html[data-ui="luxe"] .lx-form button[class*="bg-[var(--color-card-border)]"]:not([class*="rounded-full"]) {
+  border: 1px solid var(--lx-line-2); border-radius: 999px; background: transparent;
+  color: var(--lx-ink-2); padding-inline: 16px; font-size: 12.5px;
+}
+html[data-ui="luxe"] .lx-form button[class*="bg-[var(--color-input-fill)]"]:hover,
+html[data-ui="luxe"] .lx-form label[class*="bg-[var(--color-card-border)]"]:hover { color: var(--color-foreground); border-color: rgba(240,240,240,.3); }
+/* no gold inside forms (DESIGN_REVAMP_PLAN ق٥): gold accents become crimson */
+html[data-ui="luxe"] .lx-form [class*="border-[var(--color-gold)]"] { border-color: rgba(148,20,20,.5) !important; }
+html[data-ui="luxe"] .lx-form [class*="bg-[var(--color-gold)]"] { background-color: rgba(148,20,20,.2) !important; }
+html[data-ui="luxe"] .lx-form [class*="text-[var(--color-gold"] { color: var(--color-foreground) !important; }
+/* section labels (small caps) */
+html[data-ui="luxe"] .lx-form p[class*="uppercase"] { letter-spacing: .2em; font-size: 10.5px; color: var(--color-text-disabled); }
+/* checkbox rows */
+html[data-ui="luxe"] .lx-form input[type="checkbox"] { accent-color: #941414; }
+
+/* buttons inside forms that are not type=submit (contract builder, meeting
+ * and contract boxes): primary crimson -> pill */
+html[data-ui="luxe"] .lx-form button[class*="bg-[var(--color-primary)]"] { border-radius: 999px; padding-inline: 18px; font-weight: 400; }
+/* inline form boxes (contract / meeting / builder) and the schedule dialog */
+html[data-ui="luxe"] .lx-form-box {
+  background: rgba(255,255,255,.02); border-color: var(--lx-line-2); border-radius: 16px; padding: 22px;
+}
+html[data-ui="luxe"] .lx-form-box > * + * { margin-top: 14px; }
+html[data-ui="luxe"] .lx-form-box .flex { gap: 16px; }
+html[data-ui="luxe"] .lx-form-box div[class*="bg-[var(--color-card)]"] {
+  background: transparent; border: 0; border-top: 1px solid var(--lx-line); border-radius: 0; padding: 14px 0 0;
+}
+html[data-ui="luxe"] .lx-form-dialog { background: var(--lx-sheet, #171717); border-color: var(--lx-line-2); border-radius: 20px; padding: 28px; }
+html[data-ui="luxe"] .lx-form h3 { font-family: var(--font-display), serif; font-weight: 400; font-size: 20px; }
+html[lang="ar"][data-ui="luxe"] .lx-form h3 { font-family: var(--font-tajawal), sans-serif; font-weight: 500; font-size: 18px; }
+html[data-ui="luxe"] .lx-form h4 { letter-spacing: .18em; text-transform: uppercase; font-size: 10.5px; font-weight: 400; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-form-title { font-family: var(--font-display), serif; font-weight: 400; font-size: 34px; }
+html[lang="ar"][data-ui="luxe"] .lx-form-title { font-family: var(--font-tajawal), sans-serif; font-weight: 500; font-size: 28px; }
+
+/* client profile tab (workspace): serif headings, KPI tiles as outlined
+ * boxes with serif numbers, gold links -> ink */
+html[data-ui="luxe"] .lx-profiletab h3 { font-family: var(--font-display), serif; font-weight: 400; font-size: 20px; }
+html[lang="ar"][data-ui="luxe"] .lx-profiletab h3 { font-family: var(--font-tajawal), sans-serif; font-weight: 500; font-size: 17px; }
+html[data-ui="luxe"] .lx-profiletab > .grid > div {
+  background: transparent; border: 1px solid var(--lx-line); border-radius: 14px; padding: 16px 18px;
+}
+html[data-ui="luxe"] .lx-profiletab > .grid > div > p:first-child { letter-spacing: .14em; font-size: 10px; color: var(--color-text-disabled); }
+html[data-ui="luxe"] .lx-profiletab > .grid > div > p:nth-child(2) { font-family: var(--font-display), serif; font-weight: 400; font-size: 26px; }
+html[data-ui="luxe"] .lx-profiletab [class*="text-[var(--color-gold-text)]"] { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-profiletab [class*="text-[var(--color-gold-text)]"]:hover { color: var(--color-foreground); }
+html[data-ui="luxe"] .lx-profiletab button[class*="bg-[var(--color-primary)]"] { border-radius: 999px; padding-inline: 16px; font-weight: 400; }
+html[data-ui="luxe"] .lx-profiletab .w-16.h-16 { border: 1px solid var(--lx-line-2); background: #232323; }
+html[data-ui="luxe"] .lx-profiletab .w-16.h-16 > div { font-family: var(--font-display), serif; font-style: italic; color: var(--color-foreground); }

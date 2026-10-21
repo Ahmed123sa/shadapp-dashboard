@@ -193,7 +193,7 @@ export default function StaffPage() {
       {loadError && <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg mb-4">{loadError}</div>}
 
       {showForm && (
-        <form onSubmit={submit} className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-4">
+        <form onSubmit={submit} className="lx-form bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-4">
           {formError && <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg">{formError}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">

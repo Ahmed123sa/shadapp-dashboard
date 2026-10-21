@@ -203,7 +203,7 @@ export default function AccountManagersPage() {
       )}
 
       {(showCreate || editId) && (
-        <form onSubmit={editId ? updateManager : createManager} className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-4">
+        <form onSubmit={editId ? updateManager : createManager} className="lx-form bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-4">
           {error && <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg">{error}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">

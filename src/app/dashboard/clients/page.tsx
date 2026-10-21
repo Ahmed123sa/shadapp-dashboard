@@ -224,7 +224,7 @@ export default function ClientsPage() {
       )}
 
       {showCreate && (
-        <form onSubmit={createClient} className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-5">
+        <form onSubmit={createClient} className="lx-form bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 mb-6 space-y-5">
           {createError && <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-lg">{createError}</div>}
 
           {/* الصورة */}
@@ -248,7 +248,7 @@ export default function ClientsPage() {
           </div>
 
           {/* نوع العميل */}
-          <div>
+          <div className="lx-typepick">
             <SectionLabel>{t('client_type')}</SectionLabel>
             <div className="grid grid-cols-2 gap-3">
               {(['business', 'individual'] as const).map(ct => {
@@ -256,10 +256,11 @@ export default function ClientsPage() {
                 const isBiz = ct === 'business';
                 return (
                   <button type="button" key={ct} onClick={() => update('client_type', ct)}
-                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
+                    data-on={active ? '1' : undefined}
+                    className={`lx-typeopt flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
                     <span className="text-xl">{isBiz ? <Building2 size={20} strokeWidth={1.5} /> : <User size={20} strokeWidth={1.5} />}</span>
                     <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
-                    <span className="text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
+                    <span className="lx-typesub text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
                   </button>
                 );
               })}

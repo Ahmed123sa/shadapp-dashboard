@@ -223,7 +223,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
         </button>
       )}
       {canManage && showForm && (
-        <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
+        <div className="lx-form lx-form-box space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           {editingId && (
             <p className="text-xs font-semibold text-[var(--color-gold-text)]">
               {t('editing_contract', { title: form.title })}

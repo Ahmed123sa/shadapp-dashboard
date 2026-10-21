@@ -110,7 +110,7 @@ export default function MeetingsTab({ wsId }: { wsId: number }) {
     <div className="space-y-4">
       {canManage && <button onClick={() => setShowForm(!showForm)} className="text-sm text-[var(--color-gold-text)] hover:underline">{t('new_meeting')}</button>}
       {canManage && showForm && (
-        <div className="space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
+        <div className="lx-form lx-form-box space-y-2 border border-[var(--color-card-border)] rounded-lg p-4 bg-[var(--color-card-border)]">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('meeting_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
           <div className="flex gap-2">
             <input value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} type="date" className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm flex-1 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />

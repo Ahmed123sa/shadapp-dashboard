@@ -111,7 +111,7 @@ export default function ClientSettingsPage() {
   if (!client) return <div className="py-20 text-center text-[var(--color-text-secondary)]">{t('not_found')}</div>;
 
   return (
-    <div className="lx-form max-w-2xl mx-auto space-y-6">
+    <div className="lx-form lx-form-page max-w-2xl mx-auto space-y-6">
       <div className="lx-form-head flex items-center gap-3">
         <button onClick={() => router.back()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">&larr; {tc('back')}</button>
         <h1 className="text-xl font-bold">{t('edit_title', { name: client.company_name })}</h1>

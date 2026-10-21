@@ -46,7 +46,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   };
 
   return (
-    <div className="border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card-border)] p-4 space-y-3">
+    <div className="lx-form lx-form-box border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card-border)] p-4 space-y-3">
       <h3 className="text-sm font-bold text-[var(--color-foreground)]">{t('builder_title')}</h3>
 
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('builder_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />

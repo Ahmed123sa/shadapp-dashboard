@@ -335,7 +335,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             ref={scheduleDialogRef}
             {...scheduleDialogProps}
             aria-labelledby={scheduleTitleId}
-            className="bg-[var(--color-sidebar-hover)] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+            className="lx-form lx-form-dialog bg-[var(--color-sidebar-hover)] border border-[var(--color-card-border)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

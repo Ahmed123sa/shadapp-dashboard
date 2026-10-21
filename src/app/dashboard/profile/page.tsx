@@ -61,15 +61,15 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">{t('title')}</h1>
+    <div className="lx-form lx-form-page max-w-lg mx-auto space-y-6">
+      <h1 className="lx-form-title text-2xl font-bold">{t('title')}</h1>
 
       {success && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-300 text-sm">{t('profile_saved')}</div>
       )}
 
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">
-        <div className="flex flex-col items-center gap-3">
+      <div className="lx-form-card bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">
+        <div className="lx-form-av flex flex-col items-center gap-3">
           <div className="w-24 h-24 rounded-full bg-[var(--color-input-fill)] overflow-hidden border-2 border-zinc-200">
             {avatarPreview ? (
               <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
@@ -80,7 +80,7 @@ export default function ProfilePage() {
             )}
           </div>
           <button onClick={() => avatarInputRef.current?.click()} type="button"
-            className="bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-4 py-2 rounded-lg text-sm transition-colors">
+            className="lx-form-pill bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-4 py-2 rounded-lg text-sm transition-colors">
             {t('change_avatar')}
           </button>
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -99,7 +99,7 @@ export default function ProfilePage() {
         </div>
 
         <button onClick={save} disabled={saving}
-          className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">
+          className="lx-form-save bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">
           {saving ? '...' : t('save')}
         </button>
       </div>

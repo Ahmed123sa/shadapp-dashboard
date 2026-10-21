@@ -69,7 +69,7 @@ export default function ClientProfileTab({ clientId, onNavigate }: { clientId: n
   };
 
   return (
-    <div className="space-y-4">
+    <div className="lx-profiletab space-y-4">
       {msg && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-3 text-emerald-300 text-sm">{msg}</div>
       )}
