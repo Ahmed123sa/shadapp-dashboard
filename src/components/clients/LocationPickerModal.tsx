@@ -97,7 +97,7 @@ export default function LocationPickerModal({ initialLat, initialLng, initialAdd
         ref={dialogRef}
         {...dialogProps}
         aria-labelledby={titleId}
-        className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl w-full max-w-lg p-5 space-y-4"
+        className="lx-form lx-form-dialog bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl w-full max-w-lg p-5 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

@@ -17,7 +17,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, cancelLabel,
         ref={dialogRef}
         {...dialogProps}
         aria-labelledby={titleId}
-        className="bg-[var(--color-card)] border border-[var(--color-card-border)] p-6 max-w-sm w-full mx-4 space-y-4 rounded-xl shadow-xl"
+        className="lx-form lx-form-dialog bg-[var(--color-card)] border border-[var(--color-card-border)] p-6 max-w-sm w-full mx-4 space-y-4 rounded-xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id={titleId} className="font-bold text-lg">{title}</h3>

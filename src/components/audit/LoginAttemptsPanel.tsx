@@ -78,7 +78,7 @@ export default function LoginAttemptsPanel() {
         {t('attempts_total', { count: total })}
       </span>
 
-      <div className="flex gap-2 items-center flex-wrap">
+      <div className="lx-finbar flex gap-2 items-center flex-wrap">
         <div className="relative">
           <Search size={12} strokeWidth={1.5} className="absolute start-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
           <input

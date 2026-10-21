@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { subscribeToNotifications, disconnectEcho } from '@/lib/echo';
@@ -131,14 +132,16 @@ export default function NotificationBell() {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)} className="relative p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition">
-        <span className="text-lg">🔔</span>
+        {/* Classic keeps the emoji; Luxe shows the line icon instead (globals.css). */}
+        <span className="lx-bell-emoji text-lg">🔔</span>
+        <Bell size={18} strokeWidth={1.5} className="lx-bell-icon" aria-hidden="true" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-[var(--color-primary)] text-white text-[length:var(--fs-1)] w-4 h-4 flex items-center justify-center rounded-full font-bold">{unread}</span>
         )}
       </button>
 
       {open && (
-        <div className="absolute end-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
+        <div className="lx-notif absolute end-0 top-full mt-2 w-80 bg-[var(--color-card)] border border-[var(--color-card-border)] z-50 max-h-96 overflow-y-auto">
           <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center">
             <h3 className="text-sm font-bold">{t('notif_title')}</h3>
             <button onClick={markAllRead} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('notif_mark_all_read')}</button>

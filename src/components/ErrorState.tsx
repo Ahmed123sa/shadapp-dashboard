@@ -38,7 +38,7 @@ export default function ErrorState({ onRetry, fullScreen = false }: ErrorStatePr
       };
 
   return (
-    <div className={`flex flex-col items-center justify-center text-center gap-3 px-5 ${fullScreen ? 'min-h-screen' : 'py-16'}`}>
+    <div className={`lx-errorstate flex flex-col items-center justify-center text-center gap-3 px-5 ${fullScreen ? 'min-h-screen' : 'py-16'}`}>
       <div className="w-12 h-12 rounded-full bg-[var(--color-crimson-soft)] border border-[var(--color-crimson-border)] flex items-center justify-center text-[var(--color-primary-light)] text-xl">
         !
       </div>

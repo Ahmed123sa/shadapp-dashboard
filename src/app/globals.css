@@ -1793,7 +1793,8 @@ html[data-ui="luxe"] .lx-typeopt[data-on] span { color: var(--color-foreground) 
 html[data-ui="luxe"] .lx-typesub { display: none; }
 /* fields: label 12px muted, underline input (mockup `.f .in`) */
 html[data-ui="luxe"] .lx-form-grid { gap: 22px 28px; }
-html[data-ui="luxe"] .lx-form label { font-size: 12px; color: var(--color-text-secondary); }
+/* field labels only - not checkbox / file rows, which carry their own text size */
+html[data-ui="luxe"] .lx-form label:not(:has(input)) { font-size: 12px; color: var(--color-text-secondary); }
 html[data-ui="luxe"] .lx-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]) {
   border: 0; border-bottom: 1px solid var(--lx-line-2); border-radius: 0;
   background: transparent; padding: 8px 0 10px; font-size: 15px; box-shadow: none;
@@ -1842,8 +1843,11 @@ html[data-ui="luxe"] .lx-form button[class*="bg-[var(--color-primary)]"] { borde
 html[data-ui="luxe"] .lx-form-box {
   background: rgba(255,255,255,.02); border-color: var(--lx-line-2); border-radius: 16px; padding: 22px;
 }
-html[data-ui="luxe"] .lx-form-box > * + * { margin-top: 14px; }
-html[data-ui="luxe"] .lx-form-box .flex { gap: 16px; }
+/* stack spacing via gap (Tailwind space-y margins zeroed so they do not add up) */
+html[data-ui="luxe"] .lx-form-box { display: flex; flex-direction: column; gap: 14px; }
+html[data-ui="luxe"] .lx-form-box > * { margin-block: 0 !important; }
+/* only the field rows directly in the box; checkbox rows keep their own gap */
+html[data-ui="luxe"] .lx-form-box > .flex { gap: 16px; }
 html[data-ui="luxe"] .lx-form-box div[class*="bg-[var(--color-card)]"] {
   background: transparent; border: 0; border-top: 1px solid var(--lx-line); border-radius: 0; padding: 14px 0 0;
 }
@@ -1868,3 +1872,49 @@ html[data-ui="luxe"] .lx-profiletab [class*="text-[var(--color-gold-text)]"]:hov
 html[data-ui="luxe"] .lx-profiletab button[class*="bg-[var(--color-primary)]"] { border-radius: 999px; padding-inline: 16px; font-weight: 400; }
 html[data-ui="luxe"] .lx-profiletab .w-16.h-16 { border: 1px solid var(--lx-line-2); background: #232323; }
 html[data-ui="luxe"] .lx-profiletab .w-16.h-16 > div { font-family: var(--font-display), serif; font-style: italic; color: var(--color-foreground); }
+
+/* ---- remaining staff screens (inventory 21 Oct) ---- */
+/* form buttons that are outlined only (no background class) -> pill */
+html[data-ui="luxe"] .lx-form button[class*="rounded-lg"][class*="border-[var(--color-card-border)]"] {
+  border-radius: 999px; border-color: var(--lx-line-2); padding-inline: 16px;
+}
+/* login-attempts filter row reuses the audit .lx-finbar; its Apply is a plain button */
+html[data-ui="luxe"] .lx-finbar button[class*="bg-[var(--color-primary)]"] {
+  height: 40px; padding: 0 20px; border-radius: 999px; font-size: 13px; font-weight: 400;
+}
+/* files tab: tags as outline pills, rows as soft cards, status as dot + word */
+html[data-ui="luxe"] .lx-filestab [class*="bg-blue-900"] { background: transparent; border: 1px solid var(--lx-line-2); color: var(--lx-ink-2); padding: 3px 11px; }
+html[data-ui="luxe"] .lx-filestab .space-y-2 > div { border-color: var(--lx-line); border-radius: 14px; padding: 14px 16px; }
+html[data-ui="luxe"] .lx-filestab [class*="bg-red-900/20"], html[data-ui="luxe"] .lx-filestab [class*="bg-green-900/20"] {
+  background: transparent; border: 1px solid var(--lx-line-2); border-radius: 999px; font-weight: 400; letter-spacing: .04em;
+}
+html[data-ui="luxe"] .lx-filestab span[class*="rounded-full"][class*="-900/30"]:not([class*="bg-blue-900"]) {
+  background: transparent; padding: 0; display: inline-flex; align-items: center; gap: 7px;
+}
+html[data-ui="luxe"] .lx-filestab span[class*="rounded-full"][class*="-900/30"]:not([class*="bg-blue-900"])::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+}
+html[data-ui="luxe"] .lx-filestab a[class*="text-blue-"] { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-filestab a[class*="text-blue-"]:hover { color: var(--color-foreground); }
+/* staff-on-client tab: soft rows, pill buttons, "not in my team" in crimson instead of gold */
+html[data-ui="luxe"] .lx-stafftab li { border-color: var(--lx-line); border-radius: 14px; padding: 14px 16px; }
+html[data-ui="luxe"] .lx-stafftab li button, html[data-ui="luxe"] .lx-stafftab a[class*="border"] {
+  border-radius: 999px; padding: 6px 14px; text-decoration: none;
+}
+html[data-ui="luxe"] .lx-stafftab li[data-outsider] { border-color: rgba(148,20,20,.35); background: rgba(148,20,20,.05); }
+html[data-ui="luxe"] .lx-stafftab [class*="text-[var(--color-gold-text)]"] { color: #D24A4A; }
+html[data-ui="luxe"] .lx-stafftab .w-9.h-9 { border: 1px solid var(--lx-line-2); background: #232323; }
+/* notification bell: line icon instead of the emoji (classic keeps the emoji) */
+.lx-bell-icon { display: none; }
+html[data-ui="luxe"] .lx-bell-emoji { display: none; }
+html[data-ui="luxe"] .lx-bell-icon { display: block; }
+html[data-ui="luxe"] .lx-notif {
+  border-radius: 16px; border-color: var(--lx-line-2); background: #171717; box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+html[data-ui="luxe"] .lx-notif h3 { font-family: var(--font-display), serif; font-weight: 400; font-size: 17px; }
+html[data-ui="luxe"] .lx-notif [class*="text-[var(--color-gold-text)]"] { color: var(--lx-ink-2); }
+html[data-ui="luxe"] .lx-notif a { border-color: var(--lx-line); padding: 12px 16px; }
+html[data-ui="luxe"] .lx-notif a[class*="bg-[var(--color-primary)]"] { background: rgba(148,20,20,.08); }
+/* error state */
+html[data-ui="luxe"] .lx-errorstate h2 { font-weight: 400; font-size: 22px; }
+html[data-ui="luxe"] .lx-errorstate button, html[data-ui="luxe"] .lx-errorstate a { border-radius: 999px; padding-inline: 18px; font-weight: 400; }

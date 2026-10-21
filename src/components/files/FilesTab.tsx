@@ -69,7 +69,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
   if (loadError) return <ErrorState onRetry={() => filesQuery.refetch()} />;
 
   return (
-    <div className="space-y-4">
+    <div className="lx-form lx-filestab space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         {definitions.map((d) => <span key={d.id} className="px-2 py-0.5 bg-blue-900/30 text-blue-400 rounded-full text-xs">{d.name} {d.is_required ? '*' : ''}</span>)}
         <button onClick={() => setShowDefForm(!showDefForm)} className="text-xs text-[var(--color-gold-text)] hover:underline">{t('define_document')}</button>

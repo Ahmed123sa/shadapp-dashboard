@@ -123,7 +123,7 @@ export default function ClientStaffTab({ wsId, clientName }: { wsId: number; cli
   );
 
   return (
-    <div className="space-y-4">
+    <div className="lx-stafftab space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <p className="text-sm text-[var(--color-text-secondary)] max-w-2xl">{isManager ? t('client_team_hint_manager') : t('client_team_hint')}</p>
         {isManager && (
