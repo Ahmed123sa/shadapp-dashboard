@@ -53,4 +53,17 @@ describe('PasswordField', () => {
     expect(screen.getByText('One English letter')).toBeInTheDocument();
     expect(screen.getByText('One number')).toBeInTheDocument();
   });
+
+  it('hides the checklist on an empty optional field and when showRequirements is false', () => {
+    const { unmount } = renderWithIntl(<PasswordField value="" onChange={() => {}} opt />);
+    expect(screen.queryByText('At least 8 characters')).not.toBeInTheDocument();
+    unmount();
+    renderWithIntl(<PasswordField value="abc" onChange={() => {}} showRequirements={false} />);
+    expect(screen.queryByText('At least 8 characters')).not.toBeInTheDocument();
+  });
+
+  it('shows the checklist once something is typed in an optional field', () => {
+    renderWithIntl(<PasswordField value="ab" onChange={() => {}} opt />);
+    expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
+  });
 });

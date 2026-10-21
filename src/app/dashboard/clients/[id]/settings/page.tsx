@@ -111,8 +111,8 @@ export default function ClientSettingsPage() {
   if (!client) return <div className="py-20 text-center text-[var(--color-text-secondary)]">{t('not_found')}</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="lx-form max-w-2xl mx-auto space-y-6">
+      <div className="lx-form-head flex items-center gap-3">
         <button onClick={() => router.back()} className="text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]">&larr; {tc('back')}</button>
         <h1 className="text-xl font-bold">{t('edit_title', { name: client.company_name })}</h1>
         <ClientTypeBadge clientType={client.client_type} />
@@ -125,8 +125,8 @@ export default function ClientSettingsPage() {
         <div className="bg-red-900/30 border border-red-800/30 rounded-xl p-4 text-red-400 text-sm">{error}</div>
       )}
 
-      <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">
-        <div className="flex flex-col items-center gap-3">
+      <div className="lx-form-card bg-[var(--color-card)] rounded-xl border border-[var(--color-card-border)] p-6 space-y-6">
+        <div className="lx-form-av flex flex-col items-center gap-3">
           <div className="w-24 h-24 rounded-full bg-[var(--color-input-fill)] overflow-hidden border-2 border-[var(--color-card-border)]">
             {avatarPreview ? (
               <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
@@ -137,14 +137,14 @@ export default function ClientSettingsPage() {
             )}
           </div>
           <button onClick={() => avatarInputRef.current?.click()} type="button"
-            className="bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-4 py-2 rounded-lg text-sm transition-colors">
+            className="lx-form-pill bg-[var(--color-input-fill)] hover:bg-[var(--color-card-border)] px-4 py-2 rounded-lg text-sm transition-colors">
             {t('change_photo')}
           </button>
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
 
         {/* نوع العميل */}
-        <div>
+        <div className="lx-typepick">
           <p className="text-[length:var(--fs-1)] tracking-wider font-medium text-[var(--color-text-secondary)] uppercase mb-2">{t('client_type')}</p>
           <div className="grid grid-cols-2 gap-3">
             {(['business', 'individual'] as const).map(ct => {
@@ -152,17 +152,18 @@ export default function ClientSettingsPage() {
               const isBiz = ct === 'business';
               return (
                 <button type="button" key={ct} onClick={() => setForm(f => ({ ...f, client_type: ct }))}
-                  className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
+                  data-on={active ? '1' : undefined}
+                  className={`lx-typeopt flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${active ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10' : 'border-[var(--color-card-border)] bg-transparent hover:border-[var(--color-text-secondary)]'}`}>
                   <span className="text-xl">{isBiz ? <Building2 size={20} strokeWidth={1.5} /> : <User size={20} strokeWidth={1.5} />}</span>
                   <span className={`text-xs font-semibold ${active ? 'text-[var(--color-gold-text)]' : 'text-[var(--color-text-secondary)]'}`}>{isBiz ? t('company') : t('individual')}</span>
-                  <span className="text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
+                  <span className="lx-typesub text-[9px] text-[var(--color-text-secondary)]">{isBiz ? 'Business' : 'Individual'}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="lx-form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label htmlFor="client-settings-company-name" className="text-xs text-[var(--color-text-secondary)]">{t('company_name')}</label>
             <input id="client-settings-company-name" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
@@ -217,7 +218,7 @@ export default function ClientSettingsPage() {
                 className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
               <button type="button"
                 onClick={() => { const q = form.address.trim() || form.maps_url.trim(); if (q) window.open(q.startsWith('http') ? q : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition-colors whitespace-nowrap">
+                className="lx-form-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--color-card-border)] text-xs text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)] transition-colors whitespace-nowrap">
                 <MapPin size={13} strokeWidth={1.5} /> {t('open_on_maps')}
               </button>
             </div>
@@ -225,12 +226,12 @@ export default function ClientSettingsPage() {
           </div>
         </div>
 
-        <div className="border-t border-[var(--color-card-border)] pt-4">
+        <div className="lx-form-sep border-t border-[var(--color-card-border)] pt-4">
           <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} label={t('change_password')} placeholder={t('password_leave_empty')} opt />
         </div>
 
         <button onClick={save} disabled={saving}
-          className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">
+          className="lx-form-save bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50 w-full">
           {saving ? '...' : t('save_changes')}
         </button>
       </div>

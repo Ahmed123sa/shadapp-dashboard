@@ -99,20 +99,29 @@ export default function PasswordField({
           <p className={`text-[length:var(--fs-1)] ${strengthColor}`}>{strengthLabel}</p>
         </div>
       )}
-      <div className="space-y-0.5">
-        <Req label={t('pw_req_min_chars')} met={hasMinChars} />
-        <Req label={t('pw_req_letter')} met={hasLetter} />
-        <Req label={t('pw_req_number')} met={hasDigit} />
-      </div>
+      {/* The checklist used to show (in red) even on an empty optional
+          field such as "Change password - leave empty to keep it", which
+          read as an error before anything was typed. showRequirements was
+          also accepted but never honoured. Now: hidden when turned off or
+          when an optional field is still empty; neutral grey until the
+          user starts typing, then green/red per rule. */}
+      {showRequirements && !(opt && value.length === 0) && (
+        <div className="space-y-0.5">
+          <Req label={t('pw_req_min_chars')} met={hasMinChars} typed={value.length > 0} />
+          <Req label={t('pw_req_letter')} met={hasLetter} typed={value.length > 0} />
+          <Req label={t('pw_req_number')} met={hasDigit} typed={value.length > 0} />
+        </div>
+      )}
     </div>
   );
 }
 
-function Req({ label, met }: { label: string; met: boolean }) {
+function Req({ label, met, typed }: { label: string; met: boolean; typed: boolean }) {
+  const tone = met ? 'text-green-600' : typed ? 'text-red-500' : 'text-[var(--color-text-secondary)]';
   return (
     <div className="flex items-center gap-1.5 text-[length:var(--fs-1)]">
-      <span className={met ? 'text-green-600' : 'text-red-400'}>{met ? '✓' : '○'}</span>
-      <span className={met ? 'text-green-600' : 'text-red-500'}>{label}</span>
+      <span className={tone}>{met ? '✓' : '○'}</span>
+      <span className={tone}>{label}</span>
     </div>
   );
 }

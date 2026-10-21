@@ -87,7 +87,9 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const handleContextMenu = useCallback((e: React.MouseEvent, message: ChatMessage) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, message });
-  }, []);
+    // setContextMenu is a stable state setter; listing it satisfies the
+    // React Compiler (react-hooks/preserve-manual-memoization).
+  }, [setContextMenu]);
 
   const send = async () => {
     if (!text.trim() && !uploadFile) return;

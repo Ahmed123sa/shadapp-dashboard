@@ -1749,3 +1749,61 @@ html[data-ui="luxe"] .lx-drawer input[role="switch"]:checked { background: #9414
 html[data-ui="luxe"] .lx-drawer input[role="switch"]:checked::after { inset-inline-start: 15px; background: #fff; }
 html[data-ui="luxe"] .lx-drawer input[role="switch"]:disabled { cursor: not-allowed; }
 html[data-ui="luxe"] .lx-drawer input[role="switch"]:focus-visible { outline: 2px solid #D24A4A; outline-offset: 3px; }
+
+
+/* ======================================================================
+ * Luxe forms (dashboard-mockup.html `.form` / `.fsec` / `.f .in`).
+ * Opt-in with `.lx-form` on a form page; the classic look is untouched.
+ * Inputs become underline fields, the client-type picker uses the crimson
+ * chip, buttons are pills, Save is a crimson pill on the end side.
+ * ==================================================================== */
+html[data-ui="luxe"] .lx-form { max-width: 760px; }
+html[data-ui="luxe"] .lx-form-head { gap: 14px; flex-wrap: wrap; }
+html[data-ui="luxe"] .lx-form-head > button { font-size: 13px; color: var(--color-text-secondary); }
+html[data-ui="luxe"] .lx-form-head h1 {
+  font-family: var(--font-display), serif; font-weight: 400; font-size: 26px; letter-spacing: 0;
+}
+html[lang="ar"][data-ui="luxe"] .lx-form-head h1 { font-family: var(--font-tajawal), sans-serif; font-size: 22px; font-weight: 500; }
+html[data-ui="luxe"] .lx-form-card { padding: 30px 32px; }
+/* avatar: 76px circle + small pill button beside it (mockup `.avbig`) */
+html[data-ui="luxe"] .lx-form-av { flex-direction: row; justify-content: flex-start; gap: 18px; }
+html[data-ui="luxe"] .lx-form-av > div:first-child {
+  width: 76px; height: 76px; border: 1px solid var(--lx-line-2); background: #232323;
+}
+html[data-ui="luxe"] .lx-form-av > div:first-child > div {
+  font-family: var(--font-display), serif; font-style: italic; font-size: 30px; color: var(--color-foreground);
+}
+html[data-ui="luxe"] .lx-form-pill {
+  border: 1px solid var(--lx-line-2) !important; border-radius: 999px !important;
+  background: transparent !important; padding: 7px 16px !important; font-size: 12.5px !important;
+  color: var(--lx-ink-2) !important;
+}
+html[data-ui="luxe"] .lx-form-pill:hover { color: var(--color-foreground) !important; border-color: rgba(240,240,240,.3) !important; }
+/* client type: crimson chip instead of the gold card */
+html[data-ui="luxe"] .lx-typepick > p { letter-spacing: .2em; font-size: 10.5px; color: var(--color-text-disabled); margin-bottom: 10px; }
+html[data-ui="luxe"] .lx-typepick > div { display: flex; gap: 8px; }
+html[data-ui="luxe"] .lx-typeopt {
+  flex-direction: row; gap: 8px; padding: 7px 16px; border-radius: 999px;
+  border-color: var(--lx-line-2); background: transparent;
+}
+html[data-ui="luxe"] .lx-typeopt span { color: var(--lx-ink-2) !important; font-size: 12.5px; font-weight: 400; }
+html[data-ui="luxe"] .lx-typeopt svg { width: 15px; height: 15px; }
+html[data-ui="luxe"] .lx-typeopt[data-on] { background: rgba(148,20,20,.2); border-color: rgba(148,20,20,.5); }
+html[data-ui="luxe"] .lx-typeopt[data-on] span { color: var(--color-foreground) !important; }
+html[data-ui="luxe"] .lx-typesub { display: none; }
+/* fields: label 12px muted, underline input (mockup `.f .in`) */
+html[data-ui="luxe"] .lx-form-grid { gap: 22px 28px; }
+html[data-ui="luxe"] .lx-form label { font-size: 12px; color: var(--color-text-secondary); }
+html[data-ui="luxe"] .lx-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]) {
+  border: 0; border-bottom: 1px solid var(--lx-line-2); border-radius: 0;
+  background: transparent; padding: 8px 0 10px; font-size: 15px; box-shadow: none;
+}
+html[data-ui="luxe"] .lx-form input:focus { border-bottom-color: #D24A4A; box-shadow: none !important; }
+html[data-ui="luxe"] .lx-form textarea { background: rgba(255,255,255,.02); border: 1px solid var(--lx-line-2); border-radius: 12px; }
+html[data-ui="luxe"] .lx-form-sep { border-color: var(--lx-line); padding-top: 22px; }
+/* Save: crimson pill on the end side (mockup "Save changes") */
+html[data-ui="luxe"] .lx-form-save {
+  display: block; width: auto; margin-inline-start: auto; border-radius: 999px;
+  padding: 0 24px; height: 42px; font-weight: 400;
+}
+
