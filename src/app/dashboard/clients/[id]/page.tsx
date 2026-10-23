@@ -65,7 +65,9 @@ export default function ClientWorkspace() {
   const client = clientQuery.data ?? null;
   // Company staff only see the tabs they may view on THIS client.
   const staffPerms = useStaffPermissions(client?.workspace?.id);
-  const visibleTabs = TABS.filter((k) => {
+  // The accountant's first tab is payments (their main job), then contracts.
+  const orderedTabs: readonly Tab[] = isAccountant(me) ? ['payments', 'contracts'] : TABS;
+  const visibleTabs = orderedTabs.filter((k) => {
     if (isStaffMember(me)) {
       return STAFF_TABS.includes(k) && (k === 'chat' ? staffPerms.can_view_chat : k === 'approvals' ? staffPerms.can_view_approvals : staffPerms.can_view_meetings);
     }

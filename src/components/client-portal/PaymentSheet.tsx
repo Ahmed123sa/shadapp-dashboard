@@ -42,6 +42,10 @@ export default function PaymentSheet({ wsId, methods, currencies, defaultAmount,
   const [proofs, setProofs] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // A receipt is required to send a payment. The one exception is editing a
+  // payment that is already waiting for review (it keeps the proof it has).
+  const needsProof = !editing || editing.status !== 'pending';
+  const missingProof = needsProof && proofs.length === 0;
 
   // New payment: follow the suggested amount/currency. Editing: load the payment.
   useEffect(() => {
@@ -65,7 +69,7 @@ export default function PaymentSheet({ wsId, methods, currencies, defaultAmount,
   };
 
   const send = async () => {
-    if (!amount || !methodType || saving) return;
+    if (!amount || !methodType || saving || missingProof) return;
     setSaving(true);
     const form = new FormData();
     form.append('amount', amount);
@@ -146,11 +150,12 @@ export default function PaymentSheet({ wsId, methods, currencies, defaultAmount,
         </div>
       </div>
       <div className="acts2">
-        <Btn variant="primary" size="lg" disabled={saving || !amount || !methodType} onClick={send}>
+        <Btn variant="primary" size="lg" disabled={saving || !amount || !methodType || missingProof} onClick={send}>
           {saving ? t('sending') : t('send_payment')}
         </Btn>
         {editing && <Btn size="lg" onClick={onCancelEdit}>{t('cancel')}</Btn>}
       </div>
+      {missingProof && <p className="hint" role="note">{t('proof_required')}</p>}
     </div>
   );
 }

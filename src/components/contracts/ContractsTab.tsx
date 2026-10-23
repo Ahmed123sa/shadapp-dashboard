@@ -68,7 +68,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const { dialogRef: approveSigDialogRef, dialogProps: approveSigDialogProps } = useModalA11y<HTMLDivElement>(!!approveSig, closeApproveSig);
 
   const contractsQuery = useWorkspaceContracts(wsId);
-  const templatesQuery = useContractClauseTemplates();
+  const templatesQuery = useContractClauseTemplates(getUser()?.role !== 'accountant');
   const showDatesQuery = useShowContractDatesSetting();
   const createMutation = useCreateContract(wsId);
   const updateMutation = useUpdateContract(wsId);
@@ -78,7 +78,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
   const contracts = contractsQuery.data ?? [];
   const templates = templatesQuery.data ?? [];
   const showDates = showDatesQuery.data ?? true;
-  const loading = contractsQuery.isLoading || templatesQuery.isLoading || showDatesQuery.isLoading;
+  const loading = contractsQuery.isLoading || (templatesQuery.isLoading && templatesQuery.fetchStatus !== 'idle') || showDatesQuery.isLoading;
   // The settings fetch failing never surfaced as a page error in the
   // original Promise.all (it had its own inline `.catch`) — only preserved
   // here for contracts/templates, matching useShowContractDatesSetting's

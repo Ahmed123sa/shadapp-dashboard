@@ -220,7 +220,9 @@ export function useFinanceReviewPayment() {
   return useMutation({
     mutationFn: ({ pid, action, rejection_reason }: { pid: number; action: 'approved' | 'rejected'; rejection_reason?: string }) =>
       api.post(`/payments/${pid}/review`, { action, rejection_reason }).then((r) => r.data),
-    onSuccess: () => {
+    // onSettled, not onSuccess: when another reviewer got there first the
+    // server answers 409, and the list must refresh to show that outcome.
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['badge-counts'] });
     },

@@ -19,10 +19,15 @@ async function fetchContractClauseTemplates(): Promise<ContractClauseTemplate[]>
 
 // Shared (not workspace-scoped) read used by both ContractsTab and
 // ContractBuilder — same cache entry for both, matching the endpoint.
-export function useContractClauseTemplates() {
+//
+// `enabled: false` for the accountant: templates are only needed to write a
+// contract, and the backend refuses that endpoint to them (a 403 here showed
+// "Failed to load contracts" even for a client with no contracts yet).
+export function useContractClauseTemplates(enabled = true) {
   return useQuery({
     queryKey: ['contracts', 'clause-templates'],
     queryFn: fetchContractClauseTemplates,
+    enabled,
   });
 }
 

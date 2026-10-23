@@ -45,7 +45,7 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
   }, [currencyOptions]);
 
   const submit = async () => {
-    if (!amount || !methodType) return;
+    if (!amount || !methodType || proofFiles.length === 0) return;
     setSaving(true);
     const form = new FormData();
     form.append('amount', amount);
@@ -90,10 +90,11 @@ export default function UploadProofModal({ wsId, availableMethods, allowedCurren
           <span className="border border-blue-200 rounded-lg px-4 py-2">{proofFiles.length > 0 ? proofFiles.map((f) => f.name).join(', ') : t('pay_choose_proof')}</span>
         </label>
 
-        <button onClick={submit} disabled={saving || !amount || !methodType}
+        <button onClick={submit} disabled={saving || !amount || !methodType || proofFiles.length === 0}
           className="w-full bg-[var(--color-primary)] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[var(--color-primary-dark)] disabled:opacity-50">
           {saving ? t('pay_saving') : t('pay_submit_proof')}
         </button>
+        {proofFiles.length === 0 && <p className="text-xs text-[var(--color-text-secondary)] mt-2" role="note">{t('pay_proof_required')}</p>}
       </div>
     </div>
   );

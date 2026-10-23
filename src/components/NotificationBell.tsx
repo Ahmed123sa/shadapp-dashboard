@@ -34,6 +34,8 @@ export default function NotificationBell() {
     contract_edit_requested: t('tab_contracts'),
     payment_created: t('tab_payments'),
     payment_reviewed: t('tab_payments'),
+    payment_reviewed_staff: t('tab_payments'),
+    payment_overdue_staff: t('tab_payments'),
     workspace_activated: t('tab_payments'),
     payment_scheduled: t('tab_payments'),
     payment_reminder: t('tab_payments'),

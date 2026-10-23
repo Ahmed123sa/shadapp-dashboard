@@ -216,7 +216,7 @@ describe('PaymentStage', () => {
     await waitFor(() => expect(screen.getByLabelText('Amount')).toHaveValue(16530));
   });
 
-  it('keeps Send disabled until a method is chosen', async () => {
+  it('keeps Send disabled until a method is chosen AND a receipt is attached', async () => {
     load();
     const user = userEvent.setup();
     renderWithIntl(<PaymentStage wsId={9} onChanged={vi.fn()} />);
@@ -224,6 +224,9 @@ describe('PaymentStage', () => {
     const send = await screen.findByRole('button', { name: 'Send payment' });
     expect(send).toBeDisabled();
     await user.click(screen.getByRole('radio', { name: 'InstaPay' }));
+    expect(send).toBeDisabled();
+    expect(screen.getByText('Attach a receipt (image or PDF) to send the payment.')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('proof-input'), { target: { files: [new File(['1'], 'r.jpg', { type: 'image/jpeg' })] } });
     expect(send).toBeEnabled();
   });
 
@@ -266,6 +269,9 @@ describe('PaymentStage', () => {
     expect(await screen.findByText('Rejected: Blurry receipt')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Re-upload receipt' }));
     expect(screen.getByText('Re-upload your payment')).toBeInTheDocument();
+    // A rejected payment needs a NEW receipt before it can go back for review.
+    expect(screen.getByRole('button', { name: 'Send payment' })).toBeDisabled();
+    fireEvent.change(screen.getByTestId('proof-input'), { target: { files: [new File(['n'], 'new.jpg', { type: 'image/jpeg' })] } });
     await user.click(screen.getByRole('button', { name: 'Send payment' }));
 
     await waitFor(() => expect(mock.history.post.length).toBe(1));
