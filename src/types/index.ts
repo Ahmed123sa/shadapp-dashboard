@@ -273,7 +273,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member' | 'accountant';
   // Only for assistants (see lib/permissions.ts).
   assistant_permissions?: Record<string, boolean> | null;
   can_approve_contracts?: boolean;

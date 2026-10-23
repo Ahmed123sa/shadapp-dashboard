@@ -5,18 +5,20 @@ import { useTranslations, useLocale } from 'next-intl';
 import { getUser } from '@/lib/auth';
 import {
   CreditCard, Search, Download, RefreshCw, CheckCircle2,
-  Clock, AlertCircle, DollarSign, ChevronLeft, ChevronRight, ExternalLink
+  Clock, AlertCircle, XCircle, DollarSign, ChevronLeft, ChevronRight, ExternalLink
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import Link from 'next/link';
 import { resolveFileUrl } from '@/lib/utils';
-import { useAllPayments, useFinanceFilterOptions, type FinanceFilters } from '@/hooks/queries/usePayments';
+import { useAllPayments, useFinanceFilterOptions, useFinanceReviewPayment, downloadFinanceCsv, type FinanceFilters } from '@/hooks/queries/usePayments';
+import { canReviewPayments } from '@/lib/permissions';
 
 export default function FinancePage() {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const user = getUser();
-  const isSA = user?.role === 'super_admin';
+  // The manager filter shows for everyone who sees company-wide finance.
+  const isSA = user?.role === 'super_admin' || user?.role === 'accountant';
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -63,29 +65,46 @@ export default function FinancePage() {
     setPage(1);
   };
 
-  const exportCSV = () => {
-    if (payments.length === 0) return;
-    const headers = ['ID', 'Client', 'Manager', 'Contract', 'Amount', 'Currency', 'Method', 'Status', 'Date'];
-    const rows = payments.map((p) => [
-      p.id,
-      p.workspace?.client?.company_name || p.workspace?.client?.contact_person || '—',
-      p.workspace?.manager?.name || '—',
-      p.contract?.title || '—',
-      p.amount,
-      p.currency || 'SAR',
-      p.method_type || '—',
-      p.status,
-      new Date(p.created_at).toLocaleDateString(),
-    ]);
+  const [exporting, setExporting] = useState(false);
+  const [actionError, setActionError] = useState('');
+  // Payment awaiting a rejection reason (mandatory, 5+ chars).
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const reviewMutation = useFinanceReviewPayment();
+  const canReview = canReviewPayments(user);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `finance-payments-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const errorText = (err: unknown, fallback: string) => {
+    const e = err as { response?: { data?: { message?: string } } };
+    return e?.response?.data?.message || fallback;
+  };
+
+  // Exports every row matching the filters, from the backend (not just this page).
+  const exportCSV = async () => {
+    setExporting(true);
+    setActionError('');
+    try {
+      await downloadFinanceCsv(filters);
+    } catch (err) {
+      setActionError(errorText(err, locale === 'ar' ? 'تعذر التصدير.' : 'Export failed.'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const approve = (pid: number) => {
+    setActionError('');
+    reviewMutation.mutate({ pid, action: 'approved' }, {
+      onError: (err) => setActionError(errorText(err, locale === 'ar' ? 'تعذر اعتماد الدفعة.' : 'Could not approve.')),
+    });
+  };
+
+  const confirmReject = () => {
+    if (rejectingId === null || rejectReason.trim().length < 5) return;
+    setActionError('');
+    reviewMutation.mutate({ pid: rejectingId, action: 'rejected', rejection_reason: rejectReason.trim() }, {
+      onSuccess: () => { setRejectingId(null); setRejectReason(''); },
+      onError: (err) => setActionError(errorText(err, locale === 'ar' ? 'تعذر رفض الدفعة.' : 'Could not reject.')),
+    });
   };
 
   const getStatusBadge = (st: string) => {
@@ -140,7 +159,8 @@ export default function FinancePage() {
           </button>
           <button
             onClick={exportCSV}
-            disabled={payments.length === 0}
+            disabled={payments.length === 0 || exporting}
+            aria-busy={exporting}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--color-card)] border border-[var(--color-card-border)] hover:border-[var(--color-gold)] text-[var(--color-foreground)] transition disabled:opacity-50 cursor-pointer"
           >
             <Download size={14} className="text-[var(--color-gold-text)]" />
@@ -148,6 +168,12 @@ export default function FinancePage() {
           </button>
         </div>
       </div>
+
+      {actionError && (
+        <div role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-400">
+          {actionError}
+        </div>
+      )}
 
       {/* Stats Cards */}
       {stats && (
@@ -335,6 +361,7 @@ export default function FinancePage() {
                   <th className="py-3 px-4 text-start font-medium">{locale === 'ar' ? 'الحالة' : 'Status'}</th>
                   <th className="py-3 px-4 text-start font-medium">{locale === 'ar' ? 'التاريخ' : 'Date'}</th>
                   <th className="py-3 px-4 text-start font-medium">{locale === 'ar' ? 'الإشعار / المرفق' : 'Proof'}</th>
+                  {canReview && <th className="py-3 px-4 text-start font-medium">{locale === 'ar' ? 'المراجعة' : 'Review'}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-card-border)]">
@@ -388,6 +415,34 @@ export default function FinancePage() {
                           <span className="text-[var(--color-text-disabled)]">—</span>
                         )}
                       </td>
+                      {canReview && (
+                        <td className="py-3 px-4">
+                          {p.status === 'pending' ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => approve(p.id)}
+                                disabled={reviewMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[length:var(--fs-1)] font-semibold bg-[var(--color-primary)] text-white hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+                              >
+                                <CheckCircle2 size={12} />
+                                {locale === 'ar' ? 'اعتماد' : 'Approve'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setRejectingId(p.id); setRejectReason(''); setActionError(''); }}
+                                disabled={reviewMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[length:var(--fs-1)] font-semibold border border-red-500/50 text-red-400 hover:bg-red-500/10 transition disabled:opacity-50 cursor-pointer"
+                              >
+                                <XCircle size={12} />
+                                {locale === 'ar' ? 'رفض' : 'Reject'}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[var(--color-text-disabled)]">—</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -425,6 +480,46 @@ export default function FinancePage() {
           </div>
         )}
       </div>
+
+      {/* Rejection reason dialog: the reason is mandatory (5+ chars). */}
+      {rejectingId !== null && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+          <div className="w-full max-w-md rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card)] p-5 space-y-3">
+            <h2 id="reject-title" className="text-base font-bold text-[var(--color-foreground)]">
+              {locale === 'ar' ? `رفض الدفعة #${rejectingId}` : `Reject payment #${rejectingId}`}
+            </h2>
+            <label htmlFor="reject-reason" className="block text-xs text-[var(--color-text-secondary)]">
+              {locale === 'ar' ? 'سبب الرفض (إجباري، 5 حروف على الأقل)' : 'Rejection reason (required, at least 5 characters)'}
+            </label>
+            <textarea
+              id="reject-reason"
+              autoFocus
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full bg-[var(--color-input-fill)] border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-foreground)] outline-none focus:border-[var(--color-gold)]"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setRejectingId(null); setRejectReason(''); }}
+                className="px-3 py-2 rounded-lg text-xs border border-[var(--color-card-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] cursor-pointer"
+              >
+                {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={confirmReject}
+                disabled={rejectReason.trim().length < 5 || reviewMutation.isPending}
+                aria-busy={reviewMutation.isPending}
+                className="px-3 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50 cursor-pointer"
+              >
+                {locale === 'ar' ? 'تأكيد الرفض' : 'Confirm rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

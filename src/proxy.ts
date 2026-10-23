@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE } from '@/lib/session';
 import { assertProductionEnv } from '@/lib/env-guard';
 import { staffMayOpen } from '@/lib/staff-paths';
+import { accountantMayOpen } from '@/lib/accountant-paths';
 
 // Runs once, when this module is first loaded — which Next.js does before
 // serving any request. Throwing here means a misconfigured production
@@ -119,6 +120,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
+    // Accountant management: super admin only.
+    if (pathname.startsWith('/dashboard/accountants') && role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     // The super admin's "Teams" page (company staff members).
     if (pathname.startsWith('/dashboard/staff') && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -129,6 +135,11 @@ export async function proxy(request: NextRequest) {
     // route by default; this just keeps those pages from being served.
     if (role === 'staff_member' && !staffMayOpen(pathname)) {
       return NextResponse.redirect(new URL('/dashboard/clients', request.url));
+    }
+
+    // Accountant: finance-only pages. Backend denies the rest by default.
+    if (role === 'accountant' && !accountantMayOpen(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard/finance', request.url));
     }
   }
 

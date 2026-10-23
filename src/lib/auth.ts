@@ -4,7 +4,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member';
+  role: 'super_admin' | 'account_manager' | 'manager_assistant' | 'staff_member' | 'accountant';
   // Managers only: whether the old "My Team" (assistants) feature is on.
   team_assistants_enabled?: boolean;
   // Managers only: the super admin let them company-approve contracts.

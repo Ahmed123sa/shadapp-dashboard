@@ -1,5 +1,7 @@
 'use client';
 
+import { canReviewPayments } from '@/lib/permissions';
+
 import { useTranslations } from 'next-intl';
 import { CreditCard, FileText, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
@@ -48,7 +50,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   const { dialogRef: requestDialogRef, dialogProps: requestDialogProps } = useModalA11y<HTMLDivElement>(showRequest, () => setShowRequest(false));
   const { dialogRef: rejectDialogRef, dialogProps: rejectDialogProps } = useModalA11y<HTMLDivElement>(rejectingPaymentId !== null, () => setRejectingPaymentId(null));
   const user = getUser();
-  const canReview = user?.role === 'super_admin';
+  const canReview = canReviewPayments(user);
   const isSA = user?.role === 'super_admin';
 
   const paymentsQuery = useWorkspacePayments(wsId);
@@ -109,11 +111,11 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   };
 
   const confirmRejectPayment = () => {
-    if (!rejectingPaymentId) return;
+    if (!rejectingPaymentId || rejectionReason.trim().length < 5) return;
     reviewMutation.mutate({
       pid: rejectingPaymentId,
       action: 'rejected',
-      rejection_reason: rejectionReason || undefined,
+      rejection_reason: rejectionReason.trim(),
     }, {
       onError: (err) => notifyWriteError(tc, 'PaymentsTab.reviewPayment', err),
       onSuccess: (data) => {
@@ -230,7 +232,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
       </div>
 
       <p className="text-xs text-[var(--color-text-disabled)]">{t('client_type_prefix')}{client?.client_type === 'individual' ? t('individual_type') : t('company_type')}</p>
-      {!isSA && (
+      {!isSA && user?.role !== 'accountant' && (
         <div className="flex gap-2">
           <button onClick={() => setShowRequest(true)} className="px-4 py-2 bg-[var(--color-gold)] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             {t('request_payment')}
@@ -454,7 +456,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('reject_payment_desc')}</p>
             <div className="space-y-3">
               <div>
-                <label htmlFor="pay-reject-reason" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('rejection_reason_label')}</label>
+                <label htmlFor="pay-reject-reason" className="text-xs text-[var(--color-text-secondary)] mb-1 block">{t('rejection_reason_required_label')}</label>
                 <textarea
                   id="pay-reject-reason"
                   rows={3}
@@ -467,7 +469,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
               <div className="flex gap-2">
                 <button
                   onClick={confirmRejectPayment}
-                  disabled={reviewMutation.isPending}
+                  disabled={reviewMutation.isPending || rejectionReason.trim().length < 5}
                   className="flex-1 bg-red-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
                 >
                   {reviewMutation.isPending ? t('saving') : t('confirm_reject')}

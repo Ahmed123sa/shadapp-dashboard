@@ -14,7 +14,7 @@ import {
   Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
-import { canDo, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
+import { canDo, isAccountant, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
 import { applyUiStyle, getStoredUiStyle, storeUiStyle, useUiStyle, type UiStyle } from '@/lib/ui-style';
 
 interface NavItem {
@@ -51,6 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSA = user?.role === 'super_admin';
   const isAsst = isAssistant(user);
   const isStaff = isStaffMember(user);
+  const isAcct = isAccountant(user);
 
   const currentView = searchParams.get('view') || '';
 
@@ -138,6 +139,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
+  // An accountant: company-wide finance (payments review), read-only clients
+  // (their payments and contract PDFs) and their own settings.
+  const accountantNavGroups: NavGroup[] = [
+    {
+      label: t('nav_group_finance'),
+      items: [
+        { href: '/dashboard/finance', label: locale === 'ar' ? 'المالية' : 'Finance', icon: CreditCard, badge: badgeCounts?.payments, badgeColor: 'gold' },
+        { href: '/dashboard/clients', label: t('all_clients'), icon: Users },
+      ],
+    },
+    {
+      label: t('nav_group_system'),
+      items: [
+        { href: '/dashboard/settings', label: t('settings'), icon: Settings },
+      ],
+    },
+  ];
+
   const saNavGroups: NavGroup[] = [
     {
       label: t('nav_group_admin'),
@@ -155,6 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       items: [
         { href: '/dashboard/account-managers', label: t('account_managers'), icon: UserCog },
         { href: '/dashboard/staff', label: t('staff_nav'), icon: UsersRound },
+        { href: '/dashboard/accountants', label: locale === 'ar' ? 'المحاسبون' : 'Accountants', icon: CreditCard },
       ],
     },
     {
@@ -165,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
-  const navGroups = isSA ? saNavGroups : isStaff ? staffNavGroups : isAsst ? assistantNavGroups : amNavGroups;
+  const navGroups = isSA ? saNavGroups : isAcct ? accountantNavGroups : isStaff ? staffNavGroups : isAsst ? assistantNavGroups : amNavGroups;
 
   useEffect(() => {
     setMounted(true);
@@ -236,6 +256,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/settings')) return t('settings');
     if (pathname.startsWith('/dashboard/team')) return t('team_nav');
     if (pathname.startsWith('/dashboard/staff')) return t('staff_nav');
+    if (pathname.startsWith('/dashboard/accountants')) return locale === 'ar' ? 'المحاسبون' : 'Accountants';
     return t('title');
   };
 
@@ -294,7 +315,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div>
             <div className="lx-name text-xs font-bold">{user?.name}</div>
             <span className="lx-role inline-block mt-0.5 px-1.5 py-px text-[length:var(--fs-1)] uppercase whitespace-nowrap rounded-[10px] bg-[var(--color-crimson-soft)] text-[var(--color-primary-light)] border border-[var(--color-crimson-border)]">
-              {isSA ? t('role_admin') : isStaff ? t('role_staff') : isAsst ? t('role_assistant') : t('role_am')}
+              {isSA ? t('role_admin') : isAcct ? t('role_accountant') : isStaff ? t('role_staff') : isAsst ? t('role_assistant') : t('role_am')}
             </span>
           </div>
         </div>

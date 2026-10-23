@@ -41,6 +41,12 @@ const ACTION_LABELS_FN = (t: (key: string) => string): Record<string, string> =>
   'meeting.deleted': t('audit_meeting_deleted'),
   'client.created': t('audit_client_created'),
   'client.deleted': t('audit_client_deleted'),
+  'payments.exported': t('audit_payments_exported'),
+  'accountant.created': t('audit_accountant_created'),
+  'accountant.updated': t('audit_accountant_updated'),
+  'accountant.password_changed': t('audit_accountant_password_changed'),
+  'accountant.deactivated': t('audit_accountant_deactivated'),
+  'accountant.activated': t('audit_accountant_activated'),
   'staff.created': t('audit_staff_created'),
   'staff.updated': t('audit_staff_updated'),
   'staff.password_changed': t('audit_staff_password_changed'),
@@ -347,6 +353,7 @@ export default function AuditLogPage() {
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{actor.name}</span>
                               {log.user?.assistant_of && (<span className="text-[10px] text-[var(--color-text-secondary)]">({t('audit_assistant_of', { name: log.user.assistant_of })})</span>)}
+                              {log.user?.role === 'accountant' && (<span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">{t('role_accountant')}</span>)}
                               {log.user?.role === 'staff_member' && (<span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400 font-medium">{t('audit_staff_badge')}</span>)}
                               {actor.isClient && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">

@@ -46,6 +46,19 @@ export function isStaffMember(user?: { role?: string } | null): boolean {
   return user?.role === STAFF_ROLE;
 }
 
+// Accountant (ACCOUNTANT_ROLE_PLAN.md): company-wide finance, read-only except
+// approving/rejecting payments. The backend (restrict.roles) is the real gate.
+export const ACCOUNTANT_ROLE = 'accountant';
+
+export function isAccountant(user?: { role?: string } | null): boolean {
+  return user?.role === ACCOUNTANT_ROLE;
+}
+
+/** Super admin and accountant may approve/reject payments (managers never). */
+export function canReviewPayments(user?: { role?: string } | null): boolean {
+  return user?.role === 'super_admin' || user?.role === ACCOUNTANT_ROLE;
+}
+
 /**
  * The old "My Team" (assistants) page is hidden while the feature is switched
  * off (config team.assistants_enabled, sent to managers at login / on /auth/me).
@@ -65,6 +78,8 @@ export function canDo(user: MaybeAssistant | null | undefined, key: AssistantPer
   // contracts, meetings, files or approvals on the manager's side. (Sending an
   // approval *request* is allowed for them — ApprovalsTab checks isStaffMember.)
   if (isStaffMember(user)) return key === 'can_view_clients' || key === 'can_chat';
+  // Accountant: read-only finance; never manages chat/contracts/meetings/files.
+  if (isAccountant(user)) return key === 'can_view_clients';
   if (!isAssistant(user)) return true;
   if (key === 'can_view_clients') return true;
   return !!user?.assistant_permissions?.[key];

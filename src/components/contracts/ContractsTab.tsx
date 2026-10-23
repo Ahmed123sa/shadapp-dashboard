@@ -200,7 +200,7 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
 
   if (loading) return <TableSkeleton />;
   if (error) return <p className="text-sm text-red-400 text-center py-8">{error}</p>;
-  if (isSA && contracts.length === 0) return <EmptyState message={t('no_contracts')} />;
+  if ((isSA || user?.role === 'accountant') && contracts.length === 0) return <EmptyState message={t('no_contracts')} />;
 
   return (
     <div className="space-y-3">

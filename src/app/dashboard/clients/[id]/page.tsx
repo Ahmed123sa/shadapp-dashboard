@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
-import { canDo, isAssistant, isStaffMember } from '@/lib/permissions';
+import { canDo, isAccountant, isAssistant, isStaffMember } from '@/lib/permissions';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -46,6 +46,8 @@ const TAB_LABELS: Record<Tab, string> = {
 
 // Company staff work on a client through chat, approval requests and meetings only.
 const STAFF_TABS: Tab[] = ['chat', 'approvals', 'meetings'];
+// The accountant sees only the money side of a client: contracts (PDF) and payments.
+const ACCOUNTANT_TABS: Tab[] = ['payments', 'contracts'];
 
 export default function ClientWorkspace() {
   const t = useTranslations('dashboard');
@@ -67,6 +69,7 @@ export default function ClientWorkspace() {
     if (isStaffMember(me)) {
       return STAFF_TABS.includes(k) && (k === 'chat' ? staffPerms.can_view_chat : k === 'approvals' ? staffPerms.can_view_approvals : staffPerms.can_view_meetings);
     }
+    if (isAccountant(me)) return ACCOUNTANT_TABS.includes(k);
     if (k === 'team') return canManageTeam;
     return !(isAssistant(me) && (k === 'payments' || (k === 'files' && !canDo(me, 'can_view_files'))));
   });
@@ -134,6 +137,7 @@ export default function ClientWorkspace() {
   const isSA = getUser()?.role === 'super_admin';
   const asst = isAssistant(getUser());
   const staff = isStaffMember(getUser());
+  const acct = isAccountant(getUser());
   const wsId = client.workspace?.id;
   const isArchived = client.status === 'archived';
 
@@ -182,7 +186,7 @@ export default function ClientWorkspace() {
 
   const ownerName = client.workspace?.manager?.name;
 
-  const settingsLink = (!isSA && !asst && !staff) ? (
+  const settingsLink = (!isSA && !asst && !staff && !acct) ? (
     <Link href={`/dashboard/clients/${client.uuid ?? id}/settings`} className="lx-btn inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-card-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)]" title={t('settings_title')} aria-label={t('settings_title')}><Settings size={16} strokeWidth={1.5} /><span className="lx-only">{t('settings_title')}</span></Link>
   ) : null;
 
@@ -202,7 +206,7 @@ export default function ClientWorkspace() {
 
   const actionButtons = (
     <>
-      {!asst && !staff && (isArchived ? (
+      {!asst && !staff && !acct && (isArchived ? (
         <button
           onClick={unarchiveClient}
           disabled={unarchiveMutation.isPending}

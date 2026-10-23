@@ -28,7 +28,7 @@ export default function SettingsPage() {
   // An assistant gets the same personal-profile page as a manager (avatar,
   // name, phone, birth date); the system-wide sections below are super-admin only.
   // Company staff get the same personal-profile page (name, photo, birth date).
-  const isAM = user?.role === 'account_manager' || user?.role === 'manager_assistant' || user?.role === 'staff_member';
+  const isAM = user?.role === 'account_manager' || user?.role === 'manager_assistant' || user?.role === 'staff_member' || user?.role === 'accountant';
   const [officialEmail, setOfficialEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');

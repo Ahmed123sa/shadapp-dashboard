@@ -189,10 +189,10 @@ export const allPaymentsKeys = {
   list: (filters: FinanceFilters) => ['payments', 'all-payments', filters] as const,
 };
 
-async function fetchAllPayments(filters: FinanceFilters): Promise<AllPaymentsData> {
+// The filter part of the query string, shared by the list and the CSV export
+// so the file always matches what the filters on screen select.
+export function financeFilterParams(filters: FinanceFilters): URLSearchParams {
   const params = new URLSearchParams();
-  params.set('page', String(filters.page));
-  params.set('per_page', '25');
   if (filters.search.trim()) params.set('search', filters.search.trim());
   if (filters.status) params.set('status', filters.status);
   if (filters.currency) params.set('currency', filters.currency);
@@ -200,6 +200,37 @@ async function fetchAllPayments(filters: FinanceFilters): Promise<AllPaymentsDat
   if (filters.managerId) params.set('manager_id', filters.managerId);
   if (filters.dateFrom) params.set('date_from', filters.dateFrom);
   if (filters.dateTo) params.set('date_to', filters.dateTo);
+  return params;
+}
+
+/** Downloads every row matching the filters (not just the visible page) from the backend. */
+export async function downloadFinanceCsv(filters: FinanceFilters): Promise<void> {
+  const res = await api.get(`/all-payments/export?${financeFilterParams(filters).toString()}`, { responseType: 'blob' });
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `finance-payments-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Approve/reject from the finance list (super admin and accountant only). */
+export function useFinanceReviewPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pid, action, rejection_reason }: { pid: number; action: 'approved' | 'rejected'; rejection_reason?: string }) =>
+      api.post(`/payments/${pid}/review`, { action, rejection_reason }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['badge-counts'] });
+    },
+  });
+}
+
+async function fetchAllPayments(filters: FinanceFilters): Promise<AllPaymentsData> {
+  const params = financeFilterParams(filters);
+  params.set('page', String(filters.page));
+  params.set('per_page', '25');
 
   const { data } = await api.get(`/all-payments?${params.toString()}`);
   const paginated = data.payments;
