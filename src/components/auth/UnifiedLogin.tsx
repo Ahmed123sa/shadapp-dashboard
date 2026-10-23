@@ -10,6 +10,8 @@ import { reportError } from '@/lib/error-reporting';
 import { Btn, Icon } from '@/components/client-portal/ui';
 import AuthCard, { type AuthMode } from './AuthCard';
 import AuthModeSwitch from './AuthModeSwitch';
+import ShadMark from './ShadMark';
+import ButtonLoader from './ButtonLoader';
 
 /**
  * One sign-in screen for everybody. The switch picks which door you use:
@@ -24,6 +26,7 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [errorTick, setErrorTick] = useState(0);
   const router = useRouter();
   const t = useTranslations('dashboard');
 
@@ -31,6 +34,7 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
     try {
@@ -41,10 +45,11 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
         await login(email, password);
         router.push('/dashboard');
       }
+      // Signed in: keep the loader running while the next page loads (no success screen).
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.response?.data?.errors?.email?.[0] || t('login_error_invalid_credentials');
       setError(msg);
-    } finally {
+      setErrorTick((n) => n + 1);
       setLoading(false);
     }
   };
@@ -69,7 +74,7 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
   }
 
   return (
-    <AuthCard>
+    <AuthCard brand={<ShadMark errorTick={errorTick} />}>
       <h1 style={mode === 'client' ? { marginBottom: 28 } : undefined}>Shad<i>.</i></h1>
       {mode === 'staff' && <p className="lg-sub">Shorter Road.</p>}
 
@@ -89,7 +94,8 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
           </button>
         </div>
 
-        <Btn type="submit" variant="primary" size="lg" className="lg-btn" disabled={loading}>
+        <Btn type="submit" variant="primary" size="lg" className="lg-btn" aria-busy={loading}>
+          {loading && <ButtonLoader />}
           {loading ? t('login_loading') : t('login_submit')}
         </Btn>
       </form>
