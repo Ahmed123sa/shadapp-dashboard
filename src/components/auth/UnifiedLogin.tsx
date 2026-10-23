@@ -75,8 +75,7 @@ export default function UnifiedLogin({ initialMode }: { initialMode: AuthMode })
 
   return (
     <AuthCard brand={<ShadMark errorTick={errorTick} />}>
-      <h1 style={mode === 'client' ? { marginBottom: 28 } : undefined}>Shad<i>.</i></h1>
-      {mode === 'staff' && <p className="lg-sub">Shorter Road.</p>}
+      <h1 style={{ marginBottom: 28 }}>Shad<i>.</i></h1>
 
       <form onSubmit={handleSubmit}>
         {error && <div className="lg-err" role="alert">{error}</div>}
