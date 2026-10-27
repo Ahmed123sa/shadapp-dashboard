@@ -76,8 +76,11 @@ export default function DashboardHome() {
         setAllContracts(contractsRes.data.contracts?.data || contractsRes.data.contracts || []);
         setAllPayments(paymentsRes.data.payments?.data || paymentsRes.data.payments || []);
         setAllMeetings(meetingsRes.data.meetings?.data || meetingsRes.data.meetings || []);
-        setUnreadCount(notifRes.data.unread_count || 0);
-        setUnreadClientsCount(notifRes.data.unread_clients_count || 0);
+        // The "unread messages" card counts chat only (the bell keeps counting
+        // everything). The ?? fallback keeps the old number if the web is
+        // deployed before the backend that sends unread_chat_count.
+        setUnreadCount(notifRes.data.unread_chat_count ?? notifRes.data.unread_count ?? 0);
+        setUnreadClientsCount(notifRes.data.unread_chat_clients_count ?? notifRes.data.unread_clients_count ?? 0);
       }).finally(() => setLoading(false));
     }
   }, [isSA, asst, view]);
