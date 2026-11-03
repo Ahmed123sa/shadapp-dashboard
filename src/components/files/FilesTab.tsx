@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { getUser } from '@/lib/auth';
 import { canDo } from '@/lib/permissions';
@@ -12,6 +12,7 @@ import { useWorkspaceFiles, useUploadFile, useAddDocumentDefinition, useReviewFi
 
 export default function FilesTab({ wsId }: { wsId: number }) {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const tc = useTranslations('common');
   const user = getUser();
   const isSA = user?.role === 'super_admin';
@@ -101,7 +102,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
               <div className="flex items-center gap-2">
                 <p className="font-medium">{f.name}</p>
                 {f.tag && (
-                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[length:var(--fs-1)] font-bold">{f.tag}</span>
+                  <span className="px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-[length:var(--fs-1)] font-bold">{locale === 'en' && f.tag_en ? f.tag_en : f.tag}</span>
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-disabled)]">
@@ -137,7 +138,7 @@ export default function FilesTab({ wsId }: { wsId: number }) {
               <div key={pf.id} className="border border-[var(--color-card-border)] rounded-lg p-3 text-sm flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{pf.name}</p>
+                    <p className="font-medium">{locale === 'en' && pf.name_en ? pf.name_en : pf.name}</p>
                     <span className="px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-[length:var(--fs-1)] font-bold">{t('payment_proof_tag')}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-disabled)]">{pf.amount} {pf.currency}</p>

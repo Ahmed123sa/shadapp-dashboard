@@ -91,7 +91,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
                       <div>
                         <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{f.name}</div>
                         <div className="e">
-                          {f.tag && <span className="tagr" style={{ marginInlineEnd: 8 }}>{f.tag}</span>}
+                          {f.tag && <span className="tagr" style={{ marginInlineEnd: 8 }}>{locale === 'en' && f.tag_en ? f.tag_en : f.tag}</span>}
                           {f.document_definition?.name ? `${f.document_definition.name} · ` : ''}
                           <StatusDot tone={TONE[f.status] ?? 'faint'}>{statusLabel(f.status)}</StatusDot>
                         </div>
@@ -130,7 +130,7 @@ export default function ClientFiles({ wsId }: { wsId: number }) {
                       <div className="who2">
                         <div className="fileic">{extOf(pf.name)}</div>
                         <div>
-                          <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{pf.name}</div>
+                          <div className="n" style={{ fontFamily: 'var(--sans)', fontSize: 14 }}>{locale === 'en' && pf.name_en ? pf.name_en : pf.name}</div>
                           <div className="e">
                             <span style={{ marginInlineEnd: 8 }}>{t('file_payment_proof_badge')}</span>
                             <StatusDot tone={TONE[pf.status] ?? 'faint'}>{statusLabel(pf.status)}</StatusDot>

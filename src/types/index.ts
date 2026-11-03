@@ -219,6 +219,8 @@ export interface FileEntry {
   // Computed server-side (FileController::computeTag) from the linked
   // document definition or contract required-document name — not a stored column.
   tag?: string;
+  // English version of `tag` (fixed words translated, typed names untouched).
+  tag_en?: string;
   rejection_reason?: string;
   reviewed_by?: number;
   reviewed_at?: string;
@@ -237,7 +239,9 @@ export interface PaymentProofFile {
   id: string;
   payment_id: number;
   name: string;
+  name_en?: string;
   tag?: string;
+  tag_en?: string;
   file_url?: string | null;
   file_urls?: string[];
   amount: string | number;
