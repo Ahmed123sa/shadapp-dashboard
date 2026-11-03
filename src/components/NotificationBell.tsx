@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
@@ -12,6 +12,11 @@ import type { AppNotification } from '@/types';
 
 export default function NotificationBell() {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
+  // English text sent next to the Arabic; older rows have none and stay Arabic.
+  const pickTitle = (n: AppNotification) => (locale === 'en' && n.data?.title_en) || n.data?.title || '';
+  const pickMessage = (n: AppNotification) =>
+    (locale === 'en' && (n.data?.message_en || n.data?.body_en)) || n.data?.message || n.data?.body || '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -91,10 +96,10 @@ export default function NotificationBell() {
           const href = getHref(newest);
           showToast({
             id: newest.id,
-            title: newest.data?.title || '',
+            title: pickTitle(newest),
             // ن4 — several backend notification types still only send
             // 'body', not 'message'; older stored rows never got backfilled.
-            message: newest.data?.message || newest.data?.body || '',
+            message: pickMessage(newest),
             href,
           });
         });
@@ -154,8 +159,8 @@ export default function NotificationBell() {
             notifications.map((n) => (
               <a key={n.id} href={getHref(n)} onClick={(e) => { if (!n.read_at) markRead(n.id); const href = getHref(n); if (href !== '#') { e.preventDefault(); router.push(href); } }}
                 className={`block p-3 border-b border-[var(--color-card-border)] last:border-0 hover:bg-[var(--color-card-border)] transition ${n.read_at ? '' : 'bg-[var(--color-primary)]/10'}`}>
-                <p className="text-xs font-medium">{n.data?.title || ''}</p>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{n.data?.message || n.data?.body || ''}</p>
+                <p className="text-xs font-medium">{pickTitle(n)}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{pickMessage(n)}</p>
                 <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-EG')}</p>
               </a>
             ))

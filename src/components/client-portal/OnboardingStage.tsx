@@ -8,6 +8,7 @@ import SignStage from './stages/SignStage';
 import WaitingStage from './stages/WaitingStage';
 import ReviewStage from './stages/ReviewStage';
 import PaymentStage from './stages/PaymentStage';
+import ContractDocsReview from './ContractDocsReview';
 import { METHOD_KEYS } from './PaymentSheet';
 
 interface Props {
@@ -39,7 +40,11 @@ export default function OnboardingStage({ stage, client, workspace, onChanged }:
     case 2:
       return wsId ? <ReviewStage wsId={wsId} clientType={client.client_type} onChanged={onChanged} /> : null;
     case 3:
-      return <WaitingStage stepNo={4} title={t('wait_company_title')} description={t('wait_company_desc')} />;
+      return (
+        <WaitingStage stepNo={4} title={t('wait_company_title')} description={t('wait_company_desc')}>
+          {wsId ? <ContractDocsReview wsId={wsId} /> : null}
+        </WaitingStage>
+      );
     case 4:
       return wsId ? <PaymentStage wsId={wsId} onChanged={onChanged} /> : null;
     case 5: {

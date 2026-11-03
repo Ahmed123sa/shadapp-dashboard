@@ -27,7 +27,7 @@ export default function ClientSettingsPage() {
   const [form, setForm] = useState({
     company_name: '', contact_person: '', phone: '', email: '',
     country: '', industry: '', notes: '', date_of_birth: '', password: '',
-    client_type: 'business' as 'business' | 'individual', address: '', maps_url: '',
+    client_type: 'business' as 'business' | 'individual', tax_percentage: '', address: '', maps_url: '',
   });
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +51,7 @@ export default function ClientSettingsPage() {
       date_of_birth: c.date_of_birth ? String(c.date_of_birth).substring(0, 10) : '',
       password: '',
       client_type: c.client_type || 'business',
+      tax_percentage: c.tax_percentage != null ? String(c.tax_percentage) : '',
       address: c.address || '',
       maps_url: c.maps_url || '',
     });
@@ -80,7 +81,7 @@ export default function ClientSettingsPage() {
       const payload: {
         company_name: string; contact_person: string; email: string; phone: string;
         country: string | null; industry: string | null; notes: string | null;
-        date_of_birth: string | null; client_type: 'business' | 'individual';
+        date_of_birth: string | null; client_type: 'business' | 'individual'; tax_percentage?: number | null;
         address: string | null; maps_url: string | null; password?: string;
       } = {
         company_name: form.company_name,
@@ -95,6 +96,9 @@ export default function ClientSettingsPage() {
         address: form.address || null,
         maps_url: form.maps_url || null,
       };
+      // Sent only when changed: the server lets just the super admin and the
+      // client's own manager set it, so an unchanged value must not be re-sent.
+      if (form.client_type === 'business' && form.tax_percentage !== '' && Number(form.tax_percentage) !== Number(client?.tax_percentage ?? NaN)) payload.tax_percentage = Number(form.tax_percentage);
       if (form.password) payload.password = form.password;
       await updateMutation.mutateAsync(payload);
 
@@ -162,6 +166,16 @@ export default function ClientSettingsPage() {
             })}
           </div>
         </div>
+
+        {form.client_type === 'business' && (
+          <div className="space-y-1">
+            <label htmlFor="client-settings-tax" className="text-xs text-[var(--color-text-secondary)]">{t('client_tax_label')}</label>
+            <input id="client-settings-tax" type="number" min={0} max={100} step="0.01" inputMode="decimal"
+              value={form.tax_percentage} onChange={(e) => setForm({ ...form, tax_percentage: e.target.value })}
+              className="bg-[var(--color-input-fill)] border-[var(--color-input-border)] text-[var(--color-foreground)] rounded-lg px-4 py-2 text-sm w-full" />
+            <p className="text-[11px] text-[var(--color-text-secondary)]">{t('client_tax_hint')}</p>
+          </div>
+        )}
 
         <div className="lx-form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">

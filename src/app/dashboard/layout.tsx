@@ -11,7 +11,7 @@ import { useBadgeCounts } from '@/hooks/queries/useBadgeCounts';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, Calendar, CreditCard,
-  Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound,
+  Folder, ClipboardList, ClipboardCheck, Settings, UserCog, BarChart3, Sun, Moon, UsersRound, MessageCircleQuestion,
 } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/utils';
 import { canDo, isAccountant, isAssistant, isStaffMember, refreshAssistantUser } from '@/lib/permissions';
@@ -180,6 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_system'),
       items: [
+        { href: '/dashboard/assistant', label: locale === 'ar' ? 'إعدادات المساعد' : 'Assistant settings', icon: MessageCircleQuestion },
         { href: '/dashboard/settings', label: t('settings'), icon: Settings },
       ],
     },
@@ -257,6 +258,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/team')) return t('team_nav');
     if (pathname.startsWith('/dashboard/staff')) return t('staff_nav');
     if (pathname.startsWith('/dashboard/accountants')) return locale === 'ar' ? 'المحاسبون' : 'Accountants';
+    if (pathname.startsWith('/dashboard/assistant')) return locale === 'ar' ? 'إعدادات المساعد' : 'Assistant settings';
     return t('title');
   };
 

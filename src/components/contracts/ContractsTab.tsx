@@ -34,7 +34,15 @@ function isImageSignature(val: string | null | undefined) {
   return !!val && (val.startsWith('/storage/') || val.startsWith('http'));
 }
 
-export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: number; clientType?: string; wsActive?: boolean }) {
+// The company can approve only when every required document has an approved
+// file. The server enforces the same rule; this just keeps the button honest.
+function approvalBlocked(c: Contract): boolean {
+  return (c.required_documents ?? [])
+    .filter((d) => d.is_required !== false)
+    .some((d) => !(d.files ?? []).some((f) => f.status === 'approved'));
+}
+
+export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }: { wsId: number; clientType?: string; wsActive?: boolean; onGoToFiles?: () => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
 
@@ -377,6 +385,44 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               </div>
             )
           )}
+          {c.status === 'client_approved' && (c.required_documents?.length ?? 0) > 0 && (() => {
+            const docs = (c.required_documents ?? []).filter((d) => d.is_required !== false);
+            const stateOf = (files: { status: string }[]) =>
+              files.some((f) => f.status === 'approved') ? 'ok'
+                : files.length === 0 ? 'missing'
+                : files.every((f) => f.status === 'rejected') ? 'rejected' : 'pending';
+            const label = {
+              ok: t('file_approved_status'),
+              pending: t('file_pending_review'),
+              rejected: t('file_rejected_status'),
+              missing: t('contract_doc_not_uploaded'),
+            };
+            const blocked = docs.some((d) => stateOf(d.files ?? []) !== 'ok');
+            return (
+              <div className="mt-2 space-y-1" data-testid={`contract-docs-${c.id}`}>
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]">{t('contract_docs_h')}</p>
+                <ul className="space-y-1">
+                  {docs.map((d) => {
+                    const state = stateOf(d.files ?? []);
+                    return (
+                      <li key={d.id} className="text-xs flex items-center gap-2">
+                        <span className="flex-1">{d.name}</span>
+                        <span className={state === 'ok' ? 'text-emerald-600' : state === 'pending' ? 'text-amber-600' : 'text-red-500'}>{label[state]}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {blocked && (
+                  <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2 flex-wrap">
+                    <span>{t('contract_docs_blocked')}</span>
+                    {onGoToFiles && (
+                      <button type="button" onClick={onGoToFiles} className="underline text-[var(--color-gold-text)]">{t('contract_docs_review_in_files')}</button>
+                    )}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           <div className="lx-acts mt-2 flex gap-2 flex-wrap">
             {canManage && (c.status === 'draft' || c.status === 'edit_requested') && (
               <button onClick={() => startEdit(c)} className="lx-btn text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
@@ -387,17 +433,18 @@ export default function ContractsTab({ wsId, clientType, wsActive }: { wsId: num
               <>
                 {c.pdf_url && <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="lx-btn text-xs text-emerald-600 hover:underline">{t('view_signed_contract')}</a>}
                 {isSA && (
-                  <button onClick={() => openApproveSig(c.id)} className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700">{t('company_approve')}</button>
+                  <button onClick={() => openApproveSig(c.id)} disabled={approvalBlocked(c)} className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">{t('company_approve')}</button>
                 )}
                 {amCanApprove && (
                   <button
+                    disabled={approvalBlocked(c)}
                     onClick={() => {
                       if (!confirm(t('am_company_approve_confirm'))) return;
                       companyApproveMutation.mutate({ id: c.id, payload: { use_saved_signature: true } }, {
                         onError: companyApproveError('ContractsTab.amCompanyApprove'),
                       });
                     }}
-                    className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700"
+                    className="lx-btn lx-btn-primary text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('company_approve')}
                   </button>

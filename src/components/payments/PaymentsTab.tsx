@@ -222,6 +222,11 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
                 {t('value_detail')}{Number(taxSummary.contracts_total).toFixed(2)}{t('plus_tax')}{taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
               </p>
             )}
+            {(taxSummary?.contracts?.length ?? 0) > 1 && taxSummary!.contracts!.map((c) => (
+              <p key={c.id} className="text-xs text-[var(--color-text-disabled)] mt-0.5">
+                {c.title}: {Number(c.value).toFixed(2)}{t('plus_tax')}{Number(c.tax_percentage)}% = {Number(c.tax_amount).toFixed(2)} {contractCurrency}
+              </p>
+            ))}
           </>
         )}
         <div className="mt-3">

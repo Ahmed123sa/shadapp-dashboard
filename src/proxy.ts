@@ -125,6 +125,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
+    // Client assistant settings: super admin only.
+    if (pathname.startsWith('/dashboard/assistant') && role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     // The super admin's "Teams" page (company staff members).
     if (pathname.startsWith('/dashboard/staff') && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));

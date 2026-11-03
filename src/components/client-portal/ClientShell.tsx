@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { clientLogout, getSubUser, isSubUser } from '@/lib/client-auth';
 import { useLocale } from '@/lib/locale';
 import NotificationBell from '@/components/NotificationBell';
+import ClientAssistant from './ClientAssistant';
 import { Avatar, Icon } from './ui';
 import type { IconName } from './ui/icons';
 
@@ -82,6 +83,7 @@ export default function ClientShell({ company, userName, active, wsCount = 0, ch
           {children}
         </section>
       </div>
+      <ClientAssistant />
     </div>
   );
 }

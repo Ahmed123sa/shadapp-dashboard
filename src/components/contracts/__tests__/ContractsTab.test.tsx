@@ -132,6 +132,51 @@ describe('ContractsTab (characterization)', () => {
     });
   });
 
+  it('locks company approval until every required document is accepted, and points to the Files tab', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({
+      contracts: [{
+        ...draftContract,
+        status: 'client_approved',
+        required_documents: [
+          { id: 1, name: 'Commercial Register', is_required: true, files: [{ id: 5, status: 'pending', name: 'cr.pdf', file_url: '/f/cr.pdf' }] },
+          { id: 2, name: 'National ID', is_required: true, files: [{ id: 6, status: 'rejected', name: 'id.pdf', file_url: '/f/id.pdf' }] },
+          { id: 3, name: 'Letter', is_required: true, files: [] },
+        ],
+      }],
+    });
+    const goToFiles = vi.fn();
+    const user = userEvent.setup();
+    renderWithIntl(<ContractsTab wsId={9} onGoToFiles={goToFiles} />);
+
+    const list = await screen.findByTestId('contract-docs-601');
+    expect(list).toHaveTextContent('Commercial Register');
+    expect(list).toHaveTextContent('Pending Review');
+    expect(list).toHaveTextContent('Rejected');
+    expect(list).toHaveTextContent('Not uploaded');
+    expect(screen.getByRole('button', { name: 'Company Approval' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Review in Files' }));
+    expect(goToFiles).toHaveBeenCalledTimes(1);
+  });
+
+  it('enables company approval once every required document is approved', async () => {
+    vi.mocked(getUser).mockReturnValue({ id: 1, name: 'SA', email: 'sa@example.com', role: 'super_admin' });
+    mockLoad({
+      contracts: [{
+        ...draftContract,
+        status: 'client_approved',
+        required_documents: [
+          { id: 1, name: 'Commercial Register', is_required: true, files: [{ id: 5, status: 'approved', name: 'cr.pdf', file_url: '/f/cr.pdf' }] },
+        ],
+      }],
+    });
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    expect(await screen.findByRole('button', { name: 'Company Approval' })).toBeEnabled();
+    expect(screen.queryByText('Review in Files')).not.toBeInTheDocument();
+  });
+
   it('lets an account manager with the permission approve with the company signature, after a confirm', async () => {
     vi.mocked(getUser).mockReturnValue({ id: 1, name: 'Manager', email: 'manager@example.com', role: 'account_manager', can_approve_contracts: true } as any);
     vi.spyOn(window, 'confirm').mockReturnValue(true);

@@ -37,7 +37,7 @@ export default function ClientsPage() {
   const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', country: '', industry: '', address: '', maps_url: '' });
+  const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business' as 'business' | 'individual', tax_percentage: '', country: '', industry: '', address: '', maps_url: '' });
   const [autoPassword, setAutoPassword] = useState(true);
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null);
   const [createError, setCreateError] = useState('');
@@ -92,8 +92,9 @@ export default function ClientsPage() {
     if (!validate()) return;
     setCreateError('');
     try {
-      const { password, ...rest } = form;
-      const payload = autoPassword ? rest : { ...rest, password };
+      const { password, tax_percentage, ...rest } = form;
+      const withTax = form.client_type === 'business' && tax_percentage !== '' ? { ...rest, tax_percentage: Number(tax_percentage) } : rest;
+      const payload = autoPassword ? withTax : { ...withTax, password };
       const data = await createMutation.mutateAsync(payload);
       if (data.client?.id && avatarFile) {
         try {
@@ -109,7 +110,7 @@ export default function ClientsPage() {
       );
       setNewCreds(data.credentials);
       setShowCreate(false);
-      setForm({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business', country: '', industry: '', address: '', maps_url: '' });
+      setForm({ company_name: '', contact_person: '', email: '', phone: '', password: '', notes: '', date_of_birth: '', send_email: true, client_type: 'business', tax_percentage: '', country: '', industry: '', address: '', maps_url: '' });
       setAutoPassword(true);
       setAvatarFile(null);
       setAvatarPreview('');
@@ -266,6 +267,11 @@ export default function ClientsPage() {
               })}
             </div>
           </div>
+
+          {form.client_type === 'business' && (
+            <InputField label={t('client_tax_label')} type="number" min={0} max={100} step="0.01" value={form.tax_percentage}
+              onChange={e => update('tax_percentage', e.target.value)} error={fieldErrors.tax_percentage} />
+          )}
 
           {/* بيانات الشركة */}
           <div>

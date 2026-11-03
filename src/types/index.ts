@@ -18,6 +18,7 @@ export interface Client {
   country?: string;
   industry?: string;
   client_type: 'business' | 'individual';
+  tax_percentage?: number | null;
   contract_value: number;
   payment_status: string;
   signature_data?: string;
@@ -54,6 +55,9 @@ export interface Contract {
   contract_type?: string;
   value: string | null;
   currency?: string;
+  tax_percentage?: number;
+  tax_amount?: number;
+  total_with_tax?: number;
   start_date?: string;
   end_date?: string;
   pdf_url?: string;
@@ -81,6 +85,7 @@ export interface Contract {
 export interface RequiredDocument {
   id: number;
   name: string;
+  is_required?: boolean;
   files?: FileEntry[];
 }
 
@@ -311,6 +316,10 @@ export interface AppNotification {
     // notification types still only send 'body' (not 'message'); the UI
     // reads `message ?? body` so those don't render an empty line.
     body?: string;
+    // English text next to the Arabic (absent on older rows).
+    title_en?: string;
+    message_en?: string;
+    body_en?: string;
     client_id?: number;
     workspace_id?: number;
     [key: string]: unknown;
@@ -470,6 +479,8 @@ export interface PaymentTaxSummary {
   tax_percentage: number;
   tax_amount: number;
   grand_total: number;
+  // Per-contract breakdown (each contract keeps the % it was approved with).
+  contracts?: { id: number; title: string; value: number; tax_percentage: number; tax_amount: number; total: number }[];
 }
 
 export interface ContractClauseTemplate {

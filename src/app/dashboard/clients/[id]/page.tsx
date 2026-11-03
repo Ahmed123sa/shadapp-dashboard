@@ -334,7 +334,7 @@ function TabContent({ tab, wsId, client, onClientRefresh, onNavigate }: { tab: T
     case 'profile': return <ClientProfileTab clientId={client.id} onNavigate={(t) => onNavigate?.(t as Tab)} />;
     case 'chat': return <ChatTab wsId={wsId} wsActive={wsActive} clientType={client.client_type} />;
     case 'files': return <FilesTab wsId={wsId} />;
-    case 'contracts': return <ContractsTab wsId={wsId} clientType={client.client_type} wsActive={wsActive} />;
+    case 'contracts': return <ContractsTab wsId={wsId} clientType={client.client_type} wsActive={wsActive} onGoToFiles={() => onNavigate?.('files')} />;
     case 'payments': return <PaymentsTab wsId={wsId} client={client} onWorkspaceUpdate={onClientRefresh} />;
     case 'approvals': return <ApprovalsTab wsId={wsId} />;
     case 'meetings': return <MeetingsTab wsId={wsId} />;

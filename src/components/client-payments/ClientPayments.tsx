@@ -74,6 +74,18 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
         <div><div className="lbl">{tp('remaining')}</div><div className="num">{money(remaining)}</div></div>
       </div>
 
+      {taxSummary && Number(taxSummary.tax_amount) > 0 && (
+        <div className="taxline" data-testid="client-tax-card" style={{ fontSize: 12, margin: '0 0 14px', opacity: 0.85 }}>
+          <b>{tp('tax_card_title')}</b>
+          {(taxSummary.contracts?.length ?? 0) > 1
+            ? taxSummary.contracts!.map((c) => (
+                <div key={c.id}>{tp('tax_card_contract', { title: c.title, pct: Number(c.tax_percentage) })}: {money(Number(c.tax_amount))}</div>
+              ))
+            : <div>{Number(taxSummary.tax_percentage)}%: {money(Number(taxSummary.tax_amount))}</div>}
+          <div>{tp('tax_card_total')}: {money(grandTotal)}</div>
+        </div>
+      )}
+
       {!canUpload && (payable.length > 0 || payments.some((p) => p.status !== 'approved')) && (
         <span className="locked" style={{ margin: '4px 0 14px' }}><Icon name="lock" />{t('subuser_action_needs_owner')}</span>
       )}

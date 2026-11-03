@@ -63,6 +63,23 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('تم إرسال العقد')).toBeInTheDocument();
   });
 
+  it('shows the English text in the English app and the Arabic in the Arabic app', async () => {
+    const reply = {
+      notifications: [notif({ id: '1', title: 'عقد جديد', title_en: 'New contract', message: 'تم إرسال عقد', message_en: 'Contract sent', client_id: 5 })],
+      unread_count: 1,
+    };
+    mock.onGet('/notifications').reply(200, reply);
+    const en = renderWithIntl(<NotificationBell />, { locale: 'en' });
+    await userEvent.setup().click(await screen.findByRole('button'));
+    expect(await screen.findByText('Contract sent')).toBeInTheDocument();
+    expect(screen.getByText('New contract')).toBeInTheDocument();
+    en.unmount();
+
+    renderWithIntl(<NotificationBell />, { locale: 'ar' });
+    await userEvent.setup().click(await screen.findByRole('button'));
+    expect(await screen.findByText('تم إرسال عقد')).toBeInTheDocument();
+  });
+
   // ن4 — several backend notification types only send 'body', not
   // 'message'. Before this fix the bell rendered an empty line for those.
   it('falls back to the body field when message is missing', async () => {

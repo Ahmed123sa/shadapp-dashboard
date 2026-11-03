@@ -69,6 +69,32 @@ describe('ClientPayments (characterization)', () => {
     expect(screen.getByText('Remaining').parentElement).toHaveTextContent('3,000');
   });
 
+  it('shows a tax card with each contract at its own percentage when two contracts differ', async () => {
+    mockLoad({
+      contracts: [payableContract, { ...payableContract, id: 2, title: 'Extra Work', value: '500' }],
+      taxSummary: {
+        contracts_total: 5500, tax_percentage: 12, tax_amount: 670, grand_total: 6170,
+        contracts: [
+          { id: 1, title: 'Retainer Agreement', value: 5000, tax_percentage: 12, tax_amount: 600, total: 5600 },
+          { id: 2, title: 'Extra Work', value: 500, tax_percentage: 14, tax_amount: 70, total: 570 },
+        ],
+      },
+    });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    const card = await screen.findByTestId('client-tax-card');
+    expect(card).toHaveTextContent('Retainer Agreement · 12%');
+    expect(card).toHaveTextContent('Extra Work · 14%');
+    expect(card).toHaveTextContent('6,170');
+  });
+
+  it('shows no tax card when there is no tax', async () => {
+    mockLoad({ taxSummary: { contracts_total: 5000, tax_percentage: 0, tax_amount: 0, grand_total: 5000, contracts: [] } });
+    renderWithIntl(<ClientPayments wsId={9} />);
+    await screen.findByText('Contracts value');
+    expect(screen.queryByTestId('client-tax-card')).not.toBeInTheDocument();
+  });
+
   it('opens the payment sheet pre-filled with the contract value when there are no payments yet', async () => {
     mockLoad();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });

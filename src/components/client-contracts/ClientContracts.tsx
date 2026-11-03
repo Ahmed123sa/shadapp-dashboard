@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -12,6 +12,7 @@ import { reportError } from '@/lib/error-reporting';
 import { useWorkspaceContracts, useClientContractAction } from '@/hooks/queries/useContracts';
 import { canDo } from '@/lib/client-auth';
 import { Btn, Icon } from '@/components/client-portal/ui';
+import ContractDocsReview from '@/components/client-portal/ContractDocsReview';
 import type { Contract } from '@/types';
 
 /** Where a contract sits on the four-step line: Sent · You approved · Company approved · Active. */
@@ -114,7 +115,8 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
         ].filter(Boolean).join(' · ');
 
         return (
-          <div key={c.id} className={`lrow ${awaiting ? 'apcard' : ''}`.trim()}>
+          <Fragment key={c.id}>
+          <div className={`lrow ${awaiting ? 'apcard' : ''}`.trim()}>
             <div>
               <div className="kind">{c.contract_type === 'additional' ? tp('kind_extra') : tp('kind_main')}</div>
               <div className="title">{c.title}</div>
@@ -129,7 +131,9 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               {value > 0 ? (
                 <span className="num-ltr">{formatNumber(value, locale)}<small>{c.currency || 'SAR'}</small></span>
               ) : null}
-              {value > 0 && clientType === 'business' && <div className="sub" style={{ fontSize: 11 }}>{tp('excl_vat')}</div>}
+              {value > 0 && clientType === 'business' && (Number(c.tax_percentage) > 0
+                ? <div className="sub" style={{ fontSize: 11 }}>{tp('tax_on_contract', { pct: Number(c.tax_percentage), tax: formatNumber(Number(c.tax_amount ?? 0), locale), total: formatNumber(Number(c.total_with_tax ?? value), locale) })}</div>
+                : <div className="sub" style={{ fontSize: 11 }}>{tp('excl_vat')}</div>)}
             </div>
             <div className="steps">
               {STEP_KEYS.map((key, i) => (
@@ -170,6 +174,8 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               </Btn>
             </div>
           </div>
+          {c.status === 'client_approved' && <ContractDocsReview wsId={wsId} contractId={c.id} />}
+          </Fragment>
         );
       })}
 
