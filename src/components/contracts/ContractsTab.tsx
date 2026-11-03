@@ -46,10 +46,13 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
 
-  // A 422 "signature_required" means the company signature isn't saved yet —
-  // say so instead of the generic "something went wrong".
+  // Two 422 rejections carry a message the user must read: "signature_required"
+  // (the company signature isn't saved yet) and "required_documents_not_approved"
+  // (a required document still has no approved file). Show the server's message
+  // instead of the generic "something went wrong".
   const companyApproveError = (context: string) => (err: unknown) => {
-    if (getErrorCode(err) === 'signature_required') {
+    const code = getErrorCode(err);
+    if (code === 'signature_required' || code === 'required_documents_not_approved') {
       reportError(context, err);
       showToast({ id: context, title: tc('write_error_title'), message: getErrorMessage(err) || tc('write_error_message') });
       return;
