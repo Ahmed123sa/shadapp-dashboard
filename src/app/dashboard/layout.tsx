@@ -180,7 +180,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       label: t('nav_group_system'),
       items: [
-        { href: '/dashboard/assistant', label: locale === 'ar' ? 'إعدادات المساعد' : 'Assistant settings', icon: MessageCircleQuestion },
+        // The client assistant is not live yet: the link stays hidden until the
+        // build sets NEXT_PUBLIC_ASSISTANT_SETTINGS_VISIBLE=true (the page itself
+        // still opens by URL for the super admin, so it can be tried first).
+        ...(process.env.NEXT_PUBLIC_ASSISTANT_SETTINGS_VISIBLE === 'true'
+          ? [{ href: '/dashboard/assistant', label: locale === 'ar' ? 'إعدادات المساعد' : 'Assistant settings', icon: MessageCircleQuestion }]
+          : []),
         { href: '/dashboard/settings', label: t('settings'), icon: Settings },
       ],
     },
