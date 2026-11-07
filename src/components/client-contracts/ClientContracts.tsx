@@ -14,6 +14,7 @@ import { canDo } from '@/lib/client-auth';
 import { Btn, Icon } from '@/components/client-portal/ui';
 import ContractDocsReview from '@/components/client-portal/ContractDocsReview';
 import type { Contract } from '@/types';
+import AdsSplit, { hasAds } from '@/components/contracts/AdsSplit';
 
 /** Where a contract sits on the four-step line: Sent · You approved · Company approved · Active. */
 export function contractStepIndex(status: Contract['status']): number {
@@ -134,6 +135,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               {value > 0 && clientType === 'business' && (Number(c.tax_percentage) > 0
                 ? <div className="sub" style={{ fontSize: 11 }}>{tp('tax_on_contract', { pct: Number(c.tax_percentage), tax: formatNumber(Number(c.tax_amount ?? 0), locale), total: formatNumber(Number(c.total_with_tax ?? value), locale) })}</div>
                 : <div className="sub" style={{ fontSize: 11 }}>{tp('excl_vat')}</div>)}
+              {value > 0 && hasAds(c) && <AdsSplit ads={c} currency={c.currency || 'SAR'} className="sub" style={{ fontSize: 11 }} />}
             </div>
             <div className="steps">
               {STEP_KEYS.map((key, i) => (

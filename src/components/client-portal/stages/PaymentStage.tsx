@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { canDo } from '@/lib/client-auth';
 import { useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
 import type { Contract, Payment } from '@/types';
 import { Btn, StatusDot } from '../ui';
+import { hasAds } from '@/components/contracts/AdsSplit';
 import PaymentSheet, { methodLabelOf } from '../PaymentSheet';
 
 export { METHOD_KEYS } from '../PaymentSheet';
@@ -13,6 +14,7 @@ export { METHOD_KEYS } from '../PaymentSheet';
 /** Stage 4 — pay the first instalment: pick a method, attach any number of receipts, send. */
 export default function PaymentStage({ wsId, onChanged }: { wsId: number; onChanged: () => void }) {
   const t = useTranslations('client_portal');
+  const ta = useTranslations('ads');
   const locale = useLocale();
   const paymentsQuery = useWorkspacePayments(wsId);
   const contractsQuery = useWorkspaceContracts(wsId);
@@ -52,6 +54,12 @@ export default function PaymentStage({ wsId, onChanged }: { wsId: number; onChan
 
       <div className="bill">
         <div className="r"><span>{t('cv')}</span>{money(contractsTotal, cur)}</div>
+        {(tax?.contracts ?? []).filter((c) => hasAds(c)).map((c) => (
+          <Fragment key={`ads-${c.id}`}>
+            <div className="r"><span>{(tax?.contracts?.length ?? 0) > 1 ? `${c.title} · ` : ''}{ta('fee', { pct: nf.format(Number(c.ads_percentage)) })}</span>{money(Number(c.ads_amount), cur)}</div>
+            <div className="r"><span>{(tax?.contracts?.length ?? 0) > 1 ? `${c.title} · ` : ''}{ta('budget')}</span>{money(Number(c.ads_budget), cur)}</div>
+          </Fragment>
+        ))}
         {tax && Number(tax.tax_percentage) > 0 && (
           <div className="r"><span>{t('tax', { pct: nf.format(Number(tax.tax_percentage)) })}</span>{money(Number(tax.tax_amount), cur)}</div>
         )}

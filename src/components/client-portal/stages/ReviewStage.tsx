@@ -12,6 +12,7 @@ import ContractDetailModal from '@/components/client-contracts/ContractDetailMod
 import { useClientContractAction, useWorkspaceContracts } from '@/hooks/queries/useContracts';
 import type { FileEntry } from '@/types';
 import { Btn, Icon, StatusDot } from '../ui';
+import AdsSplit, { hasAds } from '@/components/contracts/AdsSplit';
 
 interface Props {
   wsId: number;
@@ -145,6 +146,7 @@ export default function ReviewStage({ wsId, clientType, onChanged }: Props) {
             {nf.format(value)}
             <small>{contract.currency || 'SAR'}</small>
             {clientType === 'business' && <div className="sub" style={{ fontSize: 11 }}>{t('excl_vat')}</div>}
+            {hasAds(contract) && <AdsSplit ads={contract} currency={contract.currency || 'SAR'} className="sub" style={{ fontSize: 11 }} />}
           </div>
         )}
         <div className="row2">

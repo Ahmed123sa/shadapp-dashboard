@@ -6,6 +6,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { resolveFileUrl } from '@/lib/utils';
 import { formatNumber, formatShortDate } from '@/lib/client-format';
 import type { Payment, Contract } from '@/types';
+import AdsSplit, { hasAds } from '@/components/contracts/AdsSplit';
 import { useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
 import { canDo } from '@/lib/client-auth';
 import { Btn, Icon, StatusDot, type DotTone } from '@/components/client-portal/ui';
@@ -73,6 +74,17 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
         <div><div className="lbl">{tp('paid')}</div><div className="num hl">{money(totalPaid)}</div></div>
         <div><div className="lbl">{tp('remaining')}</div><div className="num">{money(remaining)}</div></div>
       </div>
+
+      {(taxSummary?.contracts ?? []).some((c) => hasAds(c)) && (
+        <div className="taxline" data-testid="client-ads-card" style={{ fontSize: 12, margin: '0 0 14px', opacity: 0.85 }}>
+          {(taxSummary?.contracts ?? []).filter((c) => hasAds(c)).map((c) => (
+            <div key={c.id}>
+              {(taxSummary?.contracts?.length ?? 0) > 1 && <b>{c.title}</b>}
+              <AdsSplit ads={c} currency={contractCurrency} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {taxSummary && Number(taxSummary.tax_amount) > 0 && (
         <div className="taxline" data-testid="client-tax-card" style={{ fontSize: 12, margin: '0 0 14px', opacity: 0.85 }}>

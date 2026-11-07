@@ -3,13 +3,14 @@
 import { canReviewPayments } from '@/lib/permissions';
 
 import { useTranslations } from 'next-intl';
-import { CreditCard, FileText, Paperclip } from 'lucide-react';
+import { CircleCheck, CreditCard, FileText, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { getUser } from '@/lib/auth';
 import type { Client, Workspace } from '@/types';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
+import AdsSplit, { hasAds } from '@/components/contracts/AdsSplit';
 import { reportError } from '@/lib/error-reporting';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
@@ -201,7 +202,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
         {isFullyPaid ? (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <span className="lx-classic-only text-green-400 text-lg">✅</span>
+              <CircleCheck className="lx-classic-only w-5 h-5 text-green-400" aria-hidden="true" />
               <p className="text-sm font-bold text-green-400">{t('fully_paid')}</p>
             </div>
             <p className="text-2xl font-bold text-[var(--color-gold-text)] font-display">
@@ -222,6 +223,12 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
                 {t('value_detail')}{Number(taxSummary.contracts_total).toFixed(2)}{t('plus_tax')}{taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
               </p>
             )}
+            {(taxSummary?.contracts ?? []).filter((c) => hasAds(c)).map((c) => (
+              <div key={`ads-${c.id}`} className="text-xs text-[var(--color-text-disabled)] mt-1">
+                {(taxSummary?.contracts?.length ?? 0) > 1 && <p className="font-medium">{c.title}</p>}
+                <AdsSplit ads={c} currency={contractCurrency} />
+              </div>
+            ))}
             {(taxSummary?.contracts?.length ?? 0) > 1 && taxSummary!.contracts!.map((c) => (
               <p key={c.id} className="text-xs text-[var(--color-text-disabled)] mt-0.5">
                 {c.title}: {Number(c.value).toFixed(2)}{t('plus_tax')}{Number(c.tax_percentage)}% = {Number(c.tax_amount).toFixed(2)} {contractCurrency}

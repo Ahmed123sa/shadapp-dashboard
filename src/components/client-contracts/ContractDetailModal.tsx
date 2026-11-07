@@ -10,6 +10,7 @@ import { canDo, isMyUpload } from '@/lib/client-auth';
 import { resolveFileUrl } from '@/lib/utils';
 import type { Contract, FileEntry } from '@/types';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import AdsSplit, { hasAds } from '@/components/contracts/AdsSplit';
 
 export default function ContractDetailModal({ contract, wsId, onClose, onAction, onUpload, clientType }: {
   contract: Contract;
@@ -88,6 +89,9 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
         )}
         {clientType === 'business' && Number(contract.value) > 0 && (
           <p className="text-xs text-[var(--color-text-disabled)] mb-1">{t('contract_excl_vat')}</p>
+        )}
+        {Number(contract.value) > 0 && hasAds(contract) && (
+          <AdsSplit ads={contract} currency={contract.currency || 'SAR'} className="text-sm text-[var(--color-text-secondary)] mb-1" />
         )}
         {contract.start_date && (
           <p className="text-sm text-[var(--color-text-secondary)] mb-1">{t('contract_date_range', { start: contract.start_date, endSuffix: contract.end_date ? t('contract_date_to', { end: contract.end_date }) : '' })}</p>

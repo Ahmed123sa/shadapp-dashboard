@@ -25,6 +25,8 @@ import {
   useCompanyApproveContract,
 } from '@/hooks/queries/useContracts';
 import type { Contract } from '@/types';
+import AdsFeeField, { isValidAdsPercentage } from './AdsFeeField';
+import AdsSplit, { AdsBadge, hasAds } from './AdsSplit';
 
 // The backend has no `signature_type` field on users — signatures are
 // distinguished by shape, not a stored flag. Detecting it here directly
@@ -64,6 +66,9 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFixed, setEditFixed] = useState<string[]>([]);
   const [form, setForm] = useState({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
+  const [adsOn, setAdsOn] = useState(false);
+  const [adsPct, setAdsPct] = useState('');
+  const [adsTried, setAdsTried] = useState(false);
   const [selectedOptional, setSelectedOptional] = useState<Record<string, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
@@ -119,6 +124,9 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
       start_date: c.start_date?.slice(0, 10) ?? '',
       end_date: c.end_date?.slice(0, 10) ?? '',
     });
+    setAdsOn(c.ads_percentage != null);
+    setAdsPct(c.ads_percentage != null ? String(Number(c.ads_percentage)) : '');
+    setAdsTried(false);
     setEditFixed(byType('fixed'));
     const optional = byType('optional');
     const templateContents = new Set(optionalTemplates.map((tpl) => tpl.content));
@@ -135,6 +143,9 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     setEditingId(null);
     setEditFixed([]);
     setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
+    setAdsOn(false);
+    setAdsPct('');
+    setAdsTried(false);
     setSelectedOptional({});
     setCustomClauses([]);
     setNewCustom('');
@@ -144,6 +155,12 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
 
   const save = () => {
     if (!form.title) return;
+    if (adsOn && !isValidAdsPercentage(adsPct)) {
+      setAdsTried(true);
+      return;
+    }
+    // Null clears it on an edit; a create only sends it when the box is ticked.
+    const ads_percentage = adsOn ? Number(adsPct) : null;
     const clauses: { content: string; type: 'fixed' | 'optional' | 'custom' }[] = [];
     if (editingId) {
       editFixed.forEach((content) => clauses.push({ content, type: 'fixed' }));
@@ -157,7 +174,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
 
     if (editingId) {
       updateMutation.mutate(
-        { id: editingId, payload: { ...form, value: form.value === '' ? 0 : form.value, clauses, required_documents } },
+        { id: editingId, payload: { ...form, value: form.value === '' ? 0 : form.value, ads_percentage, clauses, required_documents } },
         {
           onSuccess: resetForm,
           onError: (err) => notifyWriteError(tc, 'ContractsTab.update', err),
@@ -167,7 +184,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     }
 
     const contract_type = wsActive ? 'additional' : 'main';
-    createMutation.mutate({ ...form, contract_type, clauses, required_documents }, {
+    createMutation.mutate({ ...form, contract_type, ...(adsOn ? { ads_percentage } : {}), clauses, required_documents }, {
       onSuccess: resetForm,
       onError: (err) => notifyWriteError(tc, 'ContractsTab.create', err),
     });
@@ -255,6 +272,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               </>
             )}
           </div>
+          <AdsFeeField enabled={adsOn} percentage={adsPct} showError={adsTried} onEnabledChange={setAdsOn} onPercentageChange={setAdsPct} />
           {(editingId ? editFixed.length > 0 : fixedTemplates.length > 0) && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h3>
@@ -340,6 +358,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
             <div className="lx-ltb"><h3 className="lx-ltitle font-medium">{c.title}</h3>
               {c.value ? <p className="lx-lsub text-xs text-[var(--color-text-secondary)]">{luxe ? '' : `${c.value} ${c.currency || 'SAR'}`}{c.start_date ? `${luxe ? '' : ' • '}${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && !luxe && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
+              {hasAds(c) && <AdsSplit ads={c} currency={c.currency || 'SAR'} className="text-xs text-[var(--color-text-secondary)] mt-0.5" />}
               {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">{luxe ? '' : '📎 '}{c.required_documents?.length}{t('doc_required_suffix')}</p>}
             </div>
             {luxe && c.value ? (
@@ -349,6 +368,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               </div>
             ) : null}
             <div className="lx-lbadges flex items-center gap-2">
+              {hasAds(c) && <AdsBadge />}
               <span className={`lx-kind px-2 py-0.5 rounded-full text-[9px] font-semibold ${
                 c.contract_type === 'main' || c.contract_type === null
                   ? 'bg-[var(--color-gold-soft)] text-[var(--color-gold-text)] border border-[var(--color-gold-border)]'

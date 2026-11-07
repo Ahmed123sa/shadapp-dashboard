@@ -1534,5 +1534,15 @@
     "tax_card_title": "الضريبة",
     "tax_card_contract": "{title} · {pct}%",
     "tax_card_total": "الإجمالي شامل الضريبة"
+  },
+  "ads": {
+    "toggle": "عقد إعلانات",
+    "toggle_hint": "نسبة الشركة جزء من قيمة العقد وليست إضافة عليها.",
+    "percentage_label": "نسبة إدارة الإعلانات (%)",
+    "percentage_ph": "مثال: 20",
+    "percentage_invalid": "اكتب نسبة بين 0.01 و100.",
+    "fee": "نسبة إدارة الإعلانات ({pct}%)",
+    "budget": "ميزانية الإعلانات",
+    "badge": "إعلانات"
   }
 }

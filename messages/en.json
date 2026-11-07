@@ -1534,5 +1534,15 @@
     "tax_card_title": "Tax",
     "tax_card_contract": "{title} · {pct}%",
     "tax_card_total": "Total incl. tax"
+  },
+  "ads": {
+    "toggle": "Ads contract",
+    "toggle_hint": "The agency fee is part of the contract value, not added on top.",
+    "percentage_label": "Ads management fee (%)",
+    "percentage_ph": "e.g. 20",
+    "percentage_invalid": "Enter a percentage between 0.01 and 100.",
+    "fee": "Ads management fee ({pct}%)",
+    "budget": "Ad budget",
+    "badge": "Ads"
   }
 }

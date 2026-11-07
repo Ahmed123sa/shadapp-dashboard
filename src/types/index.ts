@@ -58,6 +58,11 @@ export interface Contract {
   tax_percentage?: number;
   tax_amount?: number;
   total_with_tax?: number;
+  // Ads contract: the agency's fee is a share of `value` (inside it, not on top).
+  // All three are null for a normal contract.
+  ads_percentage?: number | null;
+  ads_amount?: number | null;
+  ads_budget?: number | null;
   start_date?: string;
   end_date?: string;
   pdf_url?: string;
@@ -484,7 +489,10 @@ export interface PaymentTaxSummary {
   tax_amount: number;
   grand_total: number;
   // Per-contract breakdown (each contract keeps the % it was approved with).
-  contracts?: { id: number; title: string; value: number; tax_percentage: number; tax_amount: number; total: number }[];
+  contracts?: {
+    id: number; title: string; value: number; tax_percentage: number; tax_amount: number; total: number;
+    ads_percentage?: number | null; ads_amount?: number | null; ads_budget?: number | null;
+  }[];
 }
 
 export interface ContractClauseTemplate {
