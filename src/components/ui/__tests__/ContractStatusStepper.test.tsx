@@ -15,7 +15,7 @@ describe('ContractStatusStepper', () => {
     // elements, so this avoids double-counting each circle's non-rounded
     // wrapping <div> (which shares the same textContent since the adjacent
     // connector line has none).
-    const checks = Array.from(container.querySelectorAll('.rounded-full')).filter((el) => el.textContent === '✓');
+    const checks = Array.from(container.querySelectorAll('.rounded-full')).filter((el) => el.querySelector('svg'));
     // draft, sent, client_approved are before company_approved => 3 checkmarks.
     expect(checks.length).toBe(3);
   });
@@ -24,7 +24,7 @@ describe('ContractStatusStepper', () => {
     // activeIndex = -1 => current = 0 (draft) — must not crash on an
     // out-of-range index and must not mark anything as "complete".
     const { container } = renderWithIntl(<ContractStatusStepper status="not_a_real_status" />);
-    const checks = Array.from(container.querySelectorAll('.rounded-full')).filter((el) => el.textContent === '✓');
+    const checks = Array.from(container.querySelectorAll('.rounded-full')).filter((el) => el.querySelector('svg'));
     expect(checks.length).toBe(0);
   });
 

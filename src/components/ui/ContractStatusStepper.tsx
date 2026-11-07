@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export default function ContractStatusStepper({ status, compact = false }: { status: string; compact?: boolean }) {
@@ -25,7 +26,7 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
               ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold-text)]' : ''}
               ${i > current ? 'bg-[var(--color-card-border)] text-[var(--color-text-disabled)]' : ''}
             `}>
-              {i < current ? '✓' : i + 1}
+              {i < current ? <Check size={14} strokeWidth={2} aria-hidden="true" /> : i + 1}
             </div>
             {i < STATUS_STEPS.length - 1 && (
               <div className={`lx-step-line w-5 h-0.5 mx-0.5 ${i < current ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`} />
@@ -46,7 +47,7 @@ export default function ContractStatusStepper({ status, compact = false }: { sta
             ${i === current ? 'border-2 border-[var(--color-gold)] text-[var(--color-gold-text)]' : ''}
             ${i > current ? 'bg-[var(--color-card-border)] text-[var(--color-text-disabled)]' : ''}
           `}>
-            {i < current ? '✓' : i + 1}
+            {i < current ? <Check size={14} strokeWidth={2} aria-hidden="true" /> : i + 1}
           </div>
           {i < STATUS_STEPS.length - 1 && (
             <div className={`w-8 h-0.5 mx-1 ${i < current ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`} />

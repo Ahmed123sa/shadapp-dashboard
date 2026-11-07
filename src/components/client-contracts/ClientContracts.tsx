@@ -164,7 +164,7 @@ export default function ClientContracts({ wsId, clientType, onGoToPayments }: { 
               {c.pdf_url && ['client_approved', 'company_approved', 'completed', 'archived'].includes(c.status) && (
                 <a className="lnk" href={resolveFileUrl(c.pdf_url)} target="_blank" rel="noopener noreferrer">
                   <Icon name="down" />
-                  {c.status === 'client_approved' ? t('view_signed_contract').replace('📄 ', '') : tp('c_final_pdf')}
+                  {c.status === 'client_approved' ? t('view_signed_contract') : tp('c_final_pdf')}
                 </a>
               )}
               {c.status === 'company_approved' && onGoToPayments && (

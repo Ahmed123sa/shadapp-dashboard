@@ -202,7 +202,7 @@ export default function ContractDetailModal({ contract, wsId, onClose, onAction,
           <div className="mt-4 text-center">
             <a href={resolveFileUrl(contract.pdf_url)} target="_blank" rel="noopener noreferrer"
               className="inline-block px-4 py-2 rounded-lg border border-[var(--color-card-border)] text-sm text-[var(--color-foreground)] hover:bg-[var(--color-input-fill)]">
-              {contract.status === 'client_approved' ? t('view_signed_contract').replace('📄 ', '') : t('download_final_contract').replace('📄 ', '')}
+              {contract.status === 'client_approved' ? t('view_signed_contract') : t('download_final_contract')}
             </a>
           </div>
         )}

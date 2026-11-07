@@ -1,5 +1,6 @@
 'use client';
 
+import { Folder } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import api from '@/lib/api';
@@ -37,7 +38,7 @@ export default function NoWorkspace({ client }: { client: Client }) {
 
   return (
     <div className="text-center py-16">
-      <div className="text-5xl mb-4">📁</div>
+      <Folder className="mx-auto mb-4 text-[var(--color-text-secondary)]" size={48} strokeWidth={1.25} aria-hidden="true" />
       <p className="text-[var(--color-text-secondary)] mb-2">{t('workspace_no_space')}</p>
       {loading && !error && (
         <p className="text-[var(--color-text-disabled)] text-sm">{t('workspace_creating')}</p>

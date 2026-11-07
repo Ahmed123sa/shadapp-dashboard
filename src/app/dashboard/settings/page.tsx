@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { getUser, logout } from '@/lib/auth';
@@ -576,7 +577,7 @@ export default function SettingsPage() {
         </div>
         {datesSuccess && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">
-            ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
+            <Check size={14} strokeWidth={2} className="inline-block me-1" aria-hidden="true" />{t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
           </div>
         )}
       </div>}
@@ -602,7 +603,7 @@ export default function SettingsPage() {
         </div>
         {managerFilesSuccess && (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-emerald-300 text-sm">
-            ✓ {t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
+            <Check size={14} strokeWidth={2} className="inline-block me-1" aria-hidden="true" />{t('setting_saved') || 'تم حفظ الإعداد بنجاح'}
           </div>
         )}
       </div>}

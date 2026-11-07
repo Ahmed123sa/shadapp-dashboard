@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, Circle } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -120,7 +121,7 @@ function Req({ label, met, typed }: { label: string; met: boolean; typed: boolea
   const tone = met ? 'text-green-600' : typed ? 'text-red-500' : 'text-[var(--color-text-secondary)]';
   return (
     <div className="flex items-center gap-1.5 text-[length:var(--fs-1)]">
-      <span className={tone}>{met ? '✓' : '○'}</span>
+      <span className={tone}>{met ? <Check size={14} strokeWidth={2} aria-hidden="true" /> : <Circle size={14} strokeWidth={1.5} aria-hidden="true" />}</span>
       <span className={tone}>{label}</span>
     </div>
   );

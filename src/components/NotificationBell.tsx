@@ -139,9 +139,7 @@ export default function NotificationBell() {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)} className="relative p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-foreground)] transition">
-        {/* Classic keeps the emoji; Luxe shows the line icon instead (globals.css). */}
-        <span className="lx-bell-emoji text-lg">🔔</span>
-        <Bell size={18} strokeWidth={1.5} className="lx-bell-icon" aria-hidden="true" />
+        <Bell size={20} strokeWidth={1.5} aria-hidden="true" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-[var(--color-primary)] text-white text-[length:var(--fs-1)] w-4 h-4 flex items-center justify-center rounded-full font-bold">{unread}</span>
         )}

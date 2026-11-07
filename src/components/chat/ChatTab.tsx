@@ -13,7 +13,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import MeetingChip from '@/components/ui/MeetingChip';
-import { ArrowRight, Check, CheckCheck, Download, Paperclip, Plus, Reply } from 'lucide-react';
+import { ArrowRight, Check, CheckCheck, Download, Eye, Lock, Paperclip, Plus, Reply, X } from 'lucide-react';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
 import { useWorkspaceChat, useSendChatMessage, useToggleChatAction } from '@/hooks/queries/useChat';
 import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useContracts';
@@ -267,7 +267,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             .map(contractRow)}
         </div>
         <div className="lx-viewonly flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-[var(--color-card-border)] text-xs text-[var(--color-text-secondary)]">
-          <span aria-hidden="true">{!wsActive ? '🔒' : '👁️'}</span>
+          <span aria-hidden="true">{!wsActive ? <Lock size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}</span>
           <span>{!wsActive ? t('chat_unavailable') : t('chat_view_only')}</span>
         </div>
       </div>
@@ -441,7 +441,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
             <p className="text-[length:var(--fs-1)] font-medium text-[var(--color-foreground)]">{t('reply_to_prefix')}{replyTo.sender?.name || '...'}</p>
             <p className="text-xs text-[var(--color-text-secondary)] truncate">{replyTo.message || '...'}</p>
           </div>
-          <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1">✕</button>
+          <button onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs px-1"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       )}
 
@@ -449,7 +449,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
       <div className="lx-composer flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
         <div className="lx-fieldwrap flex flex-1 gap-2">
-          <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={18} strokeWidth={1.5} /></button>
+          <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><Paperclip size={18} strokeWidth={1.5} aria-hidden="true" /></button>
           {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24">{uploadFile.name}</span>}
           <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
             className="lx-field flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />

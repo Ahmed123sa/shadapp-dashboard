@@ -3,7 +3,7 @@
 import { canReviewPayments } from '@/lib/permissions';
 
 import { useTranslations } from 'next-intl';
-import { CircleCheck, CreditCard, FileText, Paperclip } from 'lucide-react';
+import { CircleCheck, CreditCard, FileText, Paperclip, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { getUser } from '@/lib/auth';
 import type { Client, Workspace } from '@/types';
@@ -312,19 +312,19 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             <div className="px-5 py-4 space-y-2">
               {p.method_type && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs"><span className="lx-classic-only">💳</span><CreditCard className="lx-only" size={14} strokeWidth={1.5} /></span>
+                  <span className="text-xs"><CreditCard size={14} strokeWidth={1.5} /></span>
                   <span className="text-xs text-[var(--color-text-secondary)]">{methodLabels[p.method_type] || p.method_type}</span>
                 </div>
               )}
               {p.contract?.title && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs"><span className="lx-classic-only">📄</span><FileText className="lx-only" size={14} strokeWidth={1.5} /></span>
+                  <span className="text-xs"><FileText size={14} strokeWidth={1.5} /></span>
                   <span className="text-xs text-[var(--color-text-secondary)]">{p.contract.title}</span>
                 </div>
               )}
               {p.proof_file_url && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs"><span className="lx-classic-only">📎</span><Paperclip className="lx-only" size={14} strokeWidth={1.5} /></span>
+                  <span className="text-xs"><Paperclip size={14} strokeWidth={1.5} /></span>
                   <a href={resolveFileUrl(p.proof_file_url)} target="_blank" className="text-xs text-[var(--color-gold-text)] hover:underline">{t('view_proof')}</a>
                 </div>
               )}
@@ -354,7 +354,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           >
             <div className="flex items-center justify-between mb-4">
               <h3 id={scheduleTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('schedule_title')}</h3>
-              <button onClick={() => setShowSchedule(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+              <button onClick={() => setShowSchedule(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
             </div>
             <div className="space-y-3">
               <div>
@@ -417,7 +417,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           >
             <div className="flex items-center justify-between mb-4">
               <h3 id={requestTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('request_title')}</h3>
-              <button onClick={() => setShowRequest(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+              <button onClick={() => setShowRequest(false)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
             </div>
             <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('request_desc')}</p>
             <div className="space-y-3">
@@ -463,7 +463,7 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
           >
             <div className="flex items-center justify-between mb-4">
               <h3 id={rejectTitleId} className="text-lg font-bold text-[var(--color-foreground)]">{t('reject_payment_title')}</h3>
-              <button onClick={() => setRejectingPaymentId(null)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white">✕</button>
+              <button onClick={() => setRejectingPaymentId(null)} aria-label={t('close')} className="text-[var(--color-text-secondary)] hover:text-white"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
             </div>
             <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t('reject_payment_desc')}</p>
             <div className="space-y-3">

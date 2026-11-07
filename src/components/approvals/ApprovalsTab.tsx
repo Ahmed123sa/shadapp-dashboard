@@ -1,5 +1,6 @@
 'use client';
 
+import { Paperclip } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getUser } from '@/lib/auth';
@@ -109,7 +110,7 @@ export default function ApprovalsTab({ wsId }: { wsId: number }) {
                 {a.files.map((f) => (
                   <a key={f.id} href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-[var(--color-gold-text)] underline bg-blue-900/30 px-2 py-0.5 rounded">
-                    <span className="lx-classic-only">📎 </span>{f.name || t('file_label')}
+                    <Paperclip size={12} strokeWidth={1.5} className="inline-block me-1" aria-hidden="true" />{f.name || t('file_label')}
                   </a>
                 ))}
               </div>

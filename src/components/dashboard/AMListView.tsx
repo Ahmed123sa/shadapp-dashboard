@@ -161,9 +161,9 @@ export default function AMListView({ t, locale, view, clients, allPayments }: {
               m.status === 'cancelled' ? 'bg-red-900/30 text-red-400' :
               'bg-blue-900/30 text-blue-400'
             }`}>
-              {m.status === 'completed' ? '✓ ' + t('done_status') :
-               m.status === 'cancelled' ? '✕ ' + t('cancelled_status') :
-               '● ' + t('upcoming_status')}
+              {m.status === 'completed' ? t('done_status') :
+               m.status === 'cancelled' ? t('cancelled_status') :
+               t('upcoming_status')}
             </span>
           </td>
         </>

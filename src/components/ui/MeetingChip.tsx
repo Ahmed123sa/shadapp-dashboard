@@ -1,5 +1,6 @@
 'use client';
 
+import { Video } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getMeetingJoinStatus, formatMeetingDate, notifyWriteError } from '@/lib/utils';
@@ -65,7 +66,7 @@ export default function MeetingChip({
           </div>
         ) : (
           <div className="lx-meet-ic w-8 h-8 rounded-lg bg-[#1a5276]/30 border border-[#1a5276]/40 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm">📹</span>
+            <Video size={16} strokeWidth={1.5} aria-hidden="true" />
           </div>
         )}
         <div className="flex-1 min-w-0">

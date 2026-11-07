@@ -1,5 +1,6 @@
 'use client';
 
+import { X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { notifyWriteError } from '@/lib/utils';
@@ -100,7 +101,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
           <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
             <span className="text-blue-500 mt-0.5">•</span>
             <span className="flex-1">{c}</span>
-            <button onClick={() => removeCustom(i)} aria-label={t('builder_remove_clause', { clause: c })} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+            <button onClick={() => removeCustom(i)} aria-label={t('builder_remove_clause', { clause: c })} className="text-red-400 hover:text-red-600 text-xs"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
           </div>
         ))}
       </div>

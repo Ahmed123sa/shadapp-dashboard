@@ -1,5 +1,6 @@
 'use client';
 
+import { FileText, Hourglass, LayoutDashboard, MessageSquare, Settings, TrendingUp, Users, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslations } from 'next-intl';
@@ -11,13 +12,13 @@ const SECTIONS = [
 ];
 
 const NAV_ITEMS = [
-  { href: '#', label: 'لوحة التحكم', icon: '📊', section: 'main' },
-  { href: '#', label: 'العملاء', icon: '👥', section: 'admin', badge: 24 },
-  { href: '#', label: 'العقود', icon: '📄', section: 'admin', badge: 3 },
-  { href: '#', label: 'المدفوعات', icon: '💰', section: 'admin' },
-  { href: '#', label: 'الرسائل', icon: '💬', section: 'system', badge: 5 },
-  { href: '#', label: 'التقارير', icon: '📈', section: 'system' },
-  { href: '#', label: 'الإعدادات', icon: '⚙️', section: 'system' },
+  { href: '#', label: 'لوحة التحكم', icon: LayoutDashboard, section: 'main' },
+  { href: '#', label: 'العملاء', icon: Users, section: 'admin', badge: 24 },
+  { href: '#', label: 'العقود', icon: FileText, section: 'admin', badge: 3 },
+  { href: '#', label: 'المدفوعات', icon: Wallet, section: 'admin' },
+  { href: '#', label: 'الرسائل', icon: MessageSquare, section: 'system', badge: 5 },
+  { href: '#', label: 'التقارير', icon: TrendingUp, section: 'system' },
+  { href: '#', label: 'الإعدادات', icon: Settings, section: 'system' },
 ];
 
 const containerVariants = {
@@ -180,7 +181,7 @@ export default function ShowcaseDemoPage() {
                             transition={{ duration: 0.3 }}
                             className="text-base"
                           >
-                            {item.icon}
+                            <item.icon size={18} strokeWidth={1.5} aria-hidden="true" />
                           </motion.span>
                           {navLabels[item.label] || item.label}
                           {item.badge && (
@@ -324,10 +325,10 @@ export default function ShowcaseDemoPage() {
             {/* Stats cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'العملاء', value: '24', change: '+4 هذا الشهر', icon: '👥' },
-                { label: 'العقود', value: '8', change: '+2 جديد', icon: '📄' },
-                { label: 'الإيرادات', value: '48,200 SAR', change: 'هذا الشهر', icon: '💰' },
-                { label: 'بانتظار', value: '3', change: 'يتطلب تصرف', icon: '⏳' },
+                { label: 'العملاء', value: '24', change: '+4 هذا الشهر', icon: Users },
+                { label: 'العقود', value: '8', change: '+2 جديد', icon: FileText },
+                { label: 'الإيرادات', value: '48,200 SAR', change: 'هذا الشهر', icon: Wallet },
+                { label: 'بانتظار', value: '3', change: 'يتطلب تصرف', icon: Hourglass },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -338,7 +339,7 @@ export default function ShowcaseDemoPage() {
                   className="bg-[var(--color-card)] border border-[var(--color-card-border)] rounded-xl p-5 cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">{stat.icon}</span>
+                    <stat.icon size={24} strokeWidth={1.5} aria-hidden="true" />
                     <motion.span
                       initial={{ width: 0 }}
                       animate={{ width: 24 }}

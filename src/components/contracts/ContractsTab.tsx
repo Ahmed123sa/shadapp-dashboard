@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { useUiStyle } from '@/lib/ui-style';
-import { Plus } from 'lucide-react';
+import { Paperclip, Plus, X } from 'lucide-react';
 import api from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { canDo } from '@/lib/permissions';
@@ -314,7 +314,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
                 <span className="text-blue-500 mt-0.5">•</span>
                 <span className="flex-1">{c}</span>
-                <button onClick={() => removeCustom(i)} aria-label={t('remove_clause', { clause: c })} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                <button onClick={() => removeCustom(i)} aria-label={t('remove_clause', { clause: c })} className="text-red-400 hover:text-red-600 text-xs"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -326,9 +326,9 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
             </div>
             {requiredDocs.map((d, i) => (
               <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)] py-1">
-                <span className="text-amber-500 mt-0.5">📎</span>
+                <Paperclip className="text-amber-500 mt-0.5 shrink-0" size={14} strokeWidth={1.5} aria-hidden="true" />
                 <span className="flex-1">{d}</span>
-                <button onClick={() => setRequiredDocs((prev) => prev.filter((_, j) => j !== i))} aria-label={t('remove_document', { doc: d })} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                <button onClick={() => setRequiredDocs((prev) => prev.filter((_, j) => j !== i))} aria-label={t('remove_document', { doc: d })} className="text-red-400 hover:text-red-600 text-xs"><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -359,7 +359,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               {c.value ? <p className="lx-lsub text-xs text-[var(--color-text-secondary)]">{luxe ? '' : `${c.value} ${c.currency || 'SAR'}`}{c.start_date ? `${luxe ? '' : ' • '}${t('from_prefix')}${c.start_date}` : ''}{c.end_date ? `${t('to_prefix')}${c.end_date}` : ''}</p> : ''}
               {clientType === 'business' && !luxe && <p className="text-xs text-[var(--color-text-disabled)]">{t('contract_value_excl_vat')}</p>}
               {hasAds(c) && <AdsSplit ads={c} currency={c.currency || 'SAR'} className="text-xs text-[var(--color-text-secondary)] mt-0.5" />}
-              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5">{luxe ? '' : '📎 '}{c.required_documents?.length}{t('doc_required_suffix')}</p>}
+              {(c.required_documents?.length ?? 0) > 0 && <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">{!luxe && <Paperclip size={12} strokeWidth={1.5} aria-hidden="true" />}<span>{c.required_documents?.length}{t('doc_required_suffix')}</span></p>}
             </div>
             {luxe && c.value ? (
               <div className="lx-amt">

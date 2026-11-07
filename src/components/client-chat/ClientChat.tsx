@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, CheckCheck, X } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { subscribeToWorkspace } from '@/lib/echo';
 import { resolveFileUrl, notifyWriteError } from '@/lib/utils';
@@ -256,7 +257,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
                     </button>
                     {mine && (
                       <span className="sub" style={{ fontSize: 11 }} title={m.read_at ? (locale === 'ar' ? 'مقروءة' : 'Read') : (locale === 'ar' ? 'تم الإرسال' : 'Sent')}>
-                        {m.read_at ? '✓✓' : '✓'}
+                        {m.read_at ? <CheckCheck size={14} strokeWidth={1.5} aria-hidden="true" /> : <Check size={14} strokeWidth={1.5} aria-hidden="true" />}
                       </span>
                     )}
                   </div>
@@ -274,7 +275,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             <div style={{ fontWeight: 500, color: 'var(--ink)' }}>{t('chat_reply_to', { name: replyTo.sender?.name || '...' })}</div>
             <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.message || '...'}</div>
           </div>
-          <button type="button" onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="lnk" style={{ border: 0 }}>✕</button>
+          <button type="button" onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')} className="lnk" style={{ border: 0 }}><X size={14} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       )}
 
