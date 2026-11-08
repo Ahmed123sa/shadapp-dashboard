@@ -189,17 +189,22 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             );
           }
 
-          const fileBlock = m.type === 'file' && m.file_url ? (
-            /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(m.file_url) ? (
-              <img src={resolveFileUrl(m.file_url)} alt={t('attachment_label')} style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 10, marginBottom: 6 }} />
+          const renderFile = (url: string, name?: string, key?: number) => (
+            /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) ? (
+              <img key={key} src={resolveFileUrl(url)} alt={name || t('attachment_label')} style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 10, marginBottom: 6 }} />
             ) : (
-              <a className="fcard" href={resolveFileUrl(m.file_url)} target="_blank" rel="noopener noreferrer">
-                <span className="fic">{fileExt(m.file_url)}</span>
-                <span className="fn">{fileName(m.file_url)}</span>
+              <a key={key} className="fcard" href={resolveFileUrl(url)} target="_blank" rel="noopener noreferrer">
+                <span className="fic">{fileExt(url)}</span>
+                <span className="fn">{name || fileName(url)}</span>
                 <span className="fopen"><Icon name="clip" />{t('view_attachment')}</span>
               </a>
             )
-          ) : null;
+          );
+          // A file sent in chat is the message's own; an approval raised from
+          // the Approvals tab carries its files on the approval instead.
+          const fileBlock = m.type === 'file' && m.file_url
+            ? renderFile(m.file_url)
+            : (approval?.files ?? []).filter((f) => f.file_url).map((f) => renderFile(f.file_url, f.name, f.id));
 
           const replyBlock = m.reply_to ? (
             <div className="rquote">

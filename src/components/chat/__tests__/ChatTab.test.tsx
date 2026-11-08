@@ -258,6 +258,48 @@ describe('ChatTab (characterization)', () => {
     expect(await screen.findByAltText('Attachment')).toBeInTheDocument();
   });
 
+  // A request raised from the Approvals tab is a text message: its files live
+  // on the approval, and the chat has to show them too.
+  it('shows the files of an approval request in the chat', async () => {
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 9,
+        requires_action: true,
+        approval: {
+          id: 3,
+          files: [
+            { id: 11, name: 'logo.jpg', file_url: 'https://api.example.com/files/a/logo.jpg?signature=x' },
+            { id: 12, name: 'brief.pdf', file_url: 'https://api.example.com/files/a/brief.pdf?signature=y' },
+          ],
+        } as unknown as ChatMessage['approval'],
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    expect(await screen.findByAltText('logo.jpg')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /brief\.pdf/ })).toBeInTheDocument();
+  });
+
+  it('does not draw the file twice when the message itself is the file', async () => {
+    const url = 'https://api.example.com/files/chat/photo.png?expires=1&signature=z';
+    mockLoad({
+      messages: [{
+        ...staffMessage,
+        id: 10,
+        type: 'file',
+        message: '',
+        file_url: url,
+        requires_action: true,
+        approval: { id: 4, files: [{ id: 13, name: 'photo.png', file_url: url }] } as unknown as ChatMessage['approval'],
+      }],
+    });
+    renderWithIntl(<ChatTab wsId={9} wsActive clientType="business" />);
+
+    await screen.findAllByRole('img');
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+  });
+
   it('shows the unavailable message when the workspace is not active', async () => {
     mockLoad();
     renderWithIntl(<ChatTab wsId={9} wsActive={false} clientType="business" />);

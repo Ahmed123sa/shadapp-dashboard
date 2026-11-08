@@ -218,6 +218,46 @@ describe('ClientChat (characterization)', () => {
     });
   });
 
+  // An approval carries its files; a request raised from the Approvals tab is a
+  // text message, so its files only exist on the approval.
+  describe('files of an approval request', () => {
+    const photo = { id: 11, name: 'logo.jpg', file_url: 'https://api.example.com/files/a/logo.jpg?signature=x', status: 'approved' };
+    const brief = { id: 12, name: 'brief.pdf', file_url: 'https://api.example.com/files/a/brief.pdf?signature=y', status: 'approved' };
+
+    it('shows the files on the approval card, an image as an image and a document as a link', async () => {
+      mockLoad({ messages: [{ ...pendingApprovalMessage, approval: { id: 3, files: [photo, brief] } }] });
+      renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+      expect(await screen.findByAltText('logo.jpg')).toBeInTheDocument();
+      const doc = screen.getByRole('link', { name: /brief\.pdf/ });
+      expect(doc).toHaveAttribute('href', expect.stringContaining('brief.pdf'));
+    });
+
+    it('does not draw the file twice when the message itself is the file', async () => {
+      mockLoad({
+        messages: [{
+          ...pendingApprovalMessage,
+          type: 'file',
+          message: '',
+          file_url: photo.file_url,
+          approval: { id: 3, files: [photo] },
+        }],
+      });
+      renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+      await screen.findAllByRole('img');
+      expect(screen.getAllByRole('img')).toHaveLength(1);
+    });
+
+    it('shows nothing extra for an approval without files', async () => {
+      mockLoad({ messages: [{ ...pendingApprovalMessage, approval: { id: 3, files: [] } }] });
+      renderWithIntl(<ClientChat wsId={9} wsActive />);
+
+      await screen.findByText('Please approve this change');
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+  });
+
   it('replaces the composer with a view-only note without can_chat', async () => {
     vi.mocked(canDo).mockImplementation((k: string) => k !== 'can_chat');
     mockLoad();

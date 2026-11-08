@@ -392,6 +392,22 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
                       )}
                     </div>
                   )}
+                  {/* A file sent in chat is the message's own (above); an
+                      approval raised from the Approvals tab carries its files
+                      on the approval instead. */}
+                  {m.type !== 'file' && (approval?.files ?? []).filter((f) => f.file_url).map((f) => (
+                    <div key={f.id} className="mb-1">
+                      {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(f.file_url) ? (
+                        <img src={resolveFileUrl(f.file_url)} alt={f.name || t('attachment_label')} className="max-w-full rounded-lg max-h-40" />
+                      ) : (
+                        <a href={resolveFileUrl(f.file_url)} target="_blank" rel="noopener noreferrer" className="lx-file">
+                          <span className="lx-file-ic">{(f.file_url.split('?')[0].split('.').pop() || 'file').slice(0, 4)}</span>
+                          <span className="lx-file-n">{f.name}</span>
+                          <span className="lx-file-open"><Download size={14} strokeWidth={1.5} />{t('view_attachment')}</span>
+                        </a>
+                      )}
+                    </div>
+                  ))}
                   {m.message}
                   {isPending && <p className="text-xs text-red-500 mt-1 font-medium">{t('approval_pending_label')}</p>}
                   {isResponded && <p className={`text-xs mt-1 font-medium ${m.action_result === 'approved' ? 'text-emerald-600' : m.action_result === 'rejected' ? 'text-red-600' : 'text-amber-600'}`}>{actionResultLabel[m.action_result || '']}</p>}
