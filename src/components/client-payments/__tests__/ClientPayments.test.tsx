@@ -88,6 +88,28 @@ describe('ClientPayments (characterization)', () => {
     expect(card).toHaveTextContent('6,170');
   });
 
+  // An ads contract is taxed on the agency fee only: 50,000 with a 20% fee
+  // (10,000) at 14% owes 1,400, not 7,000. The page shows what the server says.
+  it('shows the tax the server charged on the fee of an ads contract', async () => {
+    mockLoad({
+      contracts: [{ ...payableContract, value: '50000', ads_percentage: 20, ads_amount: 10000, ads_budget: 40000 }],
+      taxSummary: {
+        contracts_total: 50000, tax_percentage: 14, tax_amount: 1400, grand_total: 51400,
+        contracts: [
+          { id: 1, title: 'Retainer Agreement', value: 50000, tax_percentage: 14, tax_amount: 1400, total: 51400, ads_percentage: 20, ads_amount: 10000, ads_budget: 40000 },
+        ],
+      },
+    });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    const card = await screen.findByTestId('client-tax-card');
+    expect(card).toHaveTextContent('14%');
+    expect(card).toHaveTextContent('1,400');
+    expect(card).toHaveTextContent('51,400');
+    expect(card).not.toHaveTextContent('7,000');
+    expect(screen.getByTestId('client-ads-card')).toHaveTextContent('10,000');
+  });
+
   it('shows no tax card when there is no tax', async () => {
     mockLoad({ taxSummary: { contracts_total: 5000, tax_percentage: 0, tax_amount: 0, grand_total: 5000, contracts: [] } });
     renderWithIntl(<ClientPayments wsId={9} />);
