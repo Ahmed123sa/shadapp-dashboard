@@ -61,7 +61,7 @@ export default function ClientMeetings({ wsId }: { wsId: number }) {
         <>
           <div className="section-h" style={{ marginTop: 0 }}>{t('meeting_upcoming_heading')}</div>
           {upcoming.map((m) => {
-            const join = m.link ? getMeetingJoinStatus(m.scheduled_at, locale) : null;
+            const join = m.link ? getMeetingJoinStatus(m.scheduled_at, locale, m.duration_minutes) : null;
             return (
               <div key={m.id} className="meetbig" style={{ marginBottom: 12 }}>
                 <CalendarBadge iso={m.scheduled_at} locale={locale} />

@@ -20,6 +20,7 @@ import { useWorkspaceContracts, useContractAction } from '@/hooks/queries/useCon
 import { useWorkspaceMeetings, meetingKeys } from '@/hooks/queries/useMeetings';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ChatMessage, Contract, User } from '@/types';
+import MeetingBanner from './MeetingBanner';
 
 // Messages box height: fills the viewport minus the page chrome above it
 // (header, client card, tabs) and the composer below, but never shorter than
@@ -34,7 +35,8 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
   const queryClient = useQueryClient();
   const chatQuery = useWorkspaceChat(wsId);
   // Staff without "send" on this client can read the chat but not write.
-  const canSend = useStaffPermissions(wsId).can_send_chat;
+  const staffPerms = useStaffPermissions(wsId);
+  const canSend = staffPerms.can_send_chat;
   // Company staff may not read contracts (backend 403s) — skip the query.
   const contractsQuery = useWorkspaceContracts(wsId, !isStaffMember(getUser()));
   const meetingsQuery = useWorkspaceMeetings(wsId);
@@ -149,9 +151,19 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
     </div>
   );
 
+  const meetingBanner = (
+    <MeetingBanner
+      meetings={meetingsQuery.data}
+      canJoin={staffPerms.can_join_meetings}
+      currentUserId={currentUserId}
+      onEntered={() => meetingsQuery.refetch()}
+    />
+  );
+
   if (!canChat) {
     return (
       <div className="lx-chat space-y-2">
+        {meetingBanner}
         {/* 23 Sept 2026 — was a fixed h-72 (288px) box under a ~124px
             eye-emoji banner, so on a large screen the messages got about a
             third of the height and the rest sat empty. The box now grows with
@@ -290,6 +302,7 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         <ContractBuilder wsId={wsId} onCreated={onContractCreated} onCancel={() => setShowBuilder(false)} />
       )}
 
+      {meetingBanner}
       <div ref={chatRef} className={`lx-stream ${CHAT_BOX_HEIGHT} overflow-y-auto space-y-3 border border-[var(--color-card-border)] rounded-lg p-3 bg-[var(--color-card-border)]`}>
         {!luxe && contracts.length > 0 && contracts.map((c) => (
           <ChatContractCard key={`contract-${c.id}`} contract={c} clientType={clientType} onAction={doContractAction} />

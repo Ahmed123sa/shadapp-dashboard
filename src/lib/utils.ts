@@ -51,14 +51,20 @@ export interface MeetingJoinStatus {
   label: string;
 }
 
-export function getMeetingJoinStatus(scheduledAt: string, locale = 'en'): MeetingJoinStatus {
+// One rule everywhere: a meeting can be joined from 15 minutes before it
+// starts until it ends (start + its duration; 30 minutes, the backend's
+// default, when the duration is not known).
+export const MEETING_DEFAULT_MINUTES = 30;
+
+export function getMeetingJoinStatus(scheduledAt: string, locale = 'en', durationMinutes?: number | null): MeetingJoinStatus {
   const now = new Date();
   const start = new Date(scheduledAt);
   const diffMs = start.getTime() - now.getTime();
   const diffMin = Math.floor(diffMs / 60000);
+  const length = durationMinutes && durationMinutes > 0 ? durationMinutes : MEETING_DEFAULT_MINUTES;
 
   if (diffMin <= 0) {
-    if (diffMin >= -15) return { canJoin: true, label: locale === 'ar' ? 'انضم الآن' : 'Join Now' };
+    if (diffMin >= -length) return { canJoin: true, label: locale === 'ar' ? 'انضم الآن' : 'Join Now' };
     return { canJoin: false, label: locale === 'ar' ? 'انتهى' : 'Ended' };
   }
   if (diffMin <= 15) return { canJoin: true, label: locale === 'ar' ? `متبقي ${diffMin} دقيقة` : `${diffMin} min left` };

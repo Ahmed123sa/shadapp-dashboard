@@ -26,18 +26,36 @@ describe('getMeetingJoinStatus', () => {
     expect(status.canJoin).toBe(false);
   });
 
-  it('allows joining up to 15 minutes after the scheduled time has passed', () => {
+  it('allows joining while the meeting is still running', () => {
     vi.useFakeTimers().setSystemTime(NOW);
     const status = getMeetingJoinStatus(new Date(NOW.getTime() - 10 * 60000).toISOString());
     expect(status.canJoin).toBe(true);
     expect(status.label).toBe('Join Now');
   });
 
-  it('marks the meeting as ended more than 15 minutes after the scheduled time', () => {
+  it('still allows joining 20 minutes in when the meeting lasts an hour', () => {
     vi.useFakeTimers().setSystemTime(NOW);
-    const status = getMeetingJoinStatus(new Date(NOW.getTime() - 20 * 60000).toISOString());
-    expect(status.canJoin).toBe(false);
-    expect(status.label).toBe('Ended');
+    const status = getMeetingJoinStatus(new Date(NOW.getTime() - 20 * 60000).toISOString(), 'en', 60);
+    expect(status.canJoin).toBe(true);
+    expect(status.label).toBe('Join Now');
+  });
+
+  it('marks the meeting as ended once its duration has passed', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    const ended = getMeetingJoinStatus(new Date(NOW.getTime() - 40 * 60000).toISOString(), 'en', 30);
+    expect(ended.canJoin).toBe(false);
+    expect(ended.label).toBe('Ended');
+
+    const shortOne = getMeetingJoinStatus(new Date(NOW.getTime() - 20 * 60000).toISOString(), 'en', 15);
+    expect(shortOne.canJoin).toBe(false);
+    expect(shortOne.label).toBe('Ended');
+  });
+
+  it('assumes 30 minutes when the duration is not known', () => {
+    vi.useFakeTimers().setSystemTime(NOW);
+    expect(getMeetingJoinStatus(new Date(NOW.getTime() - 25 * 60000).toISOString()).canJoin).toBe(true);
+    expect(getMeetingJoinStatus(new Date(NOW.getTime() - 35 * 60000).toISOString()).canJoin).toBe(false);
+    expect(getMeetingJoinStatus(new Date(NOW.getTime() - 35 * 60000).toISOString(), 'en', null).canJoin).toBe(false);
   });
 
   it('reports hours and days left for meetings further out', () => {

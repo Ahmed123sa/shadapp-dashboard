@@ -49,13 +49,14 @@ describe('MeetingChip', () => {
     renderWithIntl(
       <MeetingChip
         metadata={{
-          scheduled_at: new Date(NOW.getTime() - 30 * 60000).toISOString(),
+          scheduled_at: new Date(NOW.getTime() - 45 * 60000).toISOString(),
           link: 'https://meet.example.com/xyz',
           status: 'scheduled',
         }}
       />
     );
 
+    // The meeting window is its length (30 minutes when unknown), not a fixed 15.
     expect(screen.queryByText('Join Now')).not.toBeInTheDocument();
     expect(screen.getByText('Ended')).toBeInTheDocument();
   });

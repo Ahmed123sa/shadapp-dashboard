@@ -193,7 +193,7 @@ function MeetingCard({
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const isScheduled = m.status === 'scheduled';
-  const joinStatus = m.scheduled_at ? getMeetingJoinStatus(m.scheduled_at, locale) : null;
+  const joinStatus = m.scheduled_at ? getMeetingJoinStatus(m.scheduled_at, locale, m.duration_minutes) : null;
   const isZoom = Boolean(m.zoom_meeting_id);
   const isHost = !m.host_user_id || m.host_user_id === currentUserId;
 

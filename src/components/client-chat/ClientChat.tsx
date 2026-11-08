@@ -147,7 +147,7 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
           if (m.type === 'meeting' && m.metadata) {
             const md = m.metadata;
             const status = md.status || 'scheduled';
-            const joinSt = md.scheduled_at ? getMeetingJoinStatus(md.scheduled_at, locale) : null;
+            const joinSt = md.scheduled_at ? getMeetingJoinStatus(md.scheduled_at, locale, md.duration_minutes) : null;
             const sd = md.scheduled_at ? new Date(md.scheduled_at) : null;
             const validDate = sd && !Number.isNaN(sd.getTime());
             const loc = locale === 'ar' ? 'ar-EG' : 'en-US';

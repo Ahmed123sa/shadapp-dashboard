@@ -41,7 +41,7 @@ export default function MeetingChip({
   const duration = metadata.duration_minutes;
   const status = metadata.status || 'scheduled';
 
-  const joinStatus = scheduledAt ? getMeetingJoinStatus(scheduledAt, locale) : null;
+  const joinStatus = scheduledAt ? getMeetingJoinStatus(scheduledAt, locale, duration) : null;
 
   const handleStaffEnter = async () => {
     if (!metadata.meeting_id || entering) return;
