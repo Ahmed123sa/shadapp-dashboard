@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { subscribeToNotifications, disconnectEcho } from '@/lib/echo';
 import { showToast } from './ToastNotification';
 import { reportError } from '@/lib/error-reporting';
+import { formatNotificationTime } from '@/lib/notification-time';
 import type { AppNotification } from '@/types';
 
 export default function NotificationBell() {
@@ -159,7 +160,7 @@ export default function NotificationBell() {
                 className={`block p-3 border-b border-[var(--color-card-border)] last:border-0 hover:bg-[var(--color-card-border)] transition ${n.read_at ? '' : 'bg-[var(--color-primary)]/10'}`}>
                 <p className="text-xs font-medium">{pickTitle(n)}</p>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{pickMessage(n)}</p>
-                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1">{new Date(n.created_at).toLocaleDateString('ar-EG')}</p>
+                <p className="text-[length:var(--fs-1)] text-[var(--color-text-disabled)] mt-1"><time dateTime={n.created_at}>{formatNotificationTime(n.created_at, locale, t('notif_just_now'))}</time></p>
               </a>
             ))
           )}

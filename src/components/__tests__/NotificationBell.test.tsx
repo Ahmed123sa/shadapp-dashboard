@@ -80,6 +80,26 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('تم إرسال عقد')).toBeInTheDocument();
   });
 
+  // The date used to be printed as 'ar-EG' whatever the interface language.
+  it('prints the date in the language of the interface', async () => {
+    mock.onGet('/notifications').reply(200, {
+      notifications: [notif({ id: '1', message: 'x', client_id: 5 })],
+      unread_count: 1,
+    });
+    const en = renderWithIntl(<NotificationBell />, { locale: 'en' });
+    await userEvent.setup().click(await screen.findByRole('button'));
+    await screen.findByText('x');
+    const enDate = document.querySelector('time')?.textContent ?? '';
+    expect(enDate).toMatch(/Jan 1/);
+    expect(enDate).not.toMatch(/[٠-٩]/);
+    en.unmount();
+
+    renderWithIntl(<NotificationBell />, { locale: 'ar' });
+    await userEvent.setup().click(await screen.findByRole('button'));
+    await screen.findByText('x');
+    expect(document.querySelector('time')?.textContent ?? '').toMatch(/[٠-٩]/);
+  });
+
   // ن4 — several backend notification types only send 'body', not
   // 'message'. Before this fix the bell rendered an empty line for those.
   it('falls back to the body field when message is missing', async () => {

@@ -1078,6 +1078,7 @@
     "notif_title": "الإشعارات",
     "notif_mark_all_read": "تحديد الكل كمقروء",
     "notif_empty": "لا توجد إشعارات",
+    "notif_just_now": "الآن",
     "workspace_no_space": "لا توجد مساحة عمل لهذا العميل",
     "workspace_creating": "جاري إنشاء مساحة العمل...",
     "workspace_unauthorized": "غير مصرح لك بإنشاء مساحة عمل. يرجى التواصل مع مدير الحساب المسؤول.",

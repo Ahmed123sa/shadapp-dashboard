@@ -1078,6 +1078,7 @@
     "notif_title": "Notifications",
     "notif_mark_all_read": "Mark All as Read",
     "notif_empty": "No notifications",
+    "notif_just_now": "Just now",
     "workspace_no_space": "No workspace for this client",
     "workspace_creating": "Creating workspace...",
     "workspace_unauthorized": "You are not authorized to create a workspace. Please contact your account manager.",
