@@ -468,6 +468,7 @@
     "no_contracts": "لا توجد عقود",
     "new_contract": "+ عقد جديد",
     "contract_title_ph": "عنوان العقد",
+    "contract_title_required": "اكتب عنوان العقد.",
     "value_ph": "القيمة",
     "fixed_clauses_heading": "بنود ثابتة (مضمنة)",
     "optional_clauses_heading": "بنود اختيارية",

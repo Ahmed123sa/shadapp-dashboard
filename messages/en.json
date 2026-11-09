@@ -468,6 +468,7 @@
     "no_contracts": "No contracts",
     "new_contract": "+ New Contract",
     "contract_title_ph": "Contract title",
+    "contract_title_required": "Enter a contract title.",
     "value_ph": "Value",
     "fixed_clauses_heading": "Fixed Clauses (included)",
     "optional_clauses_heading": "Optional Clauses",

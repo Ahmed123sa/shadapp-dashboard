@@ -22,6 +22,7 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   const [convPct, setConvPct] = useState('');
   const [taxExcluded, setTaxExcluded] = useState(false);
   const [adsTried, setAdsTried] = useState(false);
+  const [titleTried, setTitleTried] = useState(false);
 
   const templatesQuery = useContractClauseTemplates();
   const showDatesQuery = useShowContractDatesSetting();
@@ -43,7 +44,10 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   const removeCustom = (idx: number) => setCustomClauses((prev) => prev.filter((_, i) => i !== idx));
 
   const create = () => {
-    if (!form.title) return;
+    if (!form.title.trim()) {
+      setTitleTried(true);
+      return;
+    }
     if (adsOn && (!isValidAdsPercentage(adsPct) || !isValidConversionPercentage(convPct))) {
       setAdsTried(true);
       return;
@@ -69,7 +73,17 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
     <div className="lx-form lx-form-box border border-[var(--color-card-border)] rounded-xl bg-[var(--color-card-border)] p-4 space-y-3">
       <h3 className="text-sm font-bold text-[var(--color-foreground)]">{t('builder_title')}</h3>
 
-      <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('builder_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+      <input
+        value={form.title}
+        onChange={(e) => setForm({ ...form, title: e.target.value })}
+        placeholder={t('builder_title_ph')}
+        aria-invalid={titleTried && !form.title.trim()}
+        aria-describedby={titleTried && !form.title.trim() ? 'builder-title-err' : undefined}
+        className={`border rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] ${titleTried && !form.title.trim() ? 'border-[var(--color-error)]' : 'border-[var(--color-input-border)]'}`}
+      />
+      {titleTried && !form.title.trim() && (
+        <p id="builder-title-err" role="alert" className="text-xs text-[var(--color-error-text)]">{t('contract_title_required')}</p>
+      )}
 
       <div className="flex gap-2">
         <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} type="number" placeholder={t('builder_value_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-28 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />

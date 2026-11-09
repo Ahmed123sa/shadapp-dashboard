@@ -202,6 +202,57 @@ describe('ContractsTab form', () => {
   });
 });
 
+describe('empty contract title', () => {
+  it('ContractsTab says the title is required instead of doing nothing, in both languages', async () => {
+    mockLoad([]);
+    const user = userEvent.setup();
+    const { unmount } = renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('+ + New Contract')).toBeInTheDocument());
+    await user.click(screen.getByText('+ + New Contract'));
+    await user.click(screen.getByText('Save'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a contract title.');
+    expect(screen.getByPlaceholderText('Contract title')).toHaveAttribute('aria-invalid', 'true');
+    expect(mock.history.post.some((r) => r.url === '/workspaces/9/contracts')).toBe(false);
+    unmount();
+
+    mockLoad([]);
+    renderWithIntl(<ContractsTab wsId={9} />, { locale: 'ar' });
+    const btn = await screen.findByText(/عقد جديد/);
+    await user.click(btn);
+    await user.click(screen.getByText('حفظ'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('اكتب عنوان العقد.');
+  });
+
+  it('a title of only spaces counts as empty, and typing a title clears the message', async () => {
+    mockLoad([]);
+    const user = userEvent.setup();
+    renderWithIntl(<ContractsTab wsId={9} />);
+
+    await waitFor(() => expect(screen.getByText('+ + New Contract')).toBeInTheDocument());
+    await user.click(screen.getByText('+ + New Contract'));
+    await user.type(screen.getByPlaceholderText('Contract title'), '   ');
+    await user.click(screen.getByText('Save'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a contract title.');
+
+    await user.type(screen.getByPlaceholderText('Contract title'), 'Real title');
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  });
+
+  it('ContractBuilder says the title is required and sends nothing', async () => {
+    mock.onGet('/contract-clause-templates').reply(200, { templates: [] });
+    mock.onGet('/settings').reply(200, { settings: { show_contract_dates: { value: true } } });
+
+    const user = userEvent.setup();
+    renderWithIntl(<ContractBuilder wsId={9} onCreated={() => {}} onCancel={() => {}} />);
+    await user.click(screen.getByRole('button', { name: /create/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a contract title.');
+    expect(mock.history.post.length).toBe(0);
+  });
+});
+
 describe('ContractBuilder (extra contract from the chat)', () => {
   it('can make the extra contract an ads contract with a conversion fee and no tax', async () => {
     mock.onGet('/contract-clause-templates').reply(200, { templates: [] });

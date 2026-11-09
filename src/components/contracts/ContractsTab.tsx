@@ -69,6 +69,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   const [adsOn, setAdsOn] = useState(false);
   const [adsPct, setAdsPct] = useState('');
   const [adsTried, setAdsTried] = useState(false);
+  const [titleTried, setTitleTried] = useState(false);
   const [convPct, setConvPct] = useState('');
   const [taxExcluded, setTaxExcluded] = useState(false);
   const [selectedOptional, setSelectedOptional] = useState<Record<string, boolean>>({});
@@ -152,6 +153,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     setConvPct('');
     setTaxExcluded(false);
     setAdsTried(false);
+    setTitleTried(false);
     setSelectedOptional({});
     setCustomClauses([]);
     setNewCustom('');
@@ -160,7 +162,10 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   };
 
   const save = () => {
-    if (!form.title) return;
+    if (!form.title.trim()) {
+      setTitleTried(true);
+      return;
+    }
     if (adsOn && (!isValidAdsPercentage(adsPct) || !isValidConversionPercentage(convPct))) {
       setAdsTried(true);
       return;
@@ -265,7 +270,17 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               {t('editing_contract', { title: form.title })}
             </p>
           )}
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('contract_title_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
+          <input
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder={t('contract_title_ph')}
+            aria-invalid={titleTried && !form.title.trim()}
+            aria-describedby={titleTried && !form.title.trim() ? 'contract-title-err' : undefined}
+            className={`border rounded-lg px-3 py-2 text-sm w-full bg-[var(--color-input-fill)] text-[var(--color-foreground)] ${titleTried && !form.title.trim() ? 'border-[var(--color-error)]' : 'border-[var(--color-input-border)]'}`}
+          />
+          {titleTried && !form.title.trim() && (
+            <p id="contract-title-err" role="alert" className="text-xs text-[var(--color-error-text)]">{t('contract_title_required')}</p>
+          )}
           <div className="flex gap-2">
             <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} type="number" placeholder={t('value_ph')} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-28 bg-[var(--color-input-fill)] text-[var(--color-foreground)]" />
             <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm w-24 bg-[var(--color-input-fill)] text-[var(--color-foreground)]">
