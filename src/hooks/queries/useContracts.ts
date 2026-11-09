@@ -77,6 +77,20 @@ export function useUpdateContract(wsId: number) {
   });
 }
 
+// Deletes a contract. The backend allows it only for a draft (saved, never sent).
+export function useDeleteContract(wsId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/contracts/${id}`).then((r) => r.data),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<Contract[] | undefined>(contractKeys.workspace(wsId), (old) =>
+        old ? old.filter((c) => c.id !== id) : old
+      );
+      queryClient.invalidateQueries({ queryKey: contractKeys.workspace(wsId) });
+    },
+  });
+}
+
 // Generic verb-in-URL actions (send, archive, resend, ...) used by the
 // staff-facing ContractsTab.
 export function useContractAction(wsId: number) {

@@ -23,7 +23,9 @@ import {
   useUpdateContract,
   useContractAction,
   useCompanyApproveContract,
+  useDeleteContract,
 } from '@/hooks/queries/useContracts';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { Contract } from '@/types';
 import AdsFeeField, { TaxExcludedField, isValidAdsPercentage, isValidConversionPercentage } from './AdsFeeField';
 import AdsSplit, { AdsBadge, hasAds } from './AdsSplit';
@@ -92,6 +94,9 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   const createMutation = useCreateContract(wsId);
   const updateMutation = useUpdateContract(wsId);
   const actionMutation = useContractAction(wsId);
+  const deleteMutation = useDeleteContract(wsId);
+  // The draft waiting for the "delete?" confirmation.
+  const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
   const companyApproveMutation = useCompanyApproveContract(wsId);
 
   const contracts = contractsQuery.data ?? [];
@@ -475,6 +480,16 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               <button onClick={() => startEdit(c)} className="lx-btn text-xs text-blue-500 hover:underline">{t('edit_contract')}</button>
             )}
             {canManage && c.status === 'draft' && <button onClick={() => doAction(c.id, 'send')} className="lx-btn text-xs text-[var(--color-gold-text)] hover:underline">{t('send_contract')}</button>}
+            {canManage && c.status === 'draft' && (
+              <button
+                onClick={() => setDeleteTarget(c)}
+                disabled={deleteMutation.isPending}
+                data-testid={`delete-contract-${c.id}`}
+                className="lx-btn text-xs text-[var(--color-error-text)] hover:underline disabled:opacity-50"
+              >
+                {t('delete_contract')}
+              </button>
+            )}
             {canManage && c.status === 'edit_requested' && <button onClick={() => doAction(c.id, 'send')} className="lx-btn text-xs text-amber-600 hover:underline">{t('resend_after_edit')}</button>}
             {c.status === 'client_approved' && (
               <>
@@ -510,6 +525,33 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
           </div>
         </div>
       ))}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        variant="danger"
+        title={t('delete_contract_title')}
+        message={deleteTarget ? t('delete_contract_body', { title: deleteTarget.title }) : ''}
+        confirmLabel={t('delete_contract_confirm')}
+        cancelLabel={tc('cancel')}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          deleteMutation.mutate(target.id, {
+            onSuccess: () => { if (editingId === target.id) resetForm(); },
+            onError: (err) => {
+              // "contract_not_deletable": it was sent meanwhile; say so plainly.
+              if (getErrorCode(err) === 'contract_not_deletable') {
+                reportError('ContractsTab.delete', err);
+                showToast({ id: 'ContractsTab.delete', title: tc('write_error_title'), message: getErrorMessage(err) || tc('write_error_message') });
+                return;
+              }
+              notifyWriteError(tc, 'ContractsTab.delete', err);
+            },
+          });
+        }}
+      />
 
       {approveSig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={closeApproveSig}>
