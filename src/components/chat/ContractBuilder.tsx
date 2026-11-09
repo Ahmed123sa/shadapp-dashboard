@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { notifyWriteError } from '@/lib/utils';
 import { useContractClauseTemplates, useShowContractDatesSetting, useCreateContract } from '@/hooks/queries/useContracts';
+import AdsFeeField, { TaxExcludedField, isValidAdsPercentage, isValidConversionPercentage } from '@/components/contracts/AdsFeeField';
 import type { Contract } from '@/types';
 
 export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: number; onCreated: (contract: Contract) => void; onCancel: () => void }) {
@@ -14,6 +15,13 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
   const [selectedOptional, setSelectedOptional] = useState<Record<number, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
+  // An extra service contract can be an ads contract too, with the optional
+  // dollar-conversion fee, and can be taken out of tax.
+  const [adsOn, setAdsOn] = useState(false);
+  const [adsPct, setAdsPct] = useState('');
+  const [convPct, setConvPct] = useState('');
+  const [taxExcluded, setTaxExcluded] = useState(false);
+  const [adsTried, setAdsTried] = useState(false);
 
   const templatesQuery = useContractClauseTemplates();
   const showDatesQuery = useShowContractDatesSetting();
@@ -36,11 +44,22 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
 
   const create = () => {
     if (!form.title) return;
+    if (adsOn && (!isValidAdsPercentage(adsPct) || !isValidConversionPercentage(convPct))) {
+      setAdsTried(true);
+      return;
+    }
+    const conversion_percentage = adsOn && convPct.trim() !== '' && Number(convPct) > 0 ? Number(convPct) : null;
     const clauses: { content: string; type: 'optional' | 'custom'; sort_order: number }[] = [];
     optionalTemplates.forEach((t) => { if (selectedOptional[t.id]) clauses.push({ content: t.content, type: 'optional', sort_order: clauses.length }); });
     customClauses.forEach((c) => clauses.push({ content: c, type: 'custom', sort_order: clauses.length }));
 
-    createMutation.mutate({ ...form, clauses }, {
+    createMutation.mutate({
+      ...form,
+      ...(adsOn ? { ads_percentage: Number(adsPct) } : {}),
+      ...(conversion_percentage != null ? { conversion_percentage } : {}),
+      ...(taxExcluded ? { tax_excluded: true } : {}),
+      clauses,
+    }, {
       onSuccess: (data) => { if (data?.contract) onCreated(data.contract); },
       onError: (err) => notifyWriteError(tc, 'ContractBuilder.create', err),
     });
@@ -66,6 +85,9 @@ export default function ContractBuilder({ wsId, onCreated, onCancel }: { wsId: n
           </>
         )}
       </div>
+
+      <AdsFeeField enabled={adsOn} percentage={adsPct} showError={adsTried} onEnabledChange={setAdsOn} onPercentageChange={setAdsPct} conversion={convPct} onConversionChange={setConvPct} />
+      <TaxExcludedField checked={taxExcluded} onChange={setTaxExcluded} />
 
       {fixedTemplates.length > 0 && (
         <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">

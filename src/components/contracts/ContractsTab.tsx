@@ -25,7 +25,7 @@ import {
   useCompanyApproveContract,
 } from '@/hooks/queries/useContracts';
 import type { Contract } from '@/types';
-import AdsFeeField, { isValidAdsPercentage } from './AdsFeeField';
+import AdsFeeField, { TaxExcludedField, isValidAdsPercentage, isValidConversionPercentage } from './AdsFeeField';
 import AdsSplit, { AdsBadge, hasAds } from './AdsSplit';
 
 // The backend has no `signature_type` field on users — signatures are
@@ -69,6 +69,8 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
   const [adsOn, setAdsOn] = useState(false);
   const [adsPct, setAdsPct] = useState('');
   const [adsTried, setAdsTried] = useState(false);
+  const [convPct, setConvPct] = useState('');
+  const [taxExcluded, setTaxExcluded] = useState(false);
   const [selectedOptional, setSelectedOptional] = useState<Record<string, boolean>>({});
   const [customClauses, setCustomClauses] = useState<string[]>([]);
   const [newCustom, setNewCustom] = useState('');
@@ -126,6 +128,8 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     });
     setAdsOn(c.ads_percentage != null);
     setAdsPct(c.ads_percentage != null ? String(Number(c.ads_percentage)) : '');
+    setConvPct(c.conversion_percentage != null ? String(Number(c.conversion_percentage)) : '');
+    setTaxExcluded(!!c.tax_excluded);
     setAdsTried(false);
     setEditFixed(byType('fixed'));
     const optional = byType('optional');
@@ -145,6 +149,8 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     setForm({ title: '', value: '', currency: 'SAR', start_date: '', end_date: '' });
     setAdsOn(false);
     setAdsPct('');
+    setConvPct('');
+    setTaxExcluded(false);
     setAdsTried(false);
     setSelectedOptional({});
     setCustomClauses([]);
@@ -155,12 +161,14 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
 
   const save = () => {
     if (!form.title) return;
-    if (adsOn && !isValidAdsPercentage(adsPct)) {
+    if (adsOn && (!isValidAdsPercentage(adsPct) || !isValidConversionPercentage(convPct))) {
       setAdsTried(true);
       return;
     }
     // Null clears it on an edit; a create only sends it when the box is ticked.
     const ads_percentage = adsOn ? Number(adsPct) : null;
+    // The conversion fee only exists on an ads contract; empty or 0 means none.
+    const conversion_percentage = adsOn && convPct.trim() !== '' && Number(convPct) > 0 ? Number(convPct) : null;
     const clauses: { content: string; type: 'fixed' | 'optional' | 'custom' }[] = [];
     if (editingId) {
       editFixed.forEach((content) => clauses.push({ content, type: 'fixed' }));
@@ -174,7 +182,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
 
     if (editingId) {
       updateMutation.mutate(
-        { id: editingId, payload: { ...form, value: form.value === '' ? 0 : form.value, ads_percentage, clauses, required_documents } },
+        { id: editingId, payload: { ...form, value: form.value === '' ? 0 : form.value, ads_percentage, conversion_percentage, tax_excluded: taxExcluded, clauses, required_documents } },
         {
           onSuccess: resetForm,
           onError: (err) => notifyWriteError(tc, 'ContractsTab.update', err),
@@ -184,7 +192,7 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
     }
 
     const contract_type = wsActive ? 'additional' : 'main';
-    createMutation.mutate({ ...form, contract_type, ...(adsOn ? { ads_percentage } : {}), clauses, required_documents }, {
+    createMutation.mutate({ ...form, contract_type, ...(adsOn ? { ads_percentage } : {}), ...(conversion_percentage != null ? { conversion_percentage } : {}), ...(taxExcluded ? { tax_excluded: true } : {}), clauses, required_documents }, {
       onSuccess: resetForm,
       onError: (err) => notifyWriteError(tc, 'ContractsTab.create', err),
     });
@@ -272,7 +280,8 @@ export default function ContractsTab({ wsId, clientType, wsActive, onGoToFiles }
               </>
             )}
           </div>
-          <AdsFeeField enabled={adsOn} percentage={adsPct} showError={adsTried} onEnabledChange={setAdsOn} onPercentageChange={setAdsPct} />
+          <AdsFeeField enabled={adsOn} percentage={adsPct} showError={adsTried} onEnabledChange={setAdsOn} onPercentageChange={setAdsPct} conversion={convPct} onConversionChange={setConvPct} />
+          <TaxExcludedField checked={taxExcluded} onChange={setTaxExcluded} />
           {(editingId ? editFixed.length > 0 : fixedTemplates.length > 0) && (
             <div className="border border-[var(--color-card-border)] rounded p-3 bg-[var(--color-card)]">
               <h3 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">{t('fixed_clauses_heading')}</h3>

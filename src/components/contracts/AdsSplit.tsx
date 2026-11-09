@@ -10,10 +10,18 @@ export interface AdsFields {
   ads_percentage?: number | string | null;
   ads_amount?: number | string | null;
   ads_budget?: number | string | null;
+  conversion_percentage?: number | string | null;
+  conversion_amount?: number | string | null;
 }
 
 export function hasAds(c: AdsFields | null | undefined): boolean {
   return !!c && c.ads_percentage != null && c.ads_percentage !== '' && c.ads_amount != null && c.ads_budget != null;
+}
+
+// An ads contract with a dollar-conversion fee above zero. The fee is added on
+// top of the value (never inside it, never taxed).
+export function hasConversion(c: AdsFields | null | undefined): boolean {
+  return hasAds(c) && c!.conversion_amount != null && Number(c!.conversion_amount) > 0;
 }
 
 function useNumberFormat() {
@@ -45,6 +53,14 @@ export default function AdsSplit({
       <div>
         {t('budget')}: <bdi>{nf.format(Number(ads.ads_budget))} {currency}</bdi>
       </div>
+      {hasConversion(ads) && (
+        <>
+          <div data-testid="ads-conversion">
+            {t('conversion', { pct: nf.format(Number(ads.conversion_percentage)) })}: <bdi>{nf.format(Number(ads.conversion_amount))} {currency}</bdi>
+          </div>
+          <div>{t('excl_conversion')}</div>
+        </>
+      )}
     </div>
   );
 }

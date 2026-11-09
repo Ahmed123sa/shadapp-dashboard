@@ -63,6 +63,12 @@ export interface Contract {
   ads_percentage?: number | null;
   ads_amount?: number | null;
   ads_budget?: number | null;
+  // Ads contracts only: dollar-conversion fee, a share of the ad budget added on
+  // top of `value` and never taxed. `tax_excluded` takes the contract out of tax.
+  conversion_percentage?: number | null;
+  conversion_amount?: number | null;
+  tax_excluded?: boolean;
+  total_due?: number;
   start_date?: string;
   end_date?: string;
   pdf_url?: string;
@@ -488,10 +494,13 @@ export interface PaymentTaxSummary {
   tax_percentage: number;
   tax_amount: number;
   grand_total: number;
+  // Sum of the dollar-conversion fees (already inside grand_total).
+  conversion_total?: number;
   // Per-contract breakdown (each contract keeps the % it was approved with).
   contracts?: {
     id: number; title: string; value: number; tax_percentage: number; tax_amount: number; total: number;
     ads_percentage?: number | null; ads_amount?: number | null; ads_budget?: number | null;
+    conversion_percentage?: number | null; conversion_amount?: number | null; tax_excluded?: boolean; total_due?: number;
   }[];
 }
 

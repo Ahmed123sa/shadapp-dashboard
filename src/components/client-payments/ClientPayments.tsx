@@ -51,7 +51,7 @@ export default function ClientPayments({ wsId }: { wsId: number }) {
   const totalPaid = payments.filter((p) => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0);
   const grandTotal = taxSummary?.grand_total != null
     ? Number(taxSummary.grand_total)
-    : payable.length > 0 ? payable.reduce((s, c) => s + Number(c.value), 0) : payments.reduce((s, p) => s + Number(p.amount), 0);
+    : payable.length > 0 ? payable.reduce((s, c) => s + Number(c.value) + Number(c.conversion_amount ?? 0), 0) : payments.reduce((s, p) => s + Number(p.amount), 0);
   const remaining = grandTotal - totalPaid;
 
   const money = (n: number, cur = contractCurrency) => <span className="num-ltr">{formatNumber(n, locale)}<small>{cur}</small></span>;

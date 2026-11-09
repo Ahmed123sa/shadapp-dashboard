@@ -37,6 +37,7 @@ type RequestForm = { amount: string; contract_id: string; notes: string };
 export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId: number; client: Client; onWorkspaceUpdate?: (ws: Workspace) => void }) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const ta = useTranslations('ads');
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
@@ -184,7 +185,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
   if (loadError) return <ErrorState onRetry={retry} />;
 
   const payableContracts = contracts.filter((c) => c.status === 'company_approved' || c.status === 'completed');
-  const contractValue = payableContracts.reduce((s, c) => s + Number(c.value), 0);
+  // Fallback total when the backend sent no summary: value plus any dollar-conversion fee.
+  const contractValue = payableContracts.reduce((s, c) => s + Number(c.value) + Number(c.conversion_amount ?? 0), 0);
   const contractCurrency = payableContracts.length > 0 ? (payableContracts[0]?.currency || 'SAR') : 'SAR';
   const totalPaid = payments.filter(p => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0);
   const grandTotal = taxSummary?.grand_total != null ? Number(taxSummary.grand_total) : (contractValue > 0 ? contractValue : payments.reduce((s, p) => s + Number(p.amount), 0));
@@ -218,9 +220,14 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
               {t('from_prefix_ext')}{grandTotal.toFixed(2)} {contractCurrency}{t('remaining_prefix')}{remaining.toFixed(2)}
             </p>
-            {taxSummary && taxSummary.tax_percentage > 0 && (
+            {taxSummary && taxSummary.tax_percentage > 0 && Number(taxSummary.tax_amount) > 0 && (
               <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
                 {t('value_detail')}{Number(taxSummary.contracts_total).toFixed(2)}{t('plus_tax')}{taxSummary.tax_percentage}% = {Number(taxSummary.tax_amount).toFixed(2)} {contractCurrency}
+              </p>
+            )}
+            {taxSummary && Number(taxSummary.conversion_total ?? 0) > 0 && (
+              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5" data-testid="payments-conversion-total">
+                {ta('conversion_total')}: {Number(taxSummary.conversion_total).toFixed(2)} {contractCurrency}
               </p>
             )}
             {(taxSummary?.contracts ?? []).filter((c) => hasAds(c)).map((c) => (
@@ -231,7 +238,8 @@ export default function PaymentsTab({ wsId, client, onWorkspaceUpdate }: { wsId:
             ))}
             {(taxSummary?.contracts?.length ?? 0) > 1 && taxSummary!.contracts!.map((c) => (
               <p key={c.id} className="text-xs text-[var(--color-text-disabled)] mt-0.5">
-                {c.title}: {Number(c.value).toFixed(2)}{t('plus_tax')}{Number(c.tax_percentage)}% = {Number(c.tax_amount).toFixed(2)} {contractCurrency}
+                {c.title}: {Number(c.value).toFixed(2)}
+                {!c.tax_excluded && <>{t('plus_tax')}{Number(c.tax_percentage)}% = {Number(c.tax_amount).toFixed(2)} {contractCurrency}</>}
               </p>
             ))}
           </>

@@ -1545,6 +1545,16 @@
     "percentage_invalid": "Enter a percentage between 0.01 and 100.",
     "fee": "Ads management fee ({pct}%)",
     "budget": "Ad budget",
-    "badge": "Ads"
+    "badge": "Ads",
+    "conversion_label": "Dollar conversion fee (% of ad budget)",
+    "conversion_ph": "e.g. 5",
+    "conversion_hint": "Added on top of the contract value and not taxed. Leave empty for none.",
+    "conversion_invalid": "Enter a percentage between 0 and 100.",
+    "conversion": "Dollar conversion fee ({pct}%)",
+    "excl_conversion": "Contract value excludes the conversion fee",
+    "conversion_total": "Dollar conversion fees",
+    "tax_excluded_toggle": "Exclude tax",
+    "tax_excluded_hint": "No tax is charged on this contract.",
+    "total_due": "Total due"
   }
 }

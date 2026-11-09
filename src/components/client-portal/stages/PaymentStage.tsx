@@ -6,7 +6,7 @@ import { canDo } from '@/lib/client-auth';
 import { useWorkspaceContracts, useWorkspacePayments } from '@/hooks/queries/usePayments';
 import type { Contract, Payment } from '@/types';
 import { Btn, StatusDot } from '../ui';
-import { hasAds } from '@/components/contracts/AdsSplit';
+import { hasAds, hasConversion } from '@/components/contracts/AdsSplit';
 import PaymentSheet, { methodLabelOf } from '../PaymentSheet';
 
 export { METHOD_KEYS } from '../PaymentSheet';
@@ -35,7 +35,7 @@ export default function PaymentStage({ wsId, onChanged }: { wsId: number; onChan
   const cur = payable[0]?.currency || 'SAR';
   const grandTotal = tax?.grand_total != null
     ? Number(tax.grand_total)
-    : payable.length > 0 ? payable.reduce((s, c) => s + Number(c.value), 0) : payments.reduce((s, p) => s + Number(p.amount), 0);
+    : payable.length > 0 ? payable.reduce((s, c) => s + Number(c.value) + Number(c.conversion_amount ?? 0), 0) : payments.reduce((s, p) => s + Number(p.amount), 0);
   const contractsTotal = tax?.contracts_total != null ? Number(tax.contracts_total) : grandTotal;
   const paid = payments.filter((p) => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0);
   const remaining = grandTotal - paid;
@@ -60,10 +60,13 @@ export default function PaymentStage({ wsId, onChanged }: { wsId: number; onChan
             <div className="r"><span>{(tax?.contracts?.length ?? 0) > 1 ? `${c.title} · ` : ''}{ta('budget')}</span>{money(Number(c.ads_budget), cur)}</div>
           </Fragment>
         ))}
-        {tax && Number(tax.tax_percentage) > 0 && (
+        {(tax?.contracts ?? []).filter((c) => hasConversion(c)).map((c) => (
+          <div className="r" key={`conv-${c.id}`}><span>{(tax?.contracts?.length ?? 0) > 1 ? `${c.title} · ` : ''}{ta('conversion', { pct: nf.format(Number(c.conversion_percentage)) })}</span>{money(Number(c.conversion_amount), cur)}</div>
+        ))}
+        {tax && Number(tax.tax_percentage) > 0 && Number(tax.tax_amount) > 0 && (
           <div className="r"><span>{t('tax', { pct: nf.format(Number(tax.tax_percentage)) })}</span>{money(Number(tax.tax_amount), cur)}</div>
         )}
-        <div className="r tot"><span>{t('total')}</span>{money(grandTotal, cur)}</div>
+        <div className="r tot"><span>{Number(tax?.conversion_total ?? 0) > 0 ? ta('total_due') : t('total')}</span>{money(grandTotal, cur)}</div>
         <div className="r"><span>{t('paid')}</span>{money(paid, cur)}</div>
         <div className="r"><span>{t('remaining')}</span>{money(remaining, cur)}</div>
       </div>

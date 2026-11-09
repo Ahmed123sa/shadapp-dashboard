@@ -110,6 +110,37 @@ describe('ClientPayments (characterization)', () => {
     expect(screen.getByTestId('client-ads-card')).toHaveTextContent('10,000');
   });
 
+  // Reference case: 100,000 with a 10% fee, 5% conversion on the 90,000 budget
+  // (4,500, added on top, untaxed) and 14% tax on the 10,000 fee owes 105,900.
+  it('counts the conversion fee in the total due and shows it under the contract', async () => {
+    const conv = { ads_percentage: 10, ads_amount: 10000, ads_budget: 90000, conversion_percentage: 5, conversion_amount: 4500 };
+    mockLoad({
+      contracts: [{ ...payableContract, value: '100000', ...conv }],
+      taxSummary: {
+        contracts_total: 100000, tax_percentage: 14, tax_amount: 1400, conversion_total: 4500, grand_total: 105900,
+        contracts: [{ id: 1, title: 'Retainer Agreement', value: 100000, tax_percentage: 14, tax_amount: 1400, total: 101400, total_due: 105900, ...conv }],
+      },
+    });
+    renderWithIntl(<ClientPayments wsId={9} />);
+
+    const ads = await screen.findByTestId('client-ads-card');
+    expect(ads).toHaveTextContent('4,500');
+    expect(ads).toHaveTextContent('Contract value excludes the conversion fee');
+    expect(screen.getByTestId('client-tax-card')).toHaveTextContent('105,900');
+  });
+
+  it('shows no tax card when every contract is excluded from tax', async () => {
+    mockLoad({
+      taxSummary: {
+        contracts_total: 5000, tax_percentage: 14, tax_amount: 0, grand_total: 5000,
+        contracts: [{ id: 1, title: 'Retainer Agreement', value: 5000, tax_percentage: 14, tax_amount: 0, total: 5000, tax_excluded: true }],
+      },
+    });
+    renderWithIntl(<ClientPayments wsId={9} />);
+    await screen.findByText('Contracts value');
+    expect(screen.queryByTestId('client-tax-card')).not.toBeInTheDocument();
+  });
+
   it('shows no tax card when there is no tax', async () => {
     mockLoad({ taxSummary: { contracts_total: 5000, tax_percentage: 0, tax_amount: 0, grand_total: 5000, contracts: [] } });
     renderWithIntl(<ClientPayments wsId={9} />);
