@@ -9,6 +9,7 @@ import { getMeetingJoinStatus, formatMeetingDate } from '@/lib/utils';
 import { StatusDot, type DotTone } from '@/components/client-portal/ui';
 import { formatTime, formatShortDate } from '@/lib/client-format';
 import { Btn, Icon } from '@/components/client-portal/ui';
+import PendingAttachment from '@/components/chat/PendingAttachment';
 import { useTranslations, useLocale } from 'next-intl';
 import { useWorkspaceChat, useSendChatMessage, useRespondChatAction } from '@/hooks/queries/useChat';
 import { canDo } from '@/lib/client-auth';
@@ -286,6 +287,10 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
 
       {sendError && <p className="sub" style={{ color: 'var(--crimson-ink)' }}>{sendError}</p>}
 
+      {canChat && uploadFile && (
+        <PendingAttachment file={uploadFile} onRemove={() => { setUploadFile(null); if (fileRef.current) fileRef.current.value = ''; }} />
+      )}
+
       {canChat ? (
         <div className="composer">
           <div className="field">
@@ -293,7 +298,6 @@ export default function ClientChat({ wsId, wsActive }: { wsId: number; wsActive?
             <button type="button" className="ib" style={{ width: 28, height: 28 }} onClick={() => fileRef.current?.click()} title={t('chat_attach_file_title')} aria-label={t('chat_attach_file_title')}>
               <Icon name="clip" />
             </button>
-            {uploadFile && <span className="sub" style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uploadFile.name}</span>}
             <input value={text} onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={t('chat_input_placeholder')} />

@@ -8,6 +8,7 @@ import { canDo, isStaffMember } from '@/lib/permissions';
 import { useStaffPermissions } from '@/hooks/queries/useStaffPermissions';
 import { subscribeToWorkspace } from '@/lib/echo';
 import ChatContractCard from '@/components/chat/ChatContractCard';
+import PendingAttachment from '@/components/chat/PendingAttachment';
 import ContractBuilder from '@/components/chat/ContractBuilder';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -474,12 +475,15 @@ export default function ChatTab({ wsId, wsActive, clientType }: { wsId: number; 
         </div>
       )}
 
+      {canSend && uploadFile && (
+        <PendingAttachment file={uploadFile} onRemove={() => { setUploadFile(null); if (fileRef.current) fileRef.current.value = ''; }} />
+      )}
+
       {canSend ? (
       <div className="lx-composer flex gap-2">
         <input type="file" ref={fileRef} className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
         <div className="lx-fieldwrap flex flex-1 gap-2">
           <button onClick={() => fileRef.current?.click()} className="lx-attach text-[var(--color-text-secondary)] hover:text-[var(--color-gold-text)] text-lg px-1" title={t('attach_file')} aria-label={t('attach_file')}><Paperclip size={18} strokeWidth={1.5} aria-hidden="true" /></button>
-          {uploadFile && <span className="text-xs text-[var(--color-gold-text)] self-center truncate max-w-24">{uploadFile.name}</span>}
           <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
             className="lx-field flex-1 border border-[var(--color-input-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-input-fill)] text-[var(--color-foreground)]" placeholder={t('chat_placeholder')} />
         </div>

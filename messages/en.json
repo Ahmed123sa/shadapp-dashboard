@@ -944,6 +944,7 @@
     "chat_edit_button": "Edit",
     "chat_reply_to": "Reply to {name}",
     "chat_attach_file_title": "Attach File",
+    "remove_attachment": "Remove attachment",
     "chat_input_placeholder": "Type a message...",
     "chat_send_title": "Send",
     "chat_context_reply": "Reply",

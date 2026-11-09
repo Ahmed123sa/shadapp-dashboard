@@ -944,6 +944,7 @@
     "chat_edit_button": "تعديل",
     "chat_reply_to": "↩ رد على {name}",
     "chat_attach_file_title": "إرفاق ملف",
+    "remove_attachment": "إزالة المرفق",
     "chat_input_placeholder": "اكتب رسالة...",
     "chat_send_title": "إرسال",
     "chat_context_reply": "↩ رد",

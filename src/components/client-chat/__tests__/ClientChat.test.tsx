@@ -268,3 +268,52 @@ describe('ClientChat (characterization)', () => {
     expect(screen.getByText('View only')).toBeInTheDocument();
   });
 });
+
+  // The picked file waits as a chip so it can be checked or taken back; before,
+  // only a clipped name showed beside the input and nothing could remove it.
+  describe('picked attachment', () => {
+    const pick = async (container: HTMLElement, file: File) => {
+      const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+      await userEvent.setup().upload(input, file);
+    };
+
+    it('shows the chosen file with its name and size', async () => {
+      mockLoad();
+      const { container } = renderWithIntl(<ClientChat wsId={9} wsActive />);
+      await screen.findByText('Hello from the client');
+
+      await pick(container, new File([new Uint8Array(2048)], 'brief.pdf', { type: 'application/pdf' }));
+
+      const chip = await screen.findByTestId('pending-attachment');
+      expect(chip).toHaveTextContent('brief.pdf');
+      expect(chip).toHaveTextContent('2 KB');
+    });
+
+    it('removes the file when its X is pressed, and sends nothing', async () => {
+      mockLoad();
+      const { container } = renderWithIntl(<ClientChat wsId={9} wsActive />);
+      await screen.findByText('Hello from the client');
+      await pick(container, new File(['x'], 'brief.pdf', { type: 'application/pdf' }));
+
+      await userEvent.setup().click(await screen.findByRole('button', { name: 'Remove attachment' }));
+
+      expect(screen.queryByTestId('pending-attachment')).not.toBeInTheDocument();
+      expect((container.querySelector('input[type="file"]') as HTMLInputElement).value).toBe('');
+      expect(mock.history.post.some((r) => r.url === '/workspaces/9/chat')).toBe(false);
+    });
+
+    it('sends the file together with the typed text', async () => {
+      mockLoad();
+      mock.onPost('/workspaces/9/chat').reply(200, { message: { id: 99, workspace_id: 9, sender_type: 'x', sender_id: 1, type: 'file', requires_action: false } });
+      const { container } = renderWithIntl(<ClientChat wsId={9} wsActive />);
+      await screen.findByText('Hello from the client');
+      await pick(container, new File(['x'], 'brief.pdf', { type: 'application/pdf' }));
+      const user = userEvent.setup();
+      await user.type(screen.getByPlaceholderText('Type a message...'), 'please check{Enter}');
+
+      await waitFor(() => expect(mock.history.post.some((r) => r.url === '/workspaces/9/chat')).toBe(true));
+      const body = mock.history.post.find((r) => r.url === '/workspaces/9/chat')!.data as FormData;
+      expect(body.get('message')).toBe('please check');
+      expect((body.get('file') as File).name).toBe('brief.pdf');
+    });
+  });
