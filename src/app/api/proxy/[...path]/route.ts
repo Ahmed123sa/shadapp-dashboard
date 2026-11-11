@@ -12,6 +12,7 @@ import { hasUnsafePathSegment } from '@/lib/proxy-path';
 
 const HOP_BY_HOP_REQUEST_HEADERS = new Set([
   'host', 'connection', 'content-length', 'cookie', 'authorization',
+  'x-forwarded-host', 'x-forwarded-port', 'x-forwarded-proto', 'forwarded',
 ]);
 
 async function forward(req: NextRequest, method: string, path: string[]) {
