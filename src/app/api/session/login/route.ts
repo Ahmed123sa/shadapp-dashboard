@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE, SESSION_ROLE_COOKIE, sessionCookieOptions } from '@/lib/session';
+import { forwardClientIpHeaders } from '@/lib/client-ip';
 
 // Admin / account-manager login. Forwards credentials to Laravel, and on
 // success stores the Sanctum token in an httpOnly cookie instead of
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const upstream = await fetch(`${LARAVEL_API_BASE}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...forwardClientIpHeaders(req) },
     body: JSON.stringify({ email: body.email, password: body.password }),
   });
 

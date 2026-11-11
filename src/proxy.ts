@@ -41,11 +41,14 @@ function getLocale(request: NextRequest): string {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Internal UI/UX design showcase (static, no real data) — never meant to
+  // Internal UI/UX design showcase and Sentry test page — never meant to
   // ship to production, just not previously blocked from being reachable
-  // there. Kept in the repo (not deleted) so it's still usable for local
-  // design work; just not servable once NODE_ENV is production.
-  if (pathname.startsWith('/showcase-demo') && process.env.NODE_ENV === 'production') {
+  // there. Kept in the repo (not deleted) so they remain usable locally;
+  // blocked once NODE_ENV is production.
+  if (
+    (pathname.startsWith('/showcase-demo') || pathname.startsWith('/sentry-example-page')) &&
+    process.env.NODE_ENV === 'production'
+  ) {
     return new NextResponse(null, { status: 404 });
   }
 

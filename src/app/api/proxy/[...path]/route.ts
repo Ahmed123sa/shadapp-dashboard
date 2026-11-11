@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LARAVEL_API_BASE, SESSION_COOKIE } from '@/lib/session';
+import { extractClientIp } from '@/lib/client-ip';
+import { hasUnsafePathSegment } from '@/lib/proxy-path';
 
 // Generic same-origin proxy: the browser talks to /api/proxy/*, never
 // directly to the Laravel origin, and never holds the bearer token. This
@@ -13,6 +15,10 @@ const HOP_BY_HOP_REQUEST_HEADERS = new Set([
 ]);
 
 async function forward(req: NextRequest, method: string, path: string[]) {
+  if (hasUnsafePathSegment(path)) {
+    return NextResponse.json({ message: 'Invalid path.' }, { status: 400 });
+  }
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const targetUrl = `${LARAVEL_API_BASE}/${path.join('/')}${req.nextUrl.search}`;
 
@@ -20,6 +26,8 @@ async function forward(req: NextRequest, method: string, path: string[]) {
   req.headers.forEach((value, key) => {
     if (!HOP_BY_HOP_REQUEST_HEADERS.has(key.toLowerCase())) headers.set(key, value);
   });
+  const clientIp = extractClientIp(req.headers);
+  if (clientIp) headers.set('x-forwarded-for', clientIp);
   if (token) headers.set('authorization', `Bearer ${token}`);
   headers.set('accept', headers.get('accept') || 'application/json');
 

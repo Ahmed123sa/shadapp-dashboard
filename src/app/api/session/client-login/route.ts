@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LARAVEL_API_BASE, SESSION_COOKIE, SESSION_TYPE_COOKIE, sessionCookieOptions } from '@/lib/session';
+import { forwardClientIpHeaders } from '@/lib/client-ip';
 
 // Client / sub-user login. Same pattern as /api/session/login — the token
 // stays server-side, only the client/sub_user/workspace objects go back to
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const upstream = await fetch(`${LARAVEL_API_BASE}/auth/client/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...forwardClientIpHeaders(req) },
     body: JSON.stringify({ email: body.email, password: body.password }),
   });
 
