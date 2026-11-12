@@ -67,6 +67,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Nothing in the app uses next/image, so the image optimizer endpoint
+  // (/_next/image) only adds attack surface: several Next.js advisories
+  // (DoS, SSRF, RCE) live there. Turning optimization off closes it.
+  images: { unoptimized: true },
   headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },
